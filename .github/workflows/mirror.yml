@@ -14,9 +14,9 @@ concurrency:
 
 jobs:
   mirror:
-    name: Mirror source branch
+    name: Mirror source snapshot
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     permissions:
       contents: read
 
@@ -29,7 +29,7 @@ jobs:
           set -euo pipefail
 
           if [[ -z "${MIRROR_TOKEN}" ]]; then
-            echo "::error::Repository secret MIRROR_TOKEN is missing or empty."
+            echo "::error::MIRROR_TOKEN is missing or empty."
             exit 1
           fi
 
@@ -41,10 +41,10 @@ jobs:
           repository: redaf12-Decode/Generals-Android-Port
           ref: main
           token: ${{ secrets.MIRROR_TOKEN }}
-          fetch-depth: 0
+          fetch-depth: 1
           persist-credentials: true
 
-      - name: Fetch source branch
+      - name: Fetch source branch shallowly
         id: source
         shell: bash
         run: |
@@ -56,91 +56,140 @@ jobs:
           git remote remove source 2>/dev/null || true
           git remote add source "${SOURCE_REPO}"
 
+          echo "Fetching only the latest source commit..."
+
           git -c http.version=HTTP/1.1 fetch \
+            --depth=1 \
             --no-tags \
-            --prune \
             source \
             "refs/heads/${SOURCE_BRANCH}:refs/remotes/source/${SOURCE_BRANCH}"
 
-          SOURCE_SHA="$(git rev-parse "refs/remotes/source/${SOURCE_BRANCH}")"
+          SOURCE_SHA="$(
+            git rev-parse "refs/remotes/source/${SOURCE_BRANCH}"
+          )"
+
+          SOURCE_TREE="$(
+            git rev-parse "${SOURCE_SHA}^{tree}"
+          )"
 
           if [[ ! "${SOURCE_SHA}" =~ ^[0-9a-f]{40}$ ]]; then
-            echo "::error::Fetched source commit SHA is invalid."
+            echo "::error::Invalid source commit SHA."
+            exit 1
+          fi
+
+          if [[ ! "${SOURCE_TREE}" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "::error::Invalid source tree SHA."
             exit 1
           fi
 
           echo "sha=${SOURCE_SHA}" >> "${GITHUB_OUTPUT}"
-          echo "Fetched source commit: ${SOURCE_SHA}"
+          echo "tree=${SOURCE_TREE}" >> "${GITHUB_OUTPUT}"
+
+          echo "Source commit: ${SOURCE_SHA}"
+          echo "Source tree:   ${SOURCE_TREE}"
+
+      - name: Create history-free snapshot commit
+        id: snapshot
+        shell: bash
+        env:
+          SOURCE_SHA: ${{ steps.source.outputs.sha }}
+          SOURCE_TREE: ${{ steps.source.outputs.tree }}
+        run: |
+          set -euo pipefail
+
+          export GIT_AUTHOR_NAME="Generals Android Mirror"
+          export GIT_AUTHOR_EMAIL="mirror-bot@users.noreply.github.com"
+          export GIT_COMMITTER_NAME="${GIT_AUTHOR_NAME}"
+          export GIT_COMMITTER_EMAIL="${GIT_AUTHOR_EMAIL}"
+
+          SNAPSHOT_SHA="$(
+            printf '%s\n' \
+              "Mirror snapshot of claude/network-diagnostics" \
+              "Source commit: ${SOURCE_SHA}" |
+            git commit-tree "${SOURCE_TREE}"
+          )"
+
+          if [[ ! "${SNAPSHOT_SHA}" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "::error::Failed to create snapshot commit."
+            exit 1
+          fi
+
+          SNAPSHOT_TREE="$(
+            git rev-parse "${SNAPSHOT_SHA}^{tree}"
+          )"
+
+          if [[ "${SNAPSHOT_TREE}" != "${SOURCE_TREE}" ]]; then
+            echo "::error::Snapshot tree differs from source tree."
+            exit 1
+          fi
+
+          echo "sha=${SNAPSHOT_SHA}" >> "${GITHUB_OUTPUT}"
+          echo "Snapshot commit: ${SNAPSHOT_SHA}"
+          echo "Snapshot tree:   ${SNAPSHOT_TREE}"
 
       - name: Push mirror branch with retries
         shell: bash
         env:
+          SNAPSHOT_SHA: ${{ steps.snapshot.outputs.sha }}
+        run: |
+          set -euo pipefail
+
+          TARGET_REF="refs/heads/mirror/claude-network-diagnostics"
+
+          for attempt in 1 2 3; do
+            echo "Push attempt ${attempt}/3"
+
+            if git -c http.version=HTTP/1.1 push \
+              --force \
+              origin \
+              "${SNAPSHOT_SHA}:${TARGET_REF}"; then
+              echo "Snapshot push succeeded."
+              exit 0
+            else
+              status=$?
+              echo "Push attempt ${attempt} failed (exit ${status})."
+            fi
+
+            if [[ "${attempt}" -lt 3 ]]; then
+              delay=$((attempt * 20))
+              echo "Retrying in ${delay} seconds..."
+              sleep "${delay}"
+            fi
+          done
+
+          echo "::error::All push attempts failed."
+          echo "::error::Inspect the Git output above for HTTP, permission, or branch-rule errors."
+          exit 1
+
+      - name: Verify remote branch contents
+        shell: bash
+        env:
+          SOURCE_TREE: ${{ steps.source.outputs.tree }}
           SOURCE_SHA: ${{ steps.source.outputs.sha }}
         run: |
           set -euo pipefail
 
           TARGET_BRANCH="mirror/claude-network-diagnostics"
           TARGET_REF="refs/heads/${TARGET_BRANCH}"
+          LOCAL_REF="refs/remotes/origin/${TARGET_BRANCH}"
 
-          for attempt in 1 2 3; do
-            echo "Push attempt ${attempt}/3"
+          git -c http.version=HTTP/1.1 fetch \
+            --depth=1 \
+            --no-tags \
+            origin \
+            "${TARGET_REF}:${LOCAL_REF}"
 
-            if git -c http.version=HTTP/1.1 push \
-              origin \
-              "${SOURCE_SHA}:${TARGET_REF}" \
-              --force; then
-              echo "Push command succeeded."
-              exit 0
-            fi
+          REMOTE_SHA="$(git rev-parse "${LOCAL_REF}")"
+          REMOTE_TREE="$(git rev-parse "${LOCAL_REF}^{tree}")"
 
-            if [[ "${attempt}" -lt 3 ]]; then
-              delay=$((attempt * 15))
-              echo "Push failed. Retrying in ${delay} seconds."
-              sleep "${delay}"
-            fi
-          done
+          echo "Source commit: ${SOURCE_SHA}"
+          echo "Source tree:   ${SOURCE_TREE}"
+          echo "Remote commit: ${REMOTE_SHA}"
+          echo "Remote tree:   ${REMOTE_TREE}"
 
-          echo "::error::Push failed after 3 attempts."
-          echo "::error::Check MIRROR_TOKEN permissions, branch rules, and GitHub Status."
-          exit 1
-
-      - name: Verify mirror branch
-        shell: bash
-        env:
-          SOURCE_SHA: ${{ steps.source.outputs.sha }}
-        run: |
-          set -euo pipefail
-
-          TARGET_REF="refs/heads/mirror/claude-network-diagnostics"
-          REMOTE_SHA=""
-
-          for attempt in 1 2 3; do
-            REMOTE_SHA="$(
-              git ls-remote --heads origin "${TARGET_REF}" |
-              awk 'NR == 1 { print $1 }'
-            )"
-
-            if [[ -n "${REMOTE_SHA}" ]]; then
-              break
-            fi
-
-            if [[ "${attempt}" -lt 3 ]]; then
-              echo "Target ref not visible yet; retrying verification."
-              sleep 5
-            fi
-          done
-
-          if [[ -z "${REMOTE_SHA}" ]]; then
-            echo "::error::Could not read the target mirror branch."
+          if [[ "${REMOTE_TREE}" != "${SOURCE_TREE}" ]]; then
+            echo "::error::Verification failed: remote files differ from source."
             exit 1
           fi
 
-          echo "Source SHA: ${SOURCE_SHA}"
-          echo "Target SHA: ${REMOTE_SHA}"
-
-          if [[ "${REMOTE_SHA}" != "${SOURCE_SHA}" ]]; then
-            echo "::error::Mirror verification failed: commit SHAs differ."
-            exit 1
-          fi
-
-          echo "Mirror verified successfully."
+          echo "SUCCESS: Mirror branch contains the same file tree as the source."
