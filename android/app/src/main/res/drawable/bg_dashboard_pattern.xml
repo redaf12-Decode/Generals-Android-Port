@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- GeneralsX @ui-redesign Android port dashboard-2026
+     Subtle tactical panel-seam pattern for the dashboard background.
+     Kept extremely faint so it reads as texture, not decoration, and never
+     competes with cards or text. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="120dp"
+    android:height="120dp"
+    android:viewportWidth="120"
+    android:viewportHeight="120">
+    <path
+        android:fillColor="#8F8CA0"
+        android:fillAlpha="0.045"
+        android:pathData="M0 0 h120 v120 h-120 z" />
+    <path
+        android:fillColor="#B9AEEA"
+        android:fillAlpha="0.055"
+        android:pathData="M20 0 v120 M40 0 v120 M60 0 v120 M80 0 v120 M100 0 v120" />
+    <path
+        android:fillColor="#B9AEEA"
+        android:fillAlpha="0.035"
+        android:pathData="M0 20 h120 M0 50 h120 M0 80 h120" />
+</vector>

@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- GeneralsX @ui-redesign Android port dashboard-2026
+     Layered dashboard background: faint panel-seam pattern, a vertical
+     gradient into a slightly warmer dark near the bottom, and a translucent
+     top gradient to keep the header/overline readable against whatever
+     device bar sits above it. No bitmap is loaded at runtime, so this stays
+     lightweight and offline-safe across screen sizes. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:drawable="@drawable/bg_dashboard_pattern"/>
+    <item>
+        <shape android:shape="rectangle">
+            <gradient
+                android:angle="270"
+                android:startColor="#0E0E11"
+                android:centerColor="#101116"
+                android:endColor="#14131B"
+                android:type="linear"/>
+        </shape>
+    </item>
+    <item>
+        <shape android:shape="rectangle">
+            <gradient
+                android:angle="270"
+                android:startColor="#000000"
+                android:centerColor="#000000"
+                android:endColor="#000000"
+                android:gradientRadius="100%p"
+                android:centerX="0.5"
+                android:centerY="0.0"
+                android:type="radial"
+                android:useLevel="false"/>
+        </shape>
+    </item>
+</layer-list>

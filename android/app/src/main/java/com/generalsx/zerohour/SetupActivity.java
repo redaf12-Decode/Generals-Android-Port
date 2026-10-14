@@ -64,11 +64,25 @@ import androidx.core.content.ContextCompat;
 
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.button.MaterialButton;
+import com.google.android.material.card.MaterialCardView;
 import com.google.android.material.navigation.NavigationBarView;
+import com.google.android.material.navigation.NavigationView;
 import com.google.android.material.slider.LabelFormatter;
 import com.google.android.material.slider.Slider;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
+
+import androidx.core.view.WindowCompat;
+import androidx.drawerlayout.widget.DrawerLayout;
+import androidx.drawerlayout.widget.DrawerLayout.SimpleDrawerListener;
+import androidx.annotation.IdRes;
+import androidx.activity.OnBackPressedCallback;
+import androidx.activity.OnBackPressedDispatcher;
+
+import android.view.Gravity;
+import android.view.MenuItem;
+import android.widget.FrameLayout;
+import android.view.View;
 
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -321,16 +335,53 @@ public class SetupActivity extends Activity {
     private FrameLayout contentHost;
     private TextView appBarTitle;
 
+    // Navigation drawer on the main screen. Only active when
+    // USE_DRAWER is true; until then the existing bottom rail still drives
+    // the page that is visible, including the language-picker recreate.
+    private static final boolean USE_DRAWER = true;
+
+    private DrawerLayout drawerLayout;
+    private NavigationView drawerNav;
+    private int currentDrawerDestination = R.id.nav_home;
+
+    // Selectable drawer destinations only -- section headers are labels, not
+    // navigation entries, so they are intentionally excluded here.
+    private static final int[] DRAWER_DESTINATIONS = {
+        R.id.nav_home,
+        R.id.nav_folder,
+        R.id.nav_graphics,
+        R.id.nav_interface,
+        R.id.nav_logs,
+        R.id.nav_netdiag,
+        R.id.nav_replay,
+        R.id.nav_online,
+        R.id.nav_help
+    };
+
+    // Drawer section headers: present in the menu so the drawer reads as a
+    // structured navigation rail, but not selectable destinations.
+    private static final int[] DRAWER_SECTION_HEADERS = {
+        R.id.nav_tools_header
+    };
+
+
     private void buildUi() {
         clearPageReferences();
 
+        if (USE_DRAWER) {
+            buildDrawerShell();
+        } else {
+            buildLegacyShell();
+        }
+
+        syncDrawerSelection();
+    }
+
+    private void buildLegacyShell() {
         LinearLayout shell = new LinearLayout(this);
         shell.setOrientation(LinearLayout.VERTICAL);
         shell.setBackgroundColor(UiKit.color(this, R.color.gzh_background));
         setContentView(shell);
-        // Edge-to-edge still handled the same way: pad the outermost view by
-        // the system bars/cutout so the app bar clears the status bar and the
-        // navigation bar below clears the gesture handle.
         InsetUtil.applySafeInsets(shell);
 
         appBarTitle = UiKit.appBar(shell, getString(isGeneralsSelected(this)
@@ -344,10 +395,194 @@ public class SetupActivity extends Activity {
 
         shell.addView(buildBottomNav(), new LinearLayout.LayoutParams(
             LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+    }
+
+    private void buildDrawerShell() {
+        Context c = this;
+
+        drawerLayout = new DrawerLayout(c);
+        WindowCompat.setDecorFitsSystemWindows(drawerLayout, true);
+        // Keep the drawer visually consistent with the dashboard without
+        // depending on API-specific status-bar helpers that may not resolve
+        // on this dependency surface. The shell itself is padded by
+        // InsetUtil, so the important thing is the shadow here.
+        GradientDrawable shadow = new GradientDrawable();
+        shadow.setShape(GradientDrawable.RECTANGLE);
+        shadow.setCornerRadius(0f);
+        shadow.setGradientType(GradientDrawable.RECTANGLE);
+        shadow.setColor(0x00000000);
+        drawerLayout.setDrawerShadow(shadow, Gravity.START);
+
+        // Main content shell.
+        LinearLayout shell = new LinearLayout(c);
+        shell.setOrientation(LinearLayout.VERTICAL);
+        shell.setBackgroundColor(UiKit.color(c, R.color.gzh_background));
+        shell.setBackgroundResource(R.drawable.bg_dashboard);
+        drawerLayout.addView(shell, new DrawerLayout.LayoutParams(
+            DrawerLayout.LayoutParams.MATCH_PARENT,
+            DrawerLayout.LayoutParams.MATCH_PARENT));
+
+        // Thin translucent scrim under the status bar so the header reads
+        // cleanly on light-status-bar and cutout devices without painting a
+        // hard band the user can see as a separate layer.
+        View topScrim = new View(c);
+        topScrim.setBackgroundColor(0xCC0E0E11);
+        topScrim.setLayoutParams(new FrameLayout.LayoutParams(
+            FrameLayout.LayoutParams.MATCH_PARENT, dim(c, R.dimen.gzh_status_bar_height)));
+        shell.addView(topScrim, new FrameLayout.LayoutParams(
+            FrameLayout.LayoutParams.MATCH_PARENT,
+            FrameLayout.LayoutParams.WRAP_CONTENT,
+            Gravity.TOP));
+
+        appBarTitle = UiKit.appBar(shell, getString(isGeneralsSelected(this)
+                ? R.string.setup_title_generals : R.string.setup_title),
+            getString(R.string.nav_drawer_home),
+            R.drawable.ic_gzh_menu, null, this::toggleDrawer);
+
+        contentHost = new FrameLayout(c);
+        shell.addView(contentHost, new LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f));
+
+        // Drawer.
+        drawerNav = new NavigationView(c);
+        drawerNav.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
+        drawerNav.setTextDirection(View.TEXT_DIRECTION_LOCALE);
+        drawerNav.setBackgroundColor(UiKit.color(c, R.color.gzh_surface_container_low));
+        drawerNav.setElevation(0f);
+        drawerNav.setItemIconTintList(itemTint(c));
+        drawerNav.setItemTextColor(itemTint(c));
+        drawerNav.setItemRippleColor(UiKit.tint(c, R.color.gzh_ripple_primary));
+        drawerNav.setCheckedItem(currentDrawerDestination);
+        drawerNav.setNavigationItemSelectedListener(this::onDrawerItemSelected);
+        drawerLayout.addView(drawerNav, new DrawerLayout.LayoutParams(
+            DrawerLayout.LayoutParams.MATCH_PARENT,
+            DrawerLayout.LayoutParams.MATCH_PARENT,
+            Gravity.START));
+
+        setContentView(drawerLayout);
+        InsetUtil.applySafeInsets(drawerLayout);
+
+        drawerLayout.setDrawerListener(new DrawerLayout.SimpleDrawerListener() {
+            @Override
+            public void onDrawerClosed(View drawerView) {
+                if (drawerNav != null) {
+                    drawerNav.setCheckedItem(currentDrawerDestination);
+                }
+            }
+        });
+
+        // Drawer: swipe or menu to open; Back closes it when it is open.
+        getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                if (drawerLayout.isDrawerOpen(Gravity.START)) {
+                    drawerLayout.closeDrawer(Gravity.START);
+                } else {
+                    setEnabled(false);
+                    onBackPressedDispatcher.onBackPressed();
+                }
+            }
+        });
 
         if (contentHost.getChildCount() == 0) {
             showTab(currentTab);
         }
+    }
+
+    private ColorStateList itemTint(Context c) {
+        int active = UiKit.color(c, R.color.gzh_on_surface);
+        int inactive = UiKit.color(c, R.color.gzh_on_surface_faint);
+        return new ColorStateList(
+            new int[][] {
+                new int[] { android.R.attr.state_checked },
+                new int[0]
+            },
+            new int[] { active, inactive });
+    }
+
+    private boolean onDrawerItemSelected(MenuItem item) {
+        int id = item.getItemId();
+        drawerLayout.closeDrawer(Gravity.START);
+        // Section headers are not destinations.
+        if (java.util.Arrays.binarySearch(DRAWER_SECTION_HEADERS, id) >= 0) {
+            return false;
+        }
+        if (id == R.id.nav_home) {
+            currentDrawerDestination = id;
+            showTab(TAB_HOME);
+            return true;
+        }
+        if (id == R.id.nav_folder) {
+            currentDrawerDestination = id;
+            onSelectGameFolder();
+            return true;
+        }
+        if (id == R.id.nav_graphics) {
+            currentDrawerDestination = id;
+            showTab(TAB_GRAPHICS);
+            return true;
+        }
+        if (id == R.id.nav_interface) {
+            currentDrawerDestination = id;
+            showTab(TAB_INTERFACE);
+            return true;
+        }
+        if (id == R.id.nav_logs) {
+            currentDrawerDestination = id;
+            onViewLogs();
+            return true;
+        }
+        if (id == R.id.nav_netdiag) {
+            currentDrawerDestination = id;
+            onNetworkDiagnostics();
+            return true;
+        }
+        if (id == R.id.nav_replay) {
+            currentDrawerDestination = id;
+            startActivity(new Intent(this, ReplayCheckActivity.class));
+            return true;
+        }
+        if (id == R.id.nav_online) {
+            currentDrawerDestination = id;
+            startActivity(new Intent(this, GeneralsOnlineActivity.class));
+            return true;
+        }
+        if (id == R.id.nav_help) {
+            currentDrawerDestination = id;
+            showTab(TAB_HELP);
+            return true;
+        }
+        return false;
+    }
+
+    private void toggleDrawer() {
+        if (drawerLayout.isDrawerOpen(Gravity.START)) {
+            drawerLayout.closeDrawer(Gravity.START);
+        } else {
+            drawerLayout.openDrawer(Gravity.START);
+        }
+    }
+
+    private void syncDrawerSelection() {
+        if (drawerNav == null) {
+            return;
+        }
+        int dest = currentDrawerDestination;
+        if (USE_DRAWER) {
+            if (currentTab == TAB_HOME) {
+                dest = R.id.nav_home;
+            } else if (currentTab == TAB_GRAPHICS) {
+                dest = R.id.nav_graphics;
+            } else if (currentTab == TAB_INTERFACE) {
+                dest = R.id.nav_interface;
+            } else if (currentTab == TAB_TOOLS) {
+                dest = R.id.nav_logs;
+            } else if (currentTab == TAB_HELP) {
+                dest = R.id.nav_help;
+            }
+        }
+        currentDrawerDestination = dest;
+        drawerNav.setCheckedItem(dest);
     }
 
     private BottomNavigationView buildBottomNav() {
@@ -492,6 +727,47 @@ public class SetupActivity extends Activity {
         // GeneralsX @feature Android port 04/10/2026 Which game this page is about. Play, the game
         // folder and its checks below follow it; the other pages are shared by both games.
         final boolean generals = isGeneralsSelected(this);
+
+        // Dashboard hero: the one thing this app exists to do, presented as the
+        // first and most prominent thing on the screen.
+        LinearLayout launch = UiKit.card(page);
+        launch.setBackgroundColor(UiKit.color(this, R.color.gzh_surface_container_low));
+
+        // Small brand band above the heading, using the existing monochrome
+        // setup motif tinted in the accent so the dashboard reads as Generals
+        // without leaning on a large remote or unlicensed image.
+        ImageView brand = new ImageView(this);
+        brand.setImageDrawable(ContextCompat.getDrawable(this, R.drawable.ic_gzh_play));
+        brand.setImageTintList(UiKit.tint(this, R.color.gzh_primary));
+        brand.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
+        int brandSize = dim(this, R.dimen.gzh_icon);
+        brand.setLayoutParams(new LinearLayout.LayoutParams(brandSize, brandSize));
+        brand.setPadding(dim(this, R.dimen.gzh_card_padding), dim(this, R.dimen.gzh_card_padding),
+                         dim(this, R.dimen.gzh_card_padding), 0);
+        launch.addView(brand);
+
+        TextView heading = new TextView(this);
+        heading.setText(getString(R.string.setup_button_launch_game));
+        heading.setTextSize(TypedValue.COMPLEX_UNIT_PX, dim(this, R.dimen.gzh_text_display));
+        heading.setTextColor(UiKit.color(this, R.color.gzh_on_surface));
+        heading.setTypeface(Typeface.DEFAULT_BOLD);
+        heading.setLineSpacing(0f, 1.05f);
+        LinearLayout.LayoutParams hp = new LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        hp.topMargin = dp(this, 4);
+        launch.addView(heading, hp);
+
+        UiKit.supporting(launch, getString(isGeneralsSelected(this)
+                ? R.string.setup_game_generals
+                : R.string.setup_game_zero_hour)
+            + " \u00b7 " + getString(R.string.setup_card_game));
+
+        UiKit.button(launch, UiKit.BTN_PRIMARY, R.drawable.ic_gzh_play,
+            getString(R.string.setup_button_launch_game), this::onLaunchGame);
+
+        // Game selection card: Play choice, skip-intro, and the game this
+        // dashboard is showing. Kept on the dashboard because it controls the
+        // launch path and the app bar title.
         LinearLayout game = UiKit.card(page);
         UiKit.sectionHeader(game, R.drawable.ic_gzh_play, getString(R.string.setup_card_game), false);
         CharSequence[] games = new CharSequence[] {
@@ -509,20 +785,14 @@ public class SetupActivity extends Activity {
         });
         UiKit.supporting(game, getString(R.string.setup_game_desc));
 
-        // GeneralsX @feature Android port 05/10/2026 Skip the logos and intro movies (owner's
-        // request): the engine's own -nologo, passed by GeneralsZHActivity.getArguments(), for
-        // both games. Whatever plays in their place -- EA logo, intro, sizzle, or a mod's or a
-        // repack's replacement of those movies -- is skipped, straight to loading.
         SwitchCompat skipIntro = UiKit.switchRow(game,
             getString(R.string.setup_switch_skip_intro), getString(R.string.setup_switch_skip_intro_desc));
         skipIntro.setChecked(isSkipIntroEnabled(this));
         skipIntro.setOnCheckedChangeListener((button, checked) ->
             getSharedPreferences(PREFS_NAME, MODE_PRIVATE).edit().putBoolean(PREF_SKIP_INTRO, checked).apply());
 
-        // The one thing this app exists to do, as the first thing on it.
-        UiKit.button(page, UiKit.BTN_PRIMARY, R.drawable.ic_gzh_play,
-            getString(R.string.setup_button_launch_game), this::onLaunchGame);
-
+        // Game-folder status and actions, kept honest: only the real folder
+        // state the rest of the app already computes.
         LinearLayout folder = UiKit.card(page);
         UiKit.sectionHeader(folder, R.drawable.ic_gzh_folder,
             getString(R.string.setup_card_game_folder), false);
@@ -543,6 +813,32 @@ public class SetupActivity extends Activity {
             UiKit.button(folder, UiKit.BTN_DANGER, R.drawable.ic_gzh_broom,
                 getString(R.string.setup_button_clear_base_generals), this::onClearBaseGeneralsFolder);
         }
+
+        // Quick-access rows: fewer of them on the dashboard, the rest is in
+        // the navigation drawer.
+        LinearLayout quick = UiKit.card(page);
+        UiKit.sectionHeader(quick, R.drawable.ic_gzh_home, getString(R.string.nav_drawer_home), false);
+        UiKit.supporting(quick, getString(R.string.setup_how_it_works_body));
+
+        UiKit.listRow(quick, R.drawable.ic_gzh_folder,
+            getString(R.string.setup_button_select_game_folder),
+            getString(R.string.setup_card_game_folder),
+            this::onSelectGameFolder);
+        UiKit.divider(quick);
+        UiKit.listRow(quick, R.drawable.ic_gzh_doc,
+            getString(R.string.setup_button_view_logs),
+            getString(R.string.setup_status_logs_note),
+            this::onViewLogs);
+        UiKit.divider(quick);
+        UiKit.listRow(quick, R.drawable.ic_gzh_wrench,
+            getString(R.string.netdiag_title),
+            getString(R.string.netdiag_row_note),
+            this::onNetworkDiagnostics);
+        UiKit.divider(quick);
+        UiKit.listRow(quick, R.drawable.ic_gzh_play,
+            getString(R.string.replaycheck_title),
+            getString(R.string.replaycheck_row_note),
+            () -> startActivity(new Intent(this, ReplayCheckActivity.class)));
 
         // GeneralsX @bugfix Android port 01/08/2026 kept above the advanced
         // settings -- signing into GeneralsOnline is a primary action most

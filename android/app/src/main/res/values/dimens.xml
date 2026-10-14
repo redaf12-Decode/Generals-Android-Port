@@ -28,4 +28,9 @@
     <dimen name="gzh_text_body">14sp</dimen>
     <dimen name="gzh_text_caption">12sp</dimen>
     <dimen name="gzh_text_overline">12sp</dimen>
+
+    <!-- Dashboard shell: translucent top scrim height, mirrors the status bar
+         insets the shell pads itself by. Below standard material top app bar
+         sizing on purpose so the dashboard reads as a full-screen surface. -->
+    <dimen name="gzh_status_bar_height">28dp</dimen>
 </resources>

@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- GeneralsX @ui-redesign Android port dashboard-2026
+     Navigation drawer items map to destinations that actually exist in this
+     launcher. No placeholder entries for features that have no screen yet. -->
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Primary destination -->
+    <item
+        android:id="@+id/nav_home"
+        android:icon="@drawable/ic_gzh_home"
+        android:title="@string/nav_drawer_home"/>
+
+    <!-- Storage / game-folder setup: existing FolderPickerActivity -->
+    <item
+        android:id="@+id/nav_folder"
+        android:icon="@drawable/ic_gzh_folder"
+        android:title="@string/nav_drawer_game_folder"/>
+
+    <!-- Settings group -->
+    <item
+        android:id="@+id/nav_graphics"
+        android:icon="@drawable/ic_gzh_display"
+        android:title="@string/nav_tab_graphics"/>
+
+    <item
+        android:id="@+id/nav_interface"
+        android:icon="@drawable/ic_gzh_globe"
+        android:title="@string/nav_tab_interface"/>
+
+    <!-- Tools group -->
+    <item
+        android:id="@+id/nav_tools_header"
+        android:title="@string/nav_drawer_tools"/>
+
+    <item
+        android:id="@+id/nav_logs"
+        android:icon="@drawable/ic_gzh_doc"
+        android:title="@string/setup_button_view_logs"/>
+
+    <item
+        android:id="@+id/nav_netdiag"
+        android:icon="@drawable/ic_gzh_wrench"
+        android:title="@string/netdiag_title"/>
+
+    <item
+        android:id="@+id/nav_replay"
+        android:icon="@drawable/ic_gzh_play"
+        android:title="@string/replaycheck_title"/>
+
+    <!-- Community / account -->
+    <item
+        android:id="@+id/nav_online"
+        android:icon="@drawable/ic_gzh_account"
+        android:title="@string/online_window_title"/>
+
+    <!-- About / support -->
+    <item
+        android:id="@+id/nav_help"
+        android:icon="@drawable/ic_gzh_info"
+        android:title="@string/nav_tab_help"/>
+
+</menu>
