@@ -1,0 +1,80 @@
+
+name: Mirror Network Diagnostics
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 */6 * * *"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: mirror-network-diagnostics
+  cancel-in-progress: false
+
+jobs:
+  mirror:
+    name: Sync Source Branch
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout target repository
+        uses: actions/checkout@v4
+        with:
+          repository: redaf12-Decode/Generals-Android-Port
+          ref: ${{ github.event.repository.default_branch }}
+          fetch-depth: 0
+          token: ${{ secrets.MIRROR_TOKEN }}
+          persist-credentials: true
+
+      - name: Fetch source branch
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          git remote add source \
+            https://github.com/MYSOREZ/GeneralsZH-Android-Port.git
+
+          git fetch --no-tags source \
+            refs/heads/claude/network-diagnostics
+
+          SOURCE_SHA="$(git rev-parse FETCH_HEAD)"
+
+          echo "SOURCE_SHA=$SOURCE_SHA" >> "$GITHUB_ENV"
+          echo "Source commit: $SOURCE_SHA"
+
+      - name: Push mirror branch
+        shell: bash
+        env:
+          SOURCE_SHA: ${{ env.SOURCE_SHA }}
+        run: |
+          set -euo pipefail
+
+          TARGET_BRANCH="mirror/claude-network-diagnostics"
+
+          git push origin \
+            "$SOURCE_SHA:refs/heads/$TARGET_BRANCH" \
+            --force
+
+      - name: Verify mirror
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          TARGET_BRANCH="mirror/claude-network-diagnostics"
+
+          git fetch --no-tags origin \
+            "refs/heads/$TARGET_BRANCH"
+
+          MIRROR_SHA="$(git rev-parse FETCH_HEAD)"
+
+          if [ "$MIRROR_SHA" != "$SOURCE_SHA" ]; then
+            echo "::error::Mirror verification failed"
+            exit 1
+          fi
+
+          echo "Mirror verified successfully."
+          echo "Commit: $MIRROR_SHA"
+          
