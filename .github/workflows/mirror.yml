@@ -1,5 +1,4 @@
-
-name: Mirror Network Diagnostics
+name: Mirror GeneralsZH Network Diagnostics
 
 on:
   workflow_dispatch:
@@ -7,74 +6,141 @@ on:
     - cron: "17 */6 * * *"
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
-  group: mirror-network-diagnostics
+  group: mirror-claude-network-diagnostics
   cancel-in-progress: false
 
 jobs:
   mirror:
-    name: Sync Source Branch
+    name: Mirror source branch
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
+    permissions:
+      contents: read
 
     steps:
+      - name: Validate mirror token
+        shell: bash
+        env:
+          MIRROR_TOKEN: ${{ secrets.MIRROR_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          if [[ -z "${MIRROR_TOKEN}" ]]; then
+            echo "::error::Repository secret MIRROR_TOKEN is missing or empty."
+            exit 1
+          fi
+
+          echo "Mirror token is configured."
+
       - name: Checkout target repository
         uses: actions/checkout@v4
         with:
           repository: redaf12-Decode/Generals-Android-Port
-          ref: ${{ github.event.repository.default_branch }}
-          fetch-depth: 0
+          ref: main
           token: ${{ secrets.MIRROR_TOKEN }}
+          fetch-depth: 0
           persist-credentials: true
 
       - name: Fetch source branch
+        id: source
         shell: bash
         run: |
           set -euo pipefail
 
-          git remote add source \
-            https://github.com/MYSOREZ/GeneralsZH-Android-Port.git
+          SOURCE_REPO="https://github.com/MYSOREZ/GeneralsZH-Android-Port.git"
+          SOURCE_BRANCH="claude/network-diagnostics"
 
-          git fetch --no-tags source \
-            refs/heads/claude/network-diagnostics
+          git remote remove source 2>/dev/null || true
+          git remote add source "${SOURCE_REPO}"
 
-          SOURCE_SHA="$(git rev-parse FETCH_HEAD)"
+          git -c http.version=HTTP/1.1 fetch \
+            --no-tags \
+            --prune \
+            source \
+            "refs/heads/${SOURCE_BRANCH}:refs/remotes/source/${SOURCE_BRANCH}"
 
-          echo "SOURCE_SHA=$SOURCE_SHA" >> "$GITHUB_ENV"
-          echo "Source commit: $SOURCE_SHA"
+          SOURCE_SHA="$(git rev-parse "refs/remotes/source/${SOURCE_BRANCH}")"
 
-      - name: Push mirror branch
+          if [[ ! "${SOURCE_SHA}" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "::error::Fetched source commit SHA is invalid."
+            exit 1
+          fi
+
+          echo "sha=${SOURCE_SHA}" >> "${GITHUB_OUTPUT}"
+          echo "Fetched source commit: ${SOURCE_SHA}"
+
+      - name: Push mirror branch with retries
         shell: bash
         env:
-          SOURCE_SHA: ${{ env.SOURCE_SHA }}
+          SOURCE_SHA: ${{ steps.source.outputs.sha }}
         run: |
           set -euo pipefail
 
           TARGET_BRANCH="mirror/claude-network-diagnostics"
+          TARGET_REF="refs/heads/${TARGET_BRANCH}"
 
-          git push origin \
-            "$SOURCE_SHA:refs/heads/$TARGET_BRANCH" \
-            --force
+          for attempt in 1 2 3; do
+            echo "Push attempt ${attempt}/3"
 
-      - name: Verify mirror
+            if git -c http.version=HTTP/1.1 push \
+              origin \
+              "${SOURCE_SHA}:${TARGET_REF}" \
+              --force; then
+              echo "Push command succeeded."
+              exit 0
+            fi
+
+            if [[ "${attempt}" -lt 3 ]]; then
+              delay=$((attempt * 15))
+              echo "Push failed. Retrying in ${delay} seconds."
+              sleep "${delay}"
+            fi
+          done
+
+          echo "::error::Push failed after 3 attempts."
+          echo "::error::Check MIRROR_TOKEN permissions, branch rules, and GitHub Status."
+          exit 1
+
+      - name: Verify mirror branch
         shell: bash
+        env:
+          SOURCE_SHA: ${{ steps.source.outputs.sha }}
         run: |
           set -euo pipefail
 
-          TARGET_BRANCH="mirror/claude-network-diagnostics"
+          TARGET_REF="refs/heads/mirror/claude-network-diagnostics"
+          REMOTE_SHA=""
 
-          git fetch --no-tags origin \
-            "refs/heads/$TARGET_BRANCH"
+          for attempt in 1 2 3; do
+            REMOTE_SHA="$(
+              git ls-remote --heads origin "${TARGET_REF}" |
+              awk 'NR == 1 { print $1 }'
+            )"
 
-          MIRROR_SHA="$(git rev-parse FETCH_HEAD)"
+            if [[ -n "${REMOTE_SHA}" ]]; then
+              break
+            fi
 
-          if [ "$MIRROR_SHA" != "$SOURCE_SHA" ]; then
-            echo "::error::Mirror verification failed"
+            if [[ "${attempt}" -lt 3 ]]; then
+              echo "Target ref not visible yet; retrying verification."
+              sleep 5
+            fi
+          done
+
+          if [[ -z "${REMOTE_SHA}" ]]; then
+            echo "::error::Could not read the target mirror branch."
+            exit 1
+          fi
+
+          echo "Source SHA: ${SOURCE_SHA}"
+          echo "Target SHA: ${REMOTE_SHA}"
+
+          if [[ "${REMOTE_SHA}" != "${SOURCE_SHA}" ]]; then
+            echo "::error::Mirror verification failed: commit SHAs differ."
             exit 1
           fi
 
           echo "Mirror verified successfully."
-          echo "Commit: $MIRROR_SHA"
-          
