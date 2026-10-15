@@ -62,16 +62,40 @@ if [[ -n "${GX_SECOND_GAME_LIB:-}" ]]; then
     fi
     cp "${GX_SECOND_GAME_LIB}" "${JNILIBS}/libmain60.so"
     echo "Packaging a second engine: libmain60.so ($(du -h "${GX_SECOND_GAME_LIB}" | cut -f1))"
+else
+    # GeneralsX @bugfix Android port 15/10/2026 A one-engine APK is a legitimate
+    # local build (build-android-zh.sh + this script), but it must never be a
+    # silent outcome: the launcher's Simulation Rate setting and the base-game
+    # option both read libraries that only exist when the extra engines were
+    # built, and a build that shipped without them looked exactly like a build
+    # that had them until someone tapped the wrong setting on a device. CI sets
+    # GX_REQUIRE_ALL_ENGINES=1 (see .github/workflows/build-android.yml) so its
+    # APK cannot ship incomplete; a local single-engine build says so here.
+    if [[ "${GX_REQUIRE_ALL_ENGINES:-0}" == "1" ]]; then
+        echo "ERROR: GX_REQUIRE_ALL_ENGINES=1 but GX_SECOND_GAME_LIB is unset -- libmain60.so (the 60 Hz Zero Hour engine) would be missing from the APK."
+        echo "       Build it with scripts/build/android/build-dual-hz.sh, or point GX_SECOND_GAME_LIB at the SAGE_HIGH_FPS_SIM=ON build of libmain.so."
+        exit 1
+    fi
+    echo "WARNING: no second Zero Hour engine -- this APK carries libmain.so only, so the launcher's 60 Hz cross-play setting will fall back to 30 Hz."
 fi
 
 # GeneralsX @feature Android port 04/10/2026 The base game, Command & Conquer Generals, in the
 # same APK: libgenerals.so (30 Hz) and, from build-dual-hz.sh, libgenerals60.so. The launcher
 # loads one of the four (GeneralsZHActivity.getLibraries()).
+#
+# GeneralsX @bugfix Android port 15/10/2026 libgenerals.so is REQUIRED, not optional: it comes out
+# of the same g_generals target as libmain.so comes out of z_generals, so a build tree without it
+# simply never built g_generals. This used to copy the library when it was found and say nothing
+# when it wasn't, which is how CI shipped APKs whose Generals option died at System.loadLibrary
+# (the workflow's build step only named the z_generals target -- see docs/build-reference/).
 BASE_GAME_LIB="$(find "${BUILD_DIR}" -name libgenerals.so -not -path "*/_deps/*" 2>/dev/null | head -1)"
-if [[ -n "${BASE_GAME_LIB}" ]]; then
-    cp "${BASE_GAME_LIB}" "${JNILIBS}/libgenerals.so"
-    echo "Packaging the base game: libgenerals.so ($(du -h "${BASE_GAME_LIB}" | cut -f1))"
+if [[ -z "${BASE_GAME_LIB}" ]]; then
+    echo "ERROR: libgenerals.so not found under ${BUILD_DIR} -- the base game's engine is required, but the g_generals target was never built."
+    echo "       Build it with: cmake --build ${BUILD_DIR} --target g_generals"
+    exit 1
 fi
+cp "${BASE_GAME_LIB}" "${JNILIBS}/libgenerals.so"
+echo "Packaging the base game: libgenerals.so ($(du -h "${BASE_GAME_LIB}" | cut -f1))"
 if [[ -n "${GX_SECOND_BASE_GAME_LIB:-}" ]]; then
     if [[ ! -f "${GX_SECOND_BASE_GAME_LIB}" ]]; then
         echo "ERROR: GX_SECOND_BASE_GAME_LIB points at a file that does not exist: ${GX_SECOND_BASE_GAME_LIB}"
@@ -205,6 +229,25 @@ fi
 
 echo "==> Staged $(ls "${JNILIBS}" | wc -l | tr -d ' ') native libraries:"
 ls -la "${JNILIBS}"
+
+# GeneralsX @bugfix Android port 15/10/2026 Name the engines this APK is about to carry, and
+# fail here rather than on a device: the four names are what GeneralsZHActivity.getLibraries()
+# and SetupActivity.engineLibraries() ask for, and which of them exist decides whether the
+# launcher's Game and Simulation Rate settings work at all.
+ENGINES_STAGED=""
+for engine in libmain.so libmain60.so libgenerals.so libgenerals60.so; do
+    if [[ -f "${JNILIBS}/${engine}" ]]; then
+        ENGINES_STAGED="${ENGINES_STAGED} ${engine}"
+    fi
+done
+echo "==> Engines staged:${ENGINES_STAGED:- (none)}"
+for engine in libmain.so libgenerals.so; do
+    [[ -f "${JNILIBS}/${engine}" ]] || { echo "ERROR: required engine ${engine} was not staged into ${JNILIBS}"; exit 1; }
+done
+if [[ "${GX_REQUIRE_ALL_ENGINES:-0}" == "1" && ! -f "${JNILIBS}/libmain60.so" ]]; then
+    echo "ERROR: GX_REQUIRE_ALL_ENGINES=1 requires libmain60.so in the APK; it is not staged."
+    exit 1
+fi
 
 # --- 2. SDL3 Java glue -------------------------------------------------------
 SDL_JAVA_SRC="${BUILD_DIR}/_deps/sdl3-src/android-project/app/src/main/java/org/libsdl/app"
