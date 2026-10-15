@@ -288,19 +288,71 @@ jobs:
             -DANDROID_CI_BUILD_NUMBER=${{ github.run_number }} \
             2>&1 | tee logs/configure_android.log
 
-      - name: Build z_generals (libmain.so) + DXVK d3d8/d3d9
+      # GeneralsX @bugfix Android CI 15/10/2026 This workflow used to build ONE engine
+      # (`z_generals`), while the launcher offers four (SetupActivity.engineLibraries()):
+      #
+      #   libmain.so       Zero Hour, 30 Hz   z_generals, SAGE_HIGH_FPS_SIM=OFF
+      #   libmain60.so     Zero Hour, 60 Hz   z_generals, SAGE_HIGH_FPS_SIM=ON
+      #   libgenerals.so   Generals, 30 Hz    g_generals, SAGE_HIGH_FPS_SIM=OFF
+      #   libgenerals60.so Generals, 60 Hz    g_generals, SAGE_HIGH_FPS_SIM=ON  (local only)
+      #
+      # ...so every CI APK shipped libmain.so alone: choosing Generals in the launcher died at
+      # System.loadLibrary("generals") and the 60 Hz cross-play setting silently fell back to
+      # 30 Hz (GeneralsZHActivity.getLibraries() only picks libmain60.so when that file exists).
+      #
+      # The tick rate cannot be a runtime flag -- SAGE_HIGH_FPS_SIM selects WWSyncPerSecond and
+      # the layout of GameLogic, so Core and both game trees must be compiled with the same value
+      # (CMakeLists.txt:99). The real mechanism is therefore the one scripts/build/android/
+      # build-dual-hz.sh uses: configure the SAME build tree twice and let each pass link the
+      # engine it just compiled. The 60 Hz pass has to come FIRST because the target's output name
+      # is the same libmain.so in both passes -- the last pass is what is left on disk, and the
+      # 30 Hz engine is the default the launcher falls back to. Pass 1's result is set aside as
+      # build/libmain60.so (the same stash path build-dual-hz.sh uses).
+      - name: Build the 60 Hz engine (pass 1 of 2)
         run: |
           set -o pipefail
           mkdir -p logs
+          # Same configure flags as the step above, plus the tick rate. Reconfiguring in place is
+          # what flips the compile definitions for Core and GeneralsMD alike; the flag change also
+          # invalidates every engine object, so this pass is a full engine build on a cold ccache.
+          cmake --preset ${{ env.PRESET }} \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
+            -DANDROID_CI_BUILD_NUMBER=${{ github.run_number }} \
+            -DSAGE_HIGH_FPS_SIM=ON \
+            2>&1 | tee logs/configure_android_60hz.log
+          # z_generals only: the base game is not shipped at 60 Hz (the launcher offers
+          # libgenerals.so as the base game's engine), so building g_generals here would be a
+          # second full compile of the base game for a library nothing loads.
+          cmake --build build/${{ env.PRESET }} --target z_generals -- -k 0 2>&1 | tee logs/build_android_60hz.log
+          # Deterministic path: z_generals' OUTPUT_NAME on Android is "main"
+          # (GeneralsMD/Code/Main/CMakeLists.txt), so the 60 Hz pass links exactly here.
+          cp "build/${{ env.PRESET }}/GeneralsMD/Code/Main/libmain.so" build/libmain60.so
+          ls -la build/libmain60.so
+          ccache --show-stats
+
+      - name: Build the 30 Hz engines (pass 2 of 2) + DXVK d3d8/d3d9
+        run: |
+          set -o pipefail
+          mkdir -p logs
+          # Back to the 30 Hz definitions (explicitly OFF: the cache still holds ON from pass 1).
+          cmake --preset ${{ env.PRESET }} \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
+            -DANDROID_CI_BUILD_NUMBER=${{ github.run_number }} \
+            -DSAGE_HIGH_FPS_SIM=OFF \
+            2>&1 | tee logs/configure_android.log
           # ninja -k 0: keep going past failures so ONE run surfaces every
           # cross-compile error in the 1.6M-LOC engine instead of one per
           # round-trip; the exit code still fails the step when anything broke.
+          # g_generals: the base game, libgenerals.so -- same build pass, a different game tree.
+          # Skipping it is what left the launcher's Generals option with no library at all.
           # main_hook/file_redirect_hook/gsl_alloc_hook/hook_impl
           # (cmake/adrenotools.cmake): dlopen()'d by path at runtime, not a
           # link-time dependency of z_generals, so a targeted build skips them
           # unless named explicitly -- package-android-zh.sh's jniLibs staging
           # requires all four to already exist.
-          cmake --build build/${{ env.PRESET }} --target z_generals dxvk_d3d8_install \
+          cmake --build build/${{ env.PRESET }} --target z_generals g_generals dxvk_d3d8_install \
             main_hook file_redirect_hook gsl_alloc_hook hook_impl -- -k 0 2>&1 | tee logs/build_android.log
           ccache --show-stats
 
@@ -349,6 +401,94 @@ jobs:
           strings "build/${{ env.PRESET }}/libdxvk_d3d9.so" | grep -q Sdl3WsiDriver || {
             echo "::error::libdxvk_d3d9.so built without the SDL3 WSI (silent fallback)"; exit 1; }
           echo "Artifacts verified: AArch64 libmain.so + DXVK with SDL3 WSI"
+
+      # GeneralsX @bugfix Android CI 15/10/2026 "a build succeeded" is not evidence that all
+      # three engines exist, and a missing one only shows up on a device as "Generals does
+      # nothing" or "60 Hz quietly fell back to 30 Hz". Check the files themselves -- and check
+      # WHICH engine each one is, which a file-existence test cannot tell you. The engine bakes
+      # in its GeneralsOnline client id (NextGenMP_defines.h: gen_online_60hz when
+      # SAGE_HIGH_FPS_SIM is ON, gen_online_30hz when it is OFF), so the string is in the binary
+      # and distinguishes the two passes; neither string exists anywhere in the base game's tree,
+      # which is what separates libgenerals.so from a mislabelled Zero Hour build.
+      - name: Verify the three engines (ELF AArch64 + 30/60 Hz identity)
+        run: |
+          set -euo pipefail
+          READELF="$(ls "${ANDROID_NDK_HOME}"/toolchains/llvm/prebuilt/*/bin/llvm-readelf | head -1)"
+          MAIN="build/${{ env.PRESET }}/GeneralsMD/Code/Main/libmain.so"
+          MAIN60="build/libmain60.so"
+          GENERALS="build/${{ env.PRESET }}/Generals/Code/Main/libgenerals.so"
+          fail=0
+          for lib in "${MAIN}" "${MAIN60}" "${GENERALS}"; do
+            if [ ! -f "${lib}" ]; then
+              echo "::error::engine ${lib} was not built"
+              fail=1
+              continue
+            fi
+            SIZE="$(stat -c %s "${lib}")"
+            if [ "${SIZE}" -lt 5000000 ]; then
+              echo "::error::engine ${lib} is only ${SIZE} bytes -- that is not a linked engine"
+              fail=1
+              continue
+            fi
+            # The same I/O-visibility retry as the "Verify artifacts" step above: a process
+            # started microseconds after the linker's last write has read a file whose content
+            # was not fully visible yet on the runner. A genuinely wrong-arch file fails all five
+            # attempts.
+            OK=0
+            for attempt in 1 2 3 4 5; do
+              if "${READELF}" -h "${lib}" 2>/dev/null | grep -q AArch64; then OK=1; break; fi
+              sleep 1
+            done
+            if [ "${OK}" != "1" ]; then
+              echo "::error::${lib} is not an AArch64 ELF"
+              fail=1
+            fi
+          done
+          [ "${fail}" -eq 0 ] || exit 1
+
+          # `strings` output is captured first, then matched: piping it straight into `grep -q`
+          # lets grep close the pipe on its first match and SIGPIPE `strings` mid-write, which
+          # pipefail reports as a failure of a perfectly good check (same trap as
+          # build-android-zh.sh's readelf|grep).
+          MAIN_STRINGS="$(strings "${MAIN}")"
+          MAIN60_STRINGS="$(strings "${MAIN60}")"
+          GENERALS_STRINGS="$(strings "${GENERALS}")"
+          if ! grep -qF -- "gen_online_30hz" <<< "${MAIN_STRINGS}"; then
+            echo "::error::libmain.so is not the 30 Hz engine (no gen_online_30hz in it)"
+            fail=1
+          fi
+          if grep -qF -- "gen_online_60hz" <<< "${MAIN_STRINGS}"; then
+            echo "::error::libmain.so is a 60 Hz build -- the 30 Hz pass must be the last one"
+            fail=1
+          fi
+          if ! grep -qF -- "gen_online_60hz" <<< "${MAIN60_STRINGS}"; then
+            echo "::error::libmain60.so is not the 60 Hz engine (no gen_online_60hz in it)"
+            fail=1
+          fi
+          if grep -qF -- "gen_online_30hz" <<< "${MAIN60_STRINGS}"; then
+            echo "::error::libmain60.so is a 30 Hz build -- pass 1 did not reconfigure with -DSAGE_HIGH_FPS_SIM=ON"
+            fail=1
+          fi
+          if grep -qF -- "gen_online_" <<< "${GENERALS_STRINGS}"; then
+            echo "::error::libgenerals.so carries a Zero Hour GeneralsOnline client id -- it is not the base game's engine"
+            fail=1
+          fi
+          SHA_MAIN="$(sha256sum "${MAIN}" | cut -d' ' -f1)"
+          SHA_MAIN60="$(sha256sum "${MAIN60}" | cut -d' ' -f1)"
+          SHA_GENERALS="$(sha256sum "${GENERALS}" | cut -d' ' -f1)"
+          if [ "${SHA_MAIN}" = "${SHA_MAIN60}" ]; then
+            echo "::error::libmain.so and libmain60.so are byte-identical -- the 60 Hz pass did not produce a new engine"
+            fail=1
+          fi
+          if [ "${SHA_MAIN}" = "${SHA_GENERALS}" ]; then
+            echo "::error::libmain.so and libgenerals.so are byte-identical -- the base game's engine was not built"
+            fail=1
+          fi
+          [ "${fail}" -eq 0 ] || exit 1
+          echo "Engines verified: libmain.so (Zero Hour 30 Hz), libmain60.so (Zero Hour 60 Hz), libgenerals.so (Generals 30 Hz)"
+          echo "  sha256 libmain.so     ${SHA_MAIN}"
+          echo "  sha256 libmain60.so   ${SHA_MAIN60}"
+          echo "  sha256 libgenerals.so ${SHA_GENERALS}"
 
       # GeneralsX @feature Android CI 06/09/2026 The strip step below is what
       # keeps the APK at ~42MB instead of ~118MB, but it also destroys the one
@@ -408,7 +548,12 @@ jobs:
       - name: Strip debug symbols
         run: |
           STRIP="$(ls "${ANDROID_NDK_HOME}"/toolchains/llvm/prebuilt/*/bin/llvm-strip | head -1)"
+          # GeneralsX @bugfix Android CI 15/10/2026 The other two engines are stripped here too:
+          # each is another ~40 MB of unstripped engine in an APK that already carries three of
+          # them (build/libmain60.so is pass 1's stash; see "Build the 60 Hz engine").
           for lib in "build/${{ env.PRESET }}/GeneralsMD/Code/Main/libmain.so" \
+                     "build/libmain60.so" \
+                     "build/${{ env.PRESET }}/Generals/Code/Main/libgenerals.so" \
                      "build/${{ env.PRESET }}/_deps/sdl3-build/libSDL3.so" \
                      "build/${{ env.PRESET }}/_deps/sdl3_image-build/libSDL3_image.so" \
                      "build/${{ env.PRESET }}/_deps/openal_soft-build/libopenal.so" \
@@ -446,6 +591,12 @@ jobs:
           GX_ANDROID_STAGING: ${{ github.workspace }}/android-staging
           GX_ANDROID_VERSION_CODE: ${{ steps.artifact.outputs.version_code }}
           GX_ANDROID_VERSION_NAME: ${{ steps.artifact.outputs.version_name }}
+          # GeneralsX @bugfix Android CI 15/10/2026 The 60 Hz Zero Hour engine set aside by pass 1
+          # of the build. Without this the packaging script has no second engine to stage and
+          # quietly ships a 30 Hz-only APK; GX_REQUIRE_ALL_ENGINES makes that a hard failure here
+          # rather than a device-side surprise (see package-android-zh.sh).
+          GX_SECOND_GAME_LIB: ${{ github.workspace }}/build/libmain60.so
+          GX_REQUIRE_ALL_ENGINES: "1"
         run: |
           ./scripts/build/android/package-android-zh.sh
 
@@ -464,35 +615,159 @@ jobs:
       # contents against what libmain.so declares it needs. Do that here:
       # every non-system DT_NEEDED of libmain.so must be a real file inside
       # the APK's lib/arm64-v8a/, or the build is not actually shippable.
-      - name: Verify APK contains every library libmain.so needs
+      - name: Verify APK carries all three engines and every library they need
         run: |
           set -euo pipefail
           READELF="$(ls "${ANDROID_NDK_HOME}"/toolchains/llvm/prebuilt/*/bin/llvm-readelf | head -1)"
           APK="${{ steps.locate.outputs.path }}"
           WORKDIR="$(mktemp -d)"
           unzip -q "${APK}" 'lib/arm64-v8a/*' -d "${WORKDIR}"
+          LIBDIR="${WORKDIR}/lib/arm64-v8a"
           echo "Packaged libraries:"
-          ls "${WORKDIR}/lib/arm64-v8a/"
-          NEEDED="$("${READELF}" -d "${WORKDIR}/lib/arm64-v8a/libmain.so" | grep NEEDED | sed -E 's/.*\[(.*)\]/\1/')"
+          ls "${LIBDIR}"
           missing=0
-          for lib in ${NEEDED}; do
-            case "${lib}" in
-              libc.so|libm.so|libdl.so|liblog.so|libandroid.so|libGLESv*|libEGL.so|libvulkan.so|libOpenSLES.so|libaaudio.so|libmediandk.so|libcamera2ndk.so|libjnigraphics.so|libnativewindow.so|libsync.so|libz.so)
-                continue ;;  # system libs every device provides via the NDK stable ABI (run
-                             # #11 caught libmediandk.so, pulled in by FFmpeg's MediaCodec
-                             # backend, missing from this allowlist — see docs/port/ANDROID_PORT.md)
-            esac
-            if [ ! -f "${WORKDIR}/lib/arm64-v8a/${lib}" ]; then
-              echo "::error::libmain.so needs '${lib}' at runtime but it is not packaged in the APK"
+          # GeneralsX @bugfix Android CI 15/10/2026 The engines are not optional extras:
+          # SetupActivity.engineLibraries() names libmain*/libgenerals* and
+          # GeneralsZHActivity.getLibraries() loads whichever the player selected, so an engine
+          # absent from the APK is a launcher option that cannot work on the device. Nothing used
+          # to check that any engine other than libmain.so ever reached the APK at all.
+          for engine in libmain.so libmain60.so libgenerals.so; do
+            if [ ! -f "${LIBDIR}/${engine}" ]; then
+              echo "::error::engine ${engine} is not packaged in the APK"
+              missing=1
+              continue
+            fi
+            echo "${engine}: $(stat -c %s "${LIBDIR}/${engine}") bytes"
+          done
+          [ "${missing}" -eq 0 ] || { echo "::error::APK is missing an engine the launcher offers."; exit 1; }
+
+          # Which engine each packaged library actually is (see the engine verification step for
+          # why the GeneralsOnline client id is the discriminator). A swapped pair -- a 30 Hz build
+          # renamed libmain60.so, or a Zero Hour build in the base game's slot -- would otherwise
+          # only be discoverable by playing: the first would silently mis-simulate in cross-play,
+          # the second would load Zero Hour data out of the base game's folder.
+          for pair in "libmain.so:gen_online_30hz" "libmain60.so:gen_online_60hz"; do
+            lib="${pair%%:*}"
+            id="${pair##*:}"
+            STRINGS="$(strings "${LIBDIR}/${lib}")"
+            if ! grep -qF -- "${id}" <<< "${STRINGS}"; then
+              echo "::error::packaged ${lib} does not carry ${id} -- the engines are swapped or mislabelled"
               missing=1
             fi
+          done
+          STRINGS_GENERALS="$(strings "${LIBDIR}/libgenerals.so")"
+          if grep -qF -- "gen_online_" <<< "${STRINGS_GENERALS}"; then
+            echo "::error::packaged libgenerals.so carries a Zero Hour client id -- the base game's slot holds a Zero Hour build"
+            missing=1
+          fi
+          [ "${missing}" -eq 0 ] || exit 1
+
+          # A real device caught what CI missed once before (run #10's APK was missing
+          # libgamespy.so, a genuine DT_NEEDED of libmain.so, and crashed at dlopen on launch),
+          # so this runs for each engine, not just libmain.so: every non-system DT_NEEDED must be
+          # a real file inside the APK's lib/arm64-v8a/, or the build is not shippable.
+          for engine in libmain.so libmain60.so libgenerals.so; do
+            NEEDED="$("${READELF}" -d "${LIBDIR}/${engine}" | grep NEEDED | sed -E 's/.*\[(.*)\]/\1/')"
+            for lib in ${NEEDED}; do
+              case "${lib}" in
+                libc.so|libm.so|libdl.so|liblog.so|libandroid.so|libGLESv*|libEGL.so|libvulkan.so|libOpenSLES.so|libaaudio.so|libmediandk.so|libcamera2ndk.so|libjnigraphics.so|libnativewindow.so|libsync.so|libz.so)
+                  continue ;;  # system libs every device provides via the NDK stable ABI (run
+                               # #11 caught libmediandk.so, pulled in by FFmpeg's MediaCodec
+                               # backend, missing from this allowlist — see docs/port/ANDROID_PORT.md)
+              esac
+              if [ ! -f "${LIBDIR}/${lib}" ]; then
+                echo "::error::${engine} needs '${lib}' at runtime but it is not packaged in the APK"
+                missing=1
+              fi
+            done
           done
           rm -rf "${WORKDIR}"
           if [ "${missing}" -ne 0 ]; then
             echo "::error::APK is missing required native libraries — it would crash with dlopen failed on any real device."
             exit 1
           fi
-          echo "OK: every DT_NEEDED of libmain.so is present in the APK."
+          echo "OK: the three engines are packaged, each one identified as the build it should be, and every DT_NEEDED of each is present in the APK."
+
+      # GeneralsX @bugfix Android CI 15/10/2026 The dispatch inputs version_name/version_code
+      # reached Gradle before, but nothing read them back out of the finished artifact, so a
+      # mismatch (or a dropped -P property) was invisible. Read the APK's own manifest, and check
+      # the signature with the SDK's apksigner instead of assuming installability. Note what this
+      # does NOT claim: the APK is signed with the repository's committed debug keystore
+      # (android/app/debug.keystore -- the reason consecutive CI builds install as updates over
+      # each other). No production release key or signing secret exists in this repository, so no
+      # build published from here is store-grade signed, and the steps that publish say so.
+      - name: Verify APK version and signature
+        run: |
+          set -euo pipefail
+          BUILD_TOOLS="$(ls -d "${ANDROID_HOME}"/build-tools/* | sort -V | tail -1)"
+          APK="${{ steps.locate.outputs.path }}"
+          BADGING="$("${BUILD_TOOLS}/aapt2" dump badging "${APK}")"
+          APK_NAME="$(sed -nE "s/^package:.*versionName='([^']*)'.*/\1/p" <<< "${BADGING}")"
+          APK_CODE="$(sed -nE "s/^package:.*versionCode='([0-9]+)'.*/\1/p" <<< "${BADGING}")"
+          echo "APK says:   versionName='${APK_NAME}' versionCode='${APK_CODE}'"
+          # Expected value: the manual-dispatch input when given, otherwise the committed default in
+          # android/app/build.gradle that Gradle falls back to (versionCode/versionName there are
+          # `hasProperty(...) ? override : committed`, so the fallback is the last operand).
+          EXPECT_NAME="${{ inputs.version_name }}"
+          EXPECT_CODE="${{ inputs.version_code }}"
+          if [ -z "${EXPECT_NAME}" ]; then
+            EXPECT_NAME="$(sed -nE "s/^ *versionName .*: *'([^']+)'\).*/\1/p" android/app/build.gradle | head -1)"
+          fi
+          if [ -z "${EXPECT_CODE}" ]; then
+            EXPECT_CODE="$(sed -nE 's/^ *versionCode .*: *([0-9]+)\).*/\1/p' android/app/build.gradle | head -1)"
+          fi
+          echo "Expected:   versionName='${EXPECT_NAME}' versionCode='${EXPECT_CODE}'"
+          if [ -z "${APK_CODE}" ] || [ -z "${APK_NAME}" ]; then
+            echo "::error::could not read versionCode/versionName out of the APK manifest"
+            exit 1
+          fi
+          if [ -z "${EXPECT_CODE}" ] || [ -z "${EXPECT_NAME}" ]; then
+            echo "::error::could not determine the expected version (no dispatch input and no parsable default in android/app/build.gradle)"
+            exit 1
+          fi
+          [ "${APK_CODE}" = "${EXPECT_CODE}" ] || { echo "::error::APK versionCode ${APK_CODE} does not match the expected ${EXPECT_CODE}"; exit 1; }
+          [ "${APK_NAME}" = "${EXPECT_NAME}" ] || { echo "::error::APK versionName ${APK_NAME} does not match the expected ${EXPECT_NAME}"; exit 1; }
+
+          SIGNERS="$("${BUILD_TOOLS}/apksigner" verify --print-certs "${APK}" 2>&1)"
+          echo "${SIGNERS}"
+          if ! grep -q "Signer #1 certificate DN" <<< "${SIGNERS}"; then
+            echo "::error::apksigner could not verify the APK signature"
+            exit 1
+          fi
+          # Which key signed this, established by certificate digest rather than by the DN: the
+          # committed debug key's DN is "CN=GeneralsX Android Debug", not the "CN=Android Debug"
+          # an auto-generated per-machine debug key would carry, so a DN test would silently fail
+          # to fire here. Compare the APK's signer digest with the committed keystore's own
+          # digest; keytool says SHA256: (uppercase, colon-separated), apksigner says lowercase
+          # hex, so both are normalised to lowercase without colons before comparing. `keytool`
+          # arrives with the JDK the job already installs. The keystore's password is the
+          # well-known debug one (android/app/build.gradle) and is never echoed; only digests
+          # are printed.
+          APK_CERT_SHA256="$(sed -nE 's/^Signer #1 certificate SHA-256 digest: *([0-9a-fA-F:]+).*/\1/p' <<< "${SIGNERS}" | head -1 | tr -d ':' | tr 'A-F' 'a-f')"
+          DEBUG_CERT_SHA256="$(keytool -list -v -keystore android/app/debug.keystore \
+            -storepass android -alias androiddebugkey 2>/dev/null \
+            | sed -nE 's/^[[:space:]]*SHA256: *([0-9a-fA-F:]+).*/\1/p' | head -1 | tr -d ':' | tr 'A-F' 'a-f')"
+          if [ -z "${APK_CERT_SHA256}" ]; then
+            echo "::error::could not read the signing certificate digest out of apksigner's output"
+            exit 1
+          fi
+          if [ -z "${DEBUG_CERT_SHA256}" ]; then
+            echo "::error::could not read android/app/debug.keystore's certificate digest with keytool, so which key signed this APK cannot be established"
+            exit 1
+          fi
+          echo "APK signer cert SHA-256:      ${APK_CERT_SHA256}"
+          echo "debug.keystore cert SHA-256:  ${DEBUG_CERT_SHA256}"
+          if [ "${APK_CERT_SHA256}" = "${DEBUG_CERT_SHA256}" ]; then
+            echo "::warning::Signed with the in-repo debug keystore (android/app/debug.keystore), not a production release key."
+            {
+              echo "### Signing"
+              echo
+              echo "This APK is signed with this repository's committed **debug** keystore (androiddebugkey, certificate SHA-256 \`${APK_CERT_SHA256}\`). That is deliberate -- it is what lets consecutive CI builds install as updates over each other -- but it is not a store-grade release signature, and no production key or signing secret is configured for this workflow."
+            } >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "::notice::Signed with a certificate that is NOT the committed debug key. If a production key was configured for this dispatch, this is expected; otherwise the APK was signed by something else and that needs explaining before it is published."
+          fi
+          echo "OK: version and signature verified (versionName=${APK_NAME}, versionCode=${APK_CODE})."
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v7
@@ -547,7 +822,15 @@ jobs:
         with:
           tag_name: v${{ inputs.version_name }}
           name: v${{ inputs.version_name }}
-          body: ${{ inputs.release_notes }}
+          # GeneralsX @bugfix Android CI 15/10/2026 Say which key signed this build on the
+          # release page itself, not only in the run log: the published APK is debug-signed (see
+          # "Verify APK version and signature"), and a reader of the release must not be left
+          # thinking it is store-grade signed.
+          body: |
+            ${{ inputs.release_notes }}
+
+            ---
+            **Signing:** this APK is signed with this repository's debug keystore (`androiddebugkey`), not a production release key.
           files: |
             ${{ steps.locate.outputs.path }}
             symbols/libmain-run${{ github.run_number }}.symbols.txt.gz
