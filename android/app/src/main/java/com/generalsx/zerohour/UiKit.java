@@ -1,19 +1,19 @@
 /*
-**	Command & Conquer Generals Zero Hour(tm)
-**	Copyright 2025 Electronic Arts Inc.
+**\tCommand & Conquer Generals Zero Hour(tm)
+**\tCopyright 2025 Electronic Arts Inc.
 **
-**	This program is free software: you can redistribute it and/or modify
-**	it under the terms of the GNU General Public License as published by
-**	the Free Software Foundation, either version 3 of the License, or
-**	(at your option) any later version.
+**\tThis program is free software: you can redistribute it and/or modify
+**\tit under the terms of the GNU General Public License as published by
+**\tthe Free Software Foundation, either version 3 of the License, or
+**\t(at your option) any later version.
 **
-**	This program is distributed in the hope that it will be useful,
-**	but WITHOUT ANY WARRANTY; without even the implied warranty of
-**	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-**	GNU General Public License for more details.
+**\tThis program is distributed in the hope that it will be useful,
+**\tbut WITHOUT ANY WARRANTY; without even the implied warranty of
+**\tMERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+**\tGNU General Public License for more details.
 **
-**	You should have received a copy of the GNU General Public License
-**	along with this program.  If not, see <http://www.gnu.org/licenses/>.
+**\tYou should have received a copy of the GNU General Public License
+**\talong with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 // GeneralsX @feature Android port launcher-ui-2026 08/09/2026
@@ -26,7 +26,7 @@
 // diagnostic toggles generated from an array) and a layout file per
 // permutation would be more machinery, not less. What was actually wrong
 // was that each screen re-derived its own paddings, radii, text sizes and
-// colours from scratch, so "16dp here, 12dp there, 22sp title, 0.7 alpha"
+// colours from scratch, so \"16dp here, 12dp there, 22sp title, 0.7 alpha\"
 // drifted independently in four files and read as four different apps.
 //
 // So the widgets stay in code and the STYLE moves here: a card is whatever
@@ -43,6 +43,7 @@ package com.generalsx.zerohour;
 import android.content.Context;
 import android.content.res.ColorStateList;
 import android.graphics.Typeface;
+import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.GradientDrawable;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -94,6 +95,17 @@ final class UiKit {
         return new ColorStateList(
             new int[][] { new int[] { android.R.attr.state_checked }, new int[0] },
             new int[] { color(c, checkedRes), color(c, uncheckedRes) });
+    }
+
+    /**
+     * Ripple drawable tuned to a tint, with a transparent mask so a caller
+     * that set it as a row/background tint keeps the shape it already drew.
+     * Used by the drawer item background (material:1.12.0 has no
+     * NavigationView.setItemRippleColor(ColorStateList)).
+     */
+    static android.graphics.drawable.Drawable rippleForTint(Context c, int colorRes) {
+        ColorStateList colors = tint(c, colorRes);
+        return new android.graphics.drawable.RippleDrawable(colors, null, null);
     }
 
     // ------------------------------------------------------------ page shell
@@ -283,7 +295,7 @@ final class UiKit {
         return text(parent, text, R.dimen.gzh_text_body, R.color.gzh_on_surface_variant, 0);
     }
 
-    /** The smallest tier: help paragraphs and "when to turn this on" copy. */
+    /** The smallest tier: help paragraphs and \"when to turn this on\" copy. */
     static TextView caption(LinearLayout parent, CharSequence text) {
         return text(parent, text, R.dimen.gzh_text_caption, R.color.gzh_on_surface_faint, 0);
     }
@@ -306,9 +318,9 @@ final class UiKit {
     }
 
     /**
-     * Long help copy folded away behind a tappable "?" affordance would need a
+     * Long help copy folded away behind a tappable \"?\" affordance would need a
      * new string; instead help paragraphs get a quieter treatment and a hairline
-     * above them, so a card reads as "controls, then explanation".
+     * above them, so a card reads as \"controls, then explanation\".
      */
     static TextView helpText(LinearLayout parent, CharSequence text) {
         divider(parent);
@@ -426,7 +438,7 @@ final class UiKit {
      * buttons split its width evenly.
      *
      * MATCH_PARENT height rather than WRAP_CONTENT, deliberately: a
-     * translation that wraps to two lines (Ukrainian "Очистити логи" is the
+     * translation that wraps to two lines (Ukrainian \"Очистити логи\" is the
      * one that first caught this) would otherwise make that one button taller
      * than its siblings and break the row's bottom edge. Horizontal padding
      * also comes down, since a third of a phone's width has to hold an icon
@@ -598,7 +610,7 @@ final class UiKit {
             row.setFocusable(true);
             row.setOnClickListener(v -> onClick.run());
             // GeneralsX @bugfix Android port 03/10/2026 A tap on a row showed nothing until its
-            // action had visible results -- for "copy this address" that is never. The same ripple
+            // action had visible results -- for \"copy this address\" that is never. The same ripple
             // as the buttons, clipped to the row's rounded corners.
             GradientDrawable mask = new GradientDrawable();
             mask.setShape(GradientDrawable.RECTANGLE);
@@ -658,7 +670,7 @@ final class UiKit {
     }
 
     /**
-     * A compact "chip": a rounded, tinted, non-interactive label. Used for the
+     * A compact \"chip\": a rounded, tinted, non-interactive label. Used for the
      * one-word verdicts (GPU name, active driver) that used to be full
      * sentences of body text.
      */
