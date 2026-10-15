@@ -88,4 +88,14 @@
     <style name="ThemeOverlay.GeneralsZH.OutlinedField" parent="">
         <item name="textInputStyle">@style/Widget.Material3.TextInputLayout.OutlinedBox</item>
     </style>
+
+    <!-- The navigation drawer's item ripple. Material 1.12.0's NavigationView
+         has no setItemRippleColor() (NavigationBarView, the bottom rail, is the
+         one that does), but it does resolve ?attr/itemRippleColor, so a
+         ContextThemeWrapper over this overlay is how the drawer's rows get the
+         launcher's own ripple instead of the theme default, while keeping
+         Material's checked-state highlight on the item background. -->
+    <style name="ThemeOverlay.GeneralsZH.NavigationDrawer" parent="">
+        <item name="itemRippleColor">@color/gzh_ripple_primary</item>
+    </style>
 </resources>
