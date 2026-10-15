@@ -1,12 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- GeneralsX @ui-redesign Android port dashboard-2026
-     Layered dashboard background: faint panel-seam pattern, a vertical
-     gradient into a slightly warmer dark near the bottom, and a translucent
-     top gradient to keep the header/overline readable against whatever
-     device bar sits above it. No bitmap is loaded at runtime, so this stays
-     lightweight and offline-safe across screen sizes. -->
+     Layered dashboard background: a vertical gradient into a slightly warmer
+     dark near the bottom, a faint panel-seam pattern as texture, and a
+     translucent top scrim that keeps the header/overline readable against
+     whatever device bar sits above it. No bitmap is loaded at runtime, so
+     this stays lightweight and offline-safe across screen sizes.
+
+     GeneralsX @bugfix Android port 15/10/2026 The layer order and the scrim's
+     alpha were both wrong, and between them the dashboard had no background of
+     its own at all: the opaque gradient was drawn OVER the pattern (hiding it
+     completely) and the scrim was a fully opaque #000000 radial drawn over
+     both, so every pixel behind the cards was pure black. That is the "black
+     screen" shade the launcher was reported as showing. The pattern now sits
+     above the opaque base where it can be seen, and the scrim is a translucent
+     darkening from the top edge, which is what its comment always claimed. -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:drawable="@drawable/bg_dashboard_pattern"/>
+    <!-- Base wash: opaque, so it is the colour the dashboard actually shows
+         wherever no card covers it. -->
     <item>
         <shape android:shape="rectangle">
             <gradient
@@ -17,13 +27,20 @@
                 android:type="linear"/>
         </shape>
     </item>
+
+    <!-- Panel-seam texture, over the base rather than under it. -->
+    <item android:drawable="@drawable/bg_dashboard_pattern"/>
+
+    <!-- Top scrim: soft darkening from the top edge (radial, centred on the top
+         edge) fading to nothing, so the app bar's overline and title stay
+         readable over the texture. Translucent on purpose: an opaque scrim
+         covers the screen instead of shading part of it. -->
     <item>
         <shape android:shape="rectangle">
             <gradient
                 android:angle="270"
-                android:startColor="#000000"
-                android:centerColor="#000000"
-                android:endColor="#000000"
+                android:startColor="#A6000000"
+                android:endColor="#00000000"
                 android:gradientRadius="100%p"
                 android:centerX="0.5"
                 android:centerY="0.0"

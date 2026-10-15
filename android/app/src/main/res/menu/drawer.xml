@@ -1,29 +1,44 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- GeneralsX @ui-redesign Android port dashboard-2026
      Navigation drawer items map to destinations that actually exist in this
-     launcher. No placeholder entries for features that have no screen yet. -->
+     launcher. No placeholder entries for features that have no screen yet.
+
+     GeneralsX @bugfix Android port 15/10/2026 Every destination is checkable
+     here, and that is not decoration: Material 1.12.0's presenter refuses to
+     select an item whose isCheckable() is false (NavigationMenuPresenter's
+     adapter returns early), and NavigationMenuItemView only puts the row into
+     the state_checked drawable state when the item is BOTH checkable and
+     checked. Without these attributes the shell's setCheckedItem() calls, at
+     build time and every time the drawer closes, were silently dropped, so the
+     drawer could never show which page the user was on, and tapping a
+     destination left every row looking the same. The section header below is
+     deliberately NOT checkable: it is a label, not a destination. -->
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
 
     <!-- Primary destination -->
     <item
         android:id="@+id/nav_home"
+        android:checkable="true"
         android:icon="@drawable/ic_gzh_home"
         android:title="@string/nav_drawer_home"/>
 
     <!-- Storage / game-folder setup: existing FolderPickerActivity -->
     <item
         android:id="@+id/nav_folder"
+        android:checkable="true"
         android:icon="@drawable/ic_gzh_folder"
         android:title="@string/nav_drawer_game_folder"/>
 
     <!-- Settings group -->
     <item
         android:id="@+id/nav_graphics"
+        android:checkable="true"
         android:icon="@drawable/ic_gzh_display"
         android:title="@string/nav_tab_graphics"/>
 
     <item
         android:id="@+id/nav_interface"
+        android:checkable="true"
         android:icon="@drawable/ic_gzh_globe"
         android:title="@string/nav_tab_interface"/>
 
@@ -34,28 +49,33 @@
 
     <item
         android:id="@+id/nav_logs"
+        android:checkable="true"
         android:icon="@drawable/ic_gzh_doc"
         android:title="@string/setup_button_view_logs"/>
 
     <item
         android:id="@+id/nav_netdiag"
+        android:checkable="true"
         android:icon="@drawable/ic_gzh_wrench"
         android:title="@string/netdiag_title"/>
 
     <item
         android:id="@+id/nav_replay"
+        android:checkable="true"
         android:icon="@drawable/ic_gzh_play"
         android:title="@string/replaycheck_title"/>
 
     <!-- Community / account -->
     <item
         android:id="@+id/nav_online"
+        android:checkable="true"
         android:icon="@drawable/ic_gzh_account"
         android:title="@string/online_window_title"/>
 
     <!-- About / support -->
     <item
         android:id="@+id/nav_help"
+        android:checkable="true"
         android:icon="@drawable/ic_gzh_info"
         android:title="@string/nav_tab_help"/>
 

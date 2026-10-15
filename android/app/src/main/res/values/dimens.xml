@@ -29,8 +29,9 @@
     <dimen name="gzh_text_caption">12sp</dimen>
     <dimen name="gzh_text_overline">12sp</dimen>
 
-    <!-- Dashboard shell: translucent top scrim height, mirrors the status bar
-         insets the shell pads itself by. Below standard material top app bar
-         sizing on purpose so the dashboard reads as a full-screen surface. -->
-    <dimen name="gzh_status_bar_height">28dp</dimen>
+    <!-- Navigation drawer rail width. Wide enough for the longest item title,
+         narrow enough that the page behind it stays visible while the drawer is
+         open (a MATCH_PARENT drawer covered the whole screen instead). The shell
+         narrows it further on a device too small to hold both. -->
+    <dimen name="gzh_drawer_width">300dp</dimen>
 </resources>

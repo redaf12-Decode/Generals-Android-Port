@@ -52,6 +52,7 @@ import android.text.style.StyleSpan;
 import android.text.style.UnderlineSpan;
 import android.util.TypedValue;
 import android.view.ContextThemeWrapper;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -197,6 +198,15 @@ public class SetupActivity extends Activity {
     private static final String GENERALS_REQUIRED_FILE = "INI.big";
     private static final String ZERO_HOUR_ONLY_FILE = "INIZH.big";
 
+    // GeneralsX @feature Android port 15/10/2026 Every screen here is built in code, so a screen
+    // that comes up black on a device leaves nothing to inspect in a layout file -- and, until now,
+    // nothing in logcat either: "black screen, no buttons, the drawer swipe still works" gave no way
+    // to tell whether the shell was built, whether the page was attached, or whether buildUi() had
+    // thrown and swapped in the plain-widget fallback. These lines trace the whole construction (fit
+    // `adb logcat -s SetupActivity`, or read them in the launcher's own Log Viewer) and the failure
+    // path logs the complete Throwable rather than swapping the UI silently.
+    private static final String TAG = "SetupActivity";
+
     private TextView statusText;
 
     @Override
@@ -223,6 +233,8 @@ public class SetupActivity extends Activity {
         if (savedInstanceState != null) {
             currentTab = savedInstanceState.getInt(STATE_TAB, TAB_HOME);
         }
+        Log.e(TAG, "onCreate: building the launcher UI (restored=" + (savedInstanceState != null)
+            + ", tab=" + currentTab + ")");
 
         // GeneralsX @bugfix Android port 08/07/2026 This screen is the ONLY
         // way to reach "View Logs" without adb, so it must never be the thing
@@ -231,7 +243,11 @@ public class SetupActivity extends Activity {
         // of taking the whole Settings app down with it.
         try {
             buildUi();
+            Log.e(TAG, "onCreate: buildUi() finished");
         } catch (Throwable t) {
+            // Full Throwable, not just its message: a Material/theme failure that reaches here is
+            // exactly the kind of thing whose stack trace is the only way to find the cause.
+            Log.e(TAG, "onCreate: buildUi() failed, switching to the plain-widget fallback UI", t);
             buildFallbackUi(t);
         }
     }
@@ -248,6 +264,7 @@ public class SetupActivity extends Activity {
     // MaterialButtons, which would have failed again for exactly the reason it
     // was reached. Plain framework widgets only, from here down.
     private void buildFallbackUi(Throwable failure) {
+        Log.e(TAG, "buildFallbackUi: building the plain-widget fallback UI", failure);
         clearPageReferences();
         // No tabs in the fallback: showTab() must become a no-op if anything
         // still calls it (onActivityResult does).
@@ -276,6 +293,7 @@ public class SetupActivity extends Activity {
         addPlainButton(root, getString(R.string.setup_button_view_logs), this::onViewLogs);
         addPlainButton(root, getString(R.string.setup_button_launch_game), this::onLaunchGame);
         addPlainButton(root, getString(R.string.setup_button_clear_game_folder), this::onClearGameFolder);
+        Log.e(TAG, "buildFallbackUi: fallback UI is up (" + root.getChildCount() + " views)");
     }
 
     private void addPlainButton(LinearLayout root, String label, Runnable action) {
@@ -366,6 +384,7 @@ public class SetupActivity extends Activity {
 
 
     private void buildUi() {
+        Log.e(TAG, "buildUi: begin (drawerShell=" + USE_DRAWER + ")");
         clearPageReferences();
 
         if (USE_DRAWER) {
@@ -375,6 +394,8 @@ public class SetupActivity extends Activity {
         }
 
         syncDrawerSelection();
+        Log.e(TAG, "buildUi: end (contentHost="
+            + (contentHost == null ? "null" : contentHost.getChildCount() + " child(ren)") + ")");
     }
 
     private void buildLegacyShell() {
@@ -399,16 +420,24 @@ public class SetupActivity extends Activity {
 
     private void buildDrawerShell() {
         Context c = this;
+        Log.e(TAG, "buildDrawerShell: begin");
 
         // GeneralsX @bugfix Android port 15/10/2026 WindowCompat takes the
         // WINDOW, not the view it decorates: the redesign passed the
         // DrawerLayout it had just created. Same effect, on the right object.
         drawerLayout = new DrawerLayout(c);
+        // On API < 35 this is what keeps the window classic (content below the
+        // bars); on Android 15+ edge-to-edge is enforced for targetSdk 35 and
+        // the call cannot opt out of it, so the insets a device actually
+        // delivers are applied by InsetUtil at the end of this method.
         WindowCompat.setDecorFitsSystemWindows(getWindow(), true);
         // Keep the drawer visually consistent with the dashboard without
         // depending on API-specific status-bar helpers that may not resolve
-        // on this dependency surface. The shell itself is padded by
-        // InsetUtil, so the important thing is the shadow here.
+        // on this dependency surface. The content shell is the view InsetUtil
+        // pads (see the applySafeInsets call at the end of this method):
+        // DrawerLayout gives its own padding only to the drawer panes, not to
+        // the content child it lays out at 0,0, so padding the DrawerLayout
+        // left the app bar under the status bar and the camera cutout.
         GradientDrawable shadow = new GradientDrawable();
         shadow.setShape(GradientDrawable.RECTANGLE);
         shadow.setCornerRadius(0f);
@@ -425,17 +454,18 @@ public class SetupActivity extends Activity {
             DrawerLayout.LayoutParams.MATCH_PARENT,
             DrawerLayout.LayoutParams.MATCH_PARENT));
 
-        // Thin translucent scrim under the status bar so the header reads
-        // cleanly on light-status-bar and cutout devices without painting a
-        // hard band the user can see as a separate layer.
-        View topScrim = new View(c);
-        topScrim.setBackgroundColor(0xCC0E0E11);
-        topScrim.setLayoutParams(new FrameLayout.LayoutParams(
-            FrameLayout.LayoutParams.MATCH_PARENT, UiKit.dim(c, R.dimen.gzh_status_bar_height)));
-        shell.addView(topScrim, new FrameLayout.LayoutParams(
-            FrameLayout.LayoutParams.MATCH_PARENT,
-            FrameLayout.LayoutParams.WRAP_CONTENT,
-            Gravity.TOP));
+        // GeneralsX @bugfix Android port 15/10/2026 A thin View used to sit here to
+        // dim the strip under the status bar: it was added to this LinearLayout with
+        // FrameLayout.LayoutParams (wrong parent class) and a WRAP_CONTENT height. An
+        // empty View measures WRAP_CONTENT as AT_MOST -- View.onMeasure turns AT_MOST
+        // into the spec size -- so it took the entire shell height instead of 28dp,
+        // and every sibling after it was measured against the space it had already
+        // eaten: the app bar got 0px and was laid out at y = the screen height, and so
+        // did the whole page. Nothing but a near-opaque dark view was left on the
+        // display, which is the reported "black screen, no buttons, drawer swipe still
+        // works". The scrim now lives in the background layer list (bg_dashboard.xml),
+        // where it cannot consume layout space, and the real system-bar insets pad the
+        // shell below.
 
         appBarTitle = UiKit.appBar(shell, getString(isGeneralsSelected(this)
                 ? R.string.setup_title_generals : R.string.setup_title),
@@ -445,6 +475,8 @@ public class SetupActivity extends Activity {
         contentHost = new FrameLayout(c);
         shell.addView(contentHost, new LinearLayout.LayoutParams(
             LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f));
+        Log.e(TAG, "buildDrawerShell: shell built (" + shell.getChildCount()
+            + " children: app bar + page host)");
 
         // Drawer.
         // GeneralsX @bugfix Android port 15/10/2026 Material 1.12.0's
@@ -460,6 +492,25 @@ public class SetupActivity extends Activity {
         Context drawerContext =
             new ContextThemeWrapper(c, R.style.ThemeOverlay_GeneralsZH_NavigationDrawer);
         drawerNav = new NavigationView(drawerContext);
+        // GeneralsX @bugfix Android port 15/10/2026 The drawer's items were never
+        // inflated: the shell built the NavigationView and stopped there, so the drawer
+        // opened as a blank panel (and the setCheckedItem() call below had no item to
+        // check, since DRAWER_DESTINATIONS ids only exist once the menu is inflated).
+        // R.menu.drawer is the list the drawer was always meant to show, and
+        // onDrawerItemSelected() handles every id in it.
+        //
+        // Guarded so the menu is inflated exactly once per NavigationView:
+        // DRAWER_DESTINATIONS, DRAWER_SECTION_HEADERS and onDrawerItemSelected() are all
+        // written against the ids this menu defines, and a second inflate on the same view
+        // would append a duplicate copy of every item. buildUi() does run again (language
+        // change, and every recreate), but each run builds a new shell with a new
+        // NavigationView -- the guard keeps that a property of this method instead of a
+        // property its callers have to remember.
+        if (drawerNav.getMenu().size() == 0) {
+            drawerNav.inflateMenu(R.menu.drawer);
+        }
+        Log.e(TAG, "buildDrawerShell: drawer menu has " + drawerNav.getMenu().size()
+            + " items, checked=" + currentDrawerDestination);
         drawerNav.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
         drawerNav.setTextDirection(View.TEXT_DIRECTION_LOCALE);
         drawerNav.setBackgroundColor(UiKit.color(c, R.color.gzh_surface_container_low));
@@ -468,13 +519,20 @@ public class SetupActivity extends Activity {
         drawerNav.setItemTextColor(itemTint(c));
         drawerNav.setCheckedItem(currentDrawerDestination);
         drawerNav.setNavigationItemSelectedListener(this::onDrawerItemSelected);
+        // GeneralsX @bugfix Android port 15/10/2026 A MATCH_PARENT drawer covered the
+        // whole display when open (only DrawerLayout's own min margin was left over), so
+        // the drawer read as the screen going dark. Give it a rail width instead -- the
+        // dimen value, or two gutters less than the screen on a narrow device.
+        int drawerWidth = Math.min(UiKit.dim(c, R.dimen.gzh_drawer_width),
+            getResources().getDisplayMetrics().widthPixels - UiKit.dim(c, R.dimen.gzh_gutter) * 2);
         drawerLayout.addView(drawerNav, new DrawerLayout.LayoutParams(
-            DrawerLayout.LayoutParams.MATCH_PARENT,
+            drawerWidth,
             DrawerLayout.LayoutParams.MATCH_PARENT,
             Gravity.START));
 
         setContentView(drawerLayout);
-        InsetUtil.applySafeInsets(drawerLayout);
+        // The shell, not the DrawerLayout: see the note on the drawer shadow above.
+        InsetUtil.applySafeInsets(shell);
 
         drawerLayout.setDrawerListener(new DrawerLayout.SimpleDrawerListener() {
             @Override
@@ -497,6 +555,8 @@ public class SetupActivity extends Activity {
         if (contentHost.getChildCount() == 0) {
             showTab(currentTab);
         }
+        Log.e(TAG, "buildDrawerShell: end (drawer=" + drawerWidth + "px wide, page="
+            + currentTab + ")");
     }
 
     /**
@@ -672,8 +732,11 @@ public class SetupActivity extends Activity {
     private void showTab(int tab) {
         currentTab = tab;
         if (contentHost == null) {
-            return;  // the plain-widget fallback UI is up; there are no tabs
+            // the plain-widget fallback UI is up; there are no tabs
+            Log.e(TAG, "showTab(" + tab + "): ignored, no content host (fallback UI is up)");
+            return;
         }
+        Log.e(TAG, "showTab(" + tab + "): building page into contentHost");
         clearPageReferences();
         contentHost.removeAllViews();
         if (appBarTitle != null) {
@@ -724,6 +787,8 @@ public class SetupActivity extends Activity {
         loadDxvkConfigIntoEditor();
         refreshDiagnosticsSwitches();
         refreshUpdatesStatus();
+        Log.e(TAG, "showTab(" + tab + "): page attached (" + contentHost.getChildCount()
+            + " child(ren) in the page host, title=\"" + getString(tabTitle(tab)) + "\")");
     }
 
     /** Forgets every page-scoped view so a stale one is never written to. */
@@ -1153,7 +1218,7 @@ public class SetupActivity extends Activity {
         try (java.io.FileWriter w = new java.io.FileWriter(marker, false)) {
             w.write(Integer.toString(cursorPercent));
         } catch (java.io.IOException e) {
-            android.util.Log.w("SetupActivity", "could not write the mouse mode marker", e);
+            Log.w(TAG, "could not write the mouse mode marker", e);
         }
     }
 
@@ -3164,7 +3229,7 @@ public class SetupActivity extends Activity {
             w.write("\n");
             return true;
         } catch (java.io.IOException e) {
-            android.util.Log.w("SetupActivity", "could not write the game folder marker", e);
+            Log.w(TAG, "could not write the game folder marker", e);
             return false;
         }
     }

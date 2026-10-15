@@ -228,6 +228,15 @@ cmake --build build/macos-vulkan --target z_generals
   stream it into never-reused bytes. Read `docs/WORKDIR/lessons/LESSON-gles-persistent-buffers-mali.md`,
   which also lists every perf counter now in the log and the order that found each cost.
 
+- **Launcher shows a black screen but the drawer swipe still works**: that is not a rendering bug. The
+  screens are built in code, and a plain `View` with a `WRAP_CONTENT` height measures `AT_MOST` as
+  the spec size, so an empty one takes the whole parent and starves every sibling after it (in this
+  port: a scrim view took 2340px, leaving the app bar and the page at `y = screen height`) — while
+  `DrawerLayout`'s own edge drag keeps working over an invisible page. Do not diagnose it by reading:
+  build the activity under Robolectric, run a real measure/layout pass and dump the tree, then assert
+  on-screen geometry rather than non-zero sizes. Read
+  `docs/WORKDIR/lessons/LESSON-code-built-ui-measure-the-tree.md` and
+  `docs/WORKDIR/reports/REPORT-launcher-black-screen.md` first.
 - **Interface size / bigger buttons**: no resolution or render trick makes a button bigger --
   every `.wnd` is stretched to the whole screen. `GXUiScale` scales chosen layouts as they are
   parsed, and hand-placed windows (control bar scheme, group panel) must use the same transform.

@@ -113,6 +113,19 @@ android {
         }
     }
 
+    // GeneralsX @build Android port 15/10/2026 JVM unit tests with Robolectric:
+    // the launcher screens are built entirely in code (no layout XML to inspect),
+    // so the only way to check what a screen actually puts on the display -- and
+    // the only way to catch a shell that lays out to nothing -- is to build the
+    // Activity, run a real measure/layout pass and read the view tree back.
+    // includeAndroidResources is required for Robolectric to resolve R.* the
+    // same way the APK does. Test-only: nothing here reaches the APK.
+    testOptions {
+        unitTests {
+            includeAndroidResources = true
+        }
+    }
+
     packagingOptions {
         jniLibs {
             // GeneralsX @bugfix Android port 10/07/2026 libadrenotools (custom
@@ -154,5 +167,10 @@ dependencies {
     // WindowInsetsCompat (InsetUtil.java) -- pulled in transitively by
     // Material already, but declared directly since we call its APIs.
     implementation 'androidx.core:core:1.13.1'
+
+    // GeneralsX @build Android port 15/10/2026 JVM unit tests for the launcher
+    // shell (see testOptions above). Test-only dependencies.
+    testImplementation 'junit:junit:4.13.2'
+    testImplementation 'org.robolectric:robolectric:4.14.1'
 }
 
