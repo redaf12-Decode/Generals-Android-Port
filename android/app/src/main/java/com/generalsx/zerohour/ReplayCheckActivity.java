@@ -75,12 +75,15 @@ public class ReplayCheckActivity extends Activity {
 
     @Override
     protected void attachBaseContext(android.content.Context newBase) {
-        super.attachBaseContext(LocaleHelper.wrap(newBase));
+        // GeneralsX @feature Android port daylight-darkmode 16/10/2026 Language first, then the
+        // night-mode override (see ThemeHelper.wrap).
+        super.attachBaseContext(ThemeHelper.wrap(LocaleHelper.wrap(newBase)));
     }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        ThemeHelper.applyAccentTheme(this);
         setTitle(R.string.replaycheck_title);
 
         LinearLayout root = new LinearLayout(this);

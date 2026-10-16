@@ -413,7 +413,19 @@ public class GeneralsZHActivity extends SDLActivity {
             }
         }
 
+        // GeneralsX @feature Android touch controls 16/10/2026 Settle the overlay against whichever
+        // folder is about to launch, BEFORE SDLActivity starts native code: the configurable hotkey
+        // panel replaces the injected fixed unit-group panel, so the engine sees one or the other,
+        // never both (TouchControlConfig.prepareForLaunch).
+        TouchControlConfig.prepareForLaunch(this,
+            haveCustomPath ? new File(gamePath) : legacyGameDataDir());
+
         super.onCreate(savedInstanceState);
+
+        // SDLActivity has created its native surface/layout by now. Put the configurable hotkey layer
+        // above it; only a configured button rectangle consumes a touch, so battlefield gestures
+        // continue to reach SDL unchanged (HotkeyOverlayView's header).
+        HotkeyOverlayView.attach(this);
     }
 
     // GeneralsX @bugfix Android port 02/08/2026 A tester reported the camera

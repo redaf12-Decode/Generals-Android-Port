@@ -13,7 +13,14 @@
      both, so every pixel behind the cards was pure black. That is the "black
      screen" shade the launcher was reported as showing. The pattern now sits
      above the opaque base where it can be seen, and the scrim is a translucent
-     darkening from the top edge, which is what its comment always claimed. -->
+     darkening from the top edge, which is what its comment always claimed.
+
+     GeneralsX @feature Android port daylight-darkmode 16/10/2026 The wash and
+     the scrim are @color references now instead of literals: the daylight
+     palette resolves them to a light page (and to a scrim that is simply
+     transparent - there is nothing to darken under a light app bar), the
+     darkmode palette to the near-black wash with its top darkening. See
+     values/colors.xml and values-night/colors.xml. -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
     <!-- Base wash: opaque, so it is the colour the dashboard actually shows
          wherever no card covers it. -->
@@ -21,9 +28,9 @@
         <shape android:shape="rectangle">
             <gradient
                 android:angle="270"
-                android:startColor="#0E0E11"
-                android:centerColor="#101116"
-                android:endColor="#14131B"
+                android:startColor="@color/gzh_dashboard_top"
+                android:centerColor="@color/gzh_dashboard_mid"
+                android:endColor="@color/gzh_dashboard_bottom"
                 android:type="linear"/>
         </shape>
     </item>
@@ -39,7 +46,7 @@
         <shape android:shape="rectangle">
             <gradient
                 android:angle="270"
-                android:startColor="#A6000000"
+                android:startColor="@color/gzh_dashboard_scrim"
                 android:endColor="#00000000"
                 android:gradientRadius="100%p"
                 android:centerX="0.5"

@@ -130,12 +130,15 @@ public class GeneralsOnlineActivity extends Activity {
 
     @Override
     protected void attachBaseContext(android.content.Context newBase) {
-        super.attachBaseContext(LocaleHelper.wrap(newBase));
+        // GeneralsX @feature Android port daylight-darkmode 16/10/2026 Language first, then the
+        // night-mode override (see ThemeHelper.wrap).
+        super.attachBaseContext(ThemeHelper.wrap(LocaleHelper.wrap(newBase)));
     }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        ThemeHelper.applyAccentTheme(this);
         setTitle(R.string.online_window_title);
         buildUi();
         refreshStatus();
@@ -261,9 +264,17 @@ public class GeneralsOnlineActivity extends Activity {
         dataPackModStatus = UiKit.supporting(card, "");
         final String gamePath = SetupActivity.getSavedGamePath(this, SetupActivity.GAME_ZERO_HOUR);
         new Thread(() -> {
-            final String mod = DataPackInstaller.findDataMod(gamePath);
+            // GeneralsX @feature Android Mod Manager 16/10/2026 A mod FOLDER the launcher selected
+            // counts as a mod here too: ArchiveFileSystem::loadMods() keeps the community patch out
+            // for it exactly as it does for a '!'-prefixed data mod inside the game folder, so this
+            // line must not say "no mod" while the player has one selected on the Game folder page.
+            String mod = DataPackInstaller.findDataMod(gamePath);
+            if (mod == null) {
+                mod = SetupActivity.getModPath(getApplicationContext());
+            }
+            final String found = mod;
             handler.post(() -> {
-                detectedDataMod = mod;
+                detectedDataMod = found;
                 refreshDataPackCard();
             });
         }, "gx-mod-scan").start();

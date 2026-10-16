@@ -84,10 +84,11 @@ public class SetupShellLayoutTest {
     // in the fallback test, where it is documented to be a no-op.
     private static final int TAB_HOME = 1;
 
-    /** The nine selectable destinations R.menu.drawer defines. */
+    /** The ten selectable destinations R.menu.drawer defines. */
     private static final int[] DESTINATIONS = {
         R.id.nav_home, R.id.nav_folder, R.id.nav_graphics, R.id.nav_interface,
-        R.id.nav_logs, R.id.nav_netdiag, R.id.nav_replay, R.id.nav_online, R.id.nav_help
+        R.id.nav_tools, R.id.nav_logs, R.id.nav_netdiag, R.id.nav_replay,
+        R.id.nav_online, R.id.nav_help
     };
 
     @Test
@@ -203,6 +204,10 @@ public class SetupShellLayoutTest {
             assertRowShowsPage(activity, nav, R.id.nav_home, R.string.nav_tab_home);
             assertRowShowsPage(activity, nav, R.id.nav_graphics, R.string.nav_tab_graphics);
             assertRowShowsPage(activity, nav, R.id.nav_interface, R.string.nav_tab_interface);
+            // GeneralsX @tweak Android port ui-organisation 16/10/2026 The Tools page has a drawer
+            // entry of its own, so it is checked here too. Deliberately before nav_help: the header
+            // check below needs the page to be Help again.
+            assertRowShowsPage(activity, nav, R.id.nav_tools, R.string.nav_tab_tools);
             assertRowShowsPage(activity, nav, R.id.nav_help, R.string.nav_tab_help);
 
             // The section header is a label, not a destination: it has to be displayed in the open
@@ -443,10 +448,14 @@ public class SetupShellLayoutTest {
             NavigationView nav = navigationOf(drawerOf(activity).getChildAt(0));
             Menu menu = nav.getMenu();
 
+            // GeneralsX @tweak Android port ui-organisation 16/10/2026 Storage before how it is
+            // rendered and how it looks, and the Tools page is an entry of its own now (it had
+            // none, so the drawer highlighted "View logs" -- a different screen -- whenever it was
+            // opened from the bottom rail).
             int[] expected = {
-                R.id.nav_home, R.id.nav_settings_header, R.id.nav_graphics, R.id.nav_interface,
-                R.id.nav_folder, R.id.nav_tools_header, R.id.nav_logs, R.id.nav_netdiag,
-                R.id.nav_replay, R.id.nav_online, R.id.nav_help
+                R.id.nav_home, R.id.nav_settings_header, R.id.nav_folder, R.id.nav_graphics,
+                R.id.nav_interface, R.id.nav_tools_header, R.id.nav_tools, R.id.nav_logs,
+                R.id.nav_netdiag, R.id.nav_replay, R.id.nav_online, R.id.nav_help
             };
             assertEquals("the drawer has " + menu.size() + " items instead of " + expected.length,
                 expected.length, menu.size());
@@ -861,6 +870,7 @@ public class SetupShellLayoutTest {
         if (id == R.id.nav_folder)       return "nav_folder";
         if (id == R.id.nav_graphics)     return "nav_graphics";
         if (id == R.id.nav_interface)    return "nav_interface";
+        if (id == R.id.nav_tools)        return "nav_tools";
         if (id == R.id.nav_logs)         return "nav_logs";
         if (id == R.id.nav_netdiag)      return "nav_netdiag";
         if (id == R.id.nav_replay)       return "nav_replay";

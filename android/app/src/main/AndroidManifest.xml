@@ -178,6 +178,17 @@
             android:theme="@style/Theme.GeneralsZHSettings"
             android:configChanges="orientation|screenSize|keyboardHidden" />
 
+        <!-- GeneralsX @feature Android touch controls 16/10/2026 The landscape editor for the
+             hotkey overlay shown above the running game (Interface -> Mobile Controls).
+             SCREEN_ORIENTATION_SENSOR_LANDSCAPE is requested by the activity itself, not here, so a
+             cabled controller on either side still gets a usable editor; it stays on the launcher
+             theme because it builds Material dialogs, unlike GeneralsZHActivity's game surface. -->
+        <activity
+            android:name=".TouchControlsActivity"
+            android:exported="false"
+            android:theme="@style/Theme.GeneralsZHSettings"
+            android:configChanges="orientation|screenSize|keyboardHidden" />
+
         <!-- GeneralsX @bugfix Android port 11/07/2026 LogViewerActivity's
              Share button used to hand the log over as raw Intent.EXTRA_TEXT,
              which (a) only works with the handful of apps that accept plain

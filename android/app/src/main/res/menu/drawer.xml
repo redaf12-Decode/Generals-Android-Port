@@ -14,8 +14,17 @@
      destination left every row looking the same. Section headers below are
      deliberately NOT checkable: they are labels, not destinations.
 
-     Order: the dashboard (Home) first, then the game settings that belong to
-     the selected game, then the tools, then the account, then support. The
+     GeneralsX @tweak Android port ui-organisation 16/10/2026 One entry per
+     destination, in the order the work is actually done. The Tools page is an
+     entry of its own now: it used to be missing, so opening it from the bottom
+     rail left the     drawer highlighting "View logs", which is a different screen. The three
+     launcher tools under it are direct entries because they are separate
+     activities; the Tools page groups the same shortcuts together with the
+     logging switches.
+
+     Order: the dashboard (Home) first, then what the selected game needs
+     (its folder and mod folder, then how it is rendered, then how it and the
+     launcher look), then the tools, then the account, then support. The
      launch button is deliberately NOT in here: it stays on the dashboard,
      where it is the first thing on the screen. -->
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
@@ -32,6 +41,15 @@
         android:id="@+id/nav_settings_header"
         android:title="@string/nav_drawer_settings"/>
 
+    <!-- Storage first: which game folder is in use (and, for Zero Hour, the
+         base-game archive folder), the mod folder, and the checks that decide
+         whether the game will start at all. -->
+    <item
+        android:id="@+id/nav_folder"
+        android:checkable="true"
+        android:icon="@drawable/ic_gzh_folder"
+        android:title="@string/nav_drawer_game_folder"/>
+
     <item
         android:id="@+id/nav_graphics"
         android:checkable="true"
@@ -41,21 +59,19 @@
     <item
         android:id="@+id/nav_interface"
         android:checkable="true"
-        android:icon="@drawable/ic_gzh_globe"
+        android:icon="@drawable/ic_gzh_sliders"
         android:title="@string/nav_tab_interface"/>
-
-    <!-- Storage / game-folder setup: the folder page, which keeps the picker
-         plus the base-game folder and the clear actions for Zero Hour. -->
-    <item
-        android:id="@+id/nav_folder"
-        android:checkable="true"
-        android:icon="@drawable/ic_gzh_folder"
-        android:title="@string/nav_drawer_game_folder"/>
 
     <!-- Tools group -->
     <item
         android:id="@+id/nav_tools_header"
         android:title="@string/nav_drawer_tools"/>
+
+    <item
+        android:id="@+id/nav_tools"
+        android:checkable="true"
+        android:icon="@drawable/ic_gzh_terminal"
+        android:title="@string/nav_tab_tools"/>
 
     <item
         android:id="@+id/nav_logs"

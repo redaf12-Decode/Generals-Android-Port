@@ -62,12 +62,18 @@ public class FolderPickerActivity extends Activity {
 
     @Override
     protected void attachBaseContext(android.content.Context newBase) {
-        super.attachBaseContext(LocaleHelper.wrap(newBase));
+        // GeneralsX @feature Android port daylight-darkmode 16/10/2026 Language first, then the
+        // night-mode override: LocaleHelper must stay the outer wrap (it snapshots the config it is
+        // given), ThemeHelper only adjusts uiMode inside it.
+        super.attachBaseContext(ThemeHelper.wrap(LocaleHelper.wrap(newBase)));
     }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        // Before any view is built: folds the Interface tab's accent overlay into this activity's
+        // theme (ThemeHelper.applyAccentTheme).
+        ThemeHelper.applyAccentTheme(this);
         setTitle(R.string.folderpicker_title);
 
         File start = Environment.getExternalStorageDirectory();

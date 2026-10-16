@@ -333,6 +333,18 @@ void ArchiveFileSystem::loadMods()
 			modArchive = TheGlobalData->m_modBIG;
 		if (modArchive.isEmpty() && TheGlobalData->m_modDir.isNotEmpty())
 			modArchive = TheGlobalData->m_modDir;
+		// GeneralsX @feature Android Mod Manager 16/10/2026 A mod FOLDER the launcher selected
+		// (GENERALSX_MOD_PATH, set by SDL3Main.cpp from mod_path.txt) occupies the INI space exactly
+		// like a '!'-prefixed data mod inside the game folder: its archives mount with
+		// overwrite=TRUE below, so they would mix with the patch's Data\INI\* directory files the same
+		// way, and for the same reason. Counted here so the decision below is made in one place, and
+		// so the player's "use the patch with mods too" override can still hand the patch back.
+		if (modArchive.isEmpty())
+		{
+			const char *modFolderEnv = getenv("GENERALSX_MOD_PATH");
+			if (modFolderEnv != nullptr && modFolderEnv[0] != '\0')
+				modArchive = modFolderEnv;
+		}
 
 		// The player's override from the launcher ("use the patch with mods too"), for a mod
 		// built on top of the GeneralsOnline patch: written beside the disable marker.
@@ -399,6 +411,21 @@ void ArchiveFileSystem::loadMods()
 		MAYBE_UNUSED Bool ret = loadBigFilesFromDirectory(TheGlobalData->m_modDir, "*.big", TRUE);
 		(void)ret;
 		DEBUG_ASSERTLOG(ret, ("loadBigFilesFromDirectory(%s) returned FALSE!", TheGlobalData->m_modDir.str()));
+	}
+
+	// GeneralsX @feature Android Mod Manager 16/10/2026 The mod folder the launcher selected, for
+	// when the game was not started with -mod: the exact call the -mod path above makes, and the
+	// reason the launcher keeps this folder out of the game folder -- overwrite=TRUE gives the mod
+	// the highest virtual-file priority (mod > community patch > GeneralsZH > base Generals)
+	// without moving, copying or reordering a single retail archive.
+	const char *modFolderEnv = getenv("GENERALSX_MOD_PATH");
+	if (modFolderEnv != nullptr && modFolderEnv[0] != '\0')
+	{
+		MAYBE_UNUSED Bool ret = loadBigFilesFromDirectory(AsciiString(modFolderEnv), "*.big", TRUE);
+		(void)ret;
+		fprintf(stderr, "[gxbig] mod folder mounted (overwrite): %s%s\n", modFolderEnv,
+			ret ? "" : " [no readable *.big]");
+		fflush(stderr);
 	}
 }
 

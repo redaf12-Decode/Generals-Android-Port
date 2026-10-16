@@ -2,22 +2,28 @@
 <!-- GeneralsX @ui-redesign Android port dashboard-2026
      Subtle tactical panel-seam pattern for the dashboard background.
      Kept extremely faint so it reads as texture, not decoration, and never
-     competes with cards or text. -->
+     competes with cards or text.
+
+     GeneralsX @feature Android port daylight-darkmode 16/10/2026 The seam and
+     fill colours are @color references so the texture follows the palette
+     (and its accent primary) instead of being a fixed lavender tuned for one
+     mode. Alphas stay this low in both: 3.5-5.5% reads as texture on a light
+     page and on a near-black one. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="120dp"
     android:height="120dp"
     android:viewportWidth="120"
     android:viewportHeight="120">
     <path
-        android:fillColor="#8F8CA0"
+        android:fillColor="@color/gzh_on_surface_faint"
         android:fillAlpha="0.045"
         android:pathData="M0 0 h120 v120 h-120 z" />
     <path
-        android:fillColor="#B9AEEA"
+        android:fillColor="@color/gzh_dashboard_seam"
         android:fillAlpha="0.055"
         android:pathData="M20 0 v120 M40 0 v120 M60 0 v120 M80 0 v120 M100 0 v120" />
     <path
-        android:fillColor="#B9AEEA"
+        android:fillColor="@color/gzh_dashboard_seam"
         android:fillAlpha="0.035"
         android:pathData="M0 20 h120 M0 50 h120 M0 80 h120" />
 </vector>

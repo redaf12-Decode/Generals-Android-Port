@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- GeneralsX @feature Android port daylight-darkmode 16/10/2026 The
+         DARKMODE overrides of the per-mode resources in values/themes.xml.
+         The main Theme.GeneralsZHSettings style itself is NOT re-declared
+         here: every colour it names resolves through the palette split
+         (values-night/colors.xml) and the status-bar flag through the bool
+         below, so only the resources that genuinely differ per mode are
+         overridden. -->
+
+    <!-- Light content on the transparent system bars, over the near-black
+         ground. -->
+    <bool name="gzh_light_system_bars">false</bool>
+</resources>

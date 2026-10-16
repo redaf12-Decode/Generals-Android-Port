@@ -295,7 +295,7 @@
     <string name="nav_drawer_home">Home</string>
     <string name="nav_drawer_game_folder">Game folder</string>
     <string name="nav_drawer_settings">Settings</string>
-    <string name="nav_drawer_tools">Tools</string>
+    <string name="nav_drawer_tools">Tools &amp; diagnostics</string>
     <string name="nav_drawer_support">Support</string>
     <string name="setup_render_backend_gles_short">GLES</string>
     <string name="setup_render_backend_gles_angle_short">ANGLE</string>
@@ -378,4 +378,91 @@
     <string name="setup_cursor_size_label">Cursor size: %1$d%%</string>
     <string name="setup_switch_skip_intro">Skip intro movies</string>
     <string name="setup_switch_skip_intro_desc">EA logos, the intro and other movies before the menu are skipped; the game goes straight to loading. For both games, mods included.</string>
+
+    <!-- GeneralsX @feature Android port daylight-darkmode 16/10/2026 The Theme card on the
+         Interface page: the Daylight/Darkmode choice plus the accent picker (ThemeHelper). -->
+    <string name="setup_card_appearance">Theme</string>
+    <string name="setup_appearance_status">Theme: %1$s</string>
+    <string name="setup_appearance_mode_system">System</string>
+    <string name="setup_appearance_mode_daylight">Daylight</string>
+    <string name="setup_appearance_mode_darkmode">Darkmode</string>
+    <string name="setup_appearance_help">Changes the colours of this Settings app, the log viewer, the folder browser and the account screen. “System” follows your phone\'s appearance and battery saver. The game\'s own rendering is a separate thing and never changes.</string>
+    <string name="setup_card_accent">Accent</string>
+    <string name="setup_accent_help">Picks the highlight colour used across this Settings app, the log viewer, the folder browser and the account screen. Works with either theme above.</string>
+    <string name="setup_accent_picker">Accent colour</string>
+    <string name="setup_accent_option">Accent: %1$s</string>
+    <string name="setup_accent_name_default">Violet</string>
+    <string name="setup_accent_name_blue">Blue</string>
+    <string name="setup_accent_name_green">Green</string>
+    <string name="setup_accent_name_teal">Teal</string>
+    <string name="setup_accent_name_orange">Orange</string>
+    <string name="setup_accent_name_red">Red</string>
+    <string name="setup_accent_name_black">Black</string>
+    <string name="setup_accent_name_gray">Gray</string>
+    <string name="setup_accent_name_gold">Gold</string>
+    <string name="setup_accent_name_transparent">Transparent</string>
+    <string name="setup_accent_name_white">White</string>
+    <string name="setup_accent_name_yellow">Yellow</string>
+
+    <!-- GeneralsX @feature Android touch controls 16/10/2026 The Interface page's Touch Controls
+         card and the landscape editor activity (TouchControlsActivity). The overlay itself sends
+         real keyboard events to the engine through SDL, so these labels name game shortcuts. -->
+    <string name="setup_card_touch_controls">Mobile Controls</string>
+    <string name="setup_button_touch_controls">Configure Touch Controls</string>
+    <string name="setup_touch_hotkey_row">Show hotkey panel</string>
+    <string name="setup_touch_hotkey_row_desc">Shows the custom on-map shortcut buttons while you play. Full layout editing stays in the editor below.</string>
+    <string name="setup_touch_controls_help">Build your own in-game hotkey panel: add or remove buttons, choose keyboard keys and Ctrl/Shift/Alt modifiers, drag every button to its preferred screen position, and tune button size and transparency.</string>
+    <string name="touch_editor_title">Touch Controls Editor</string>
+    <string name="touch_add_button">Add</string>
+    <string name="touch_edit_button">Edit</string>
+    <string name="touch_delete_button">Delete</string>
+    <string name="touch_reset_button">Defaults</string>
+    <string name="touch_save_button">Save</string>
+    <string name="touch_apply_button">Apply</string>
+    <string name="touch_button_size">Button size: %1$d%%</string>
+    <string name="touch_button_opacity">Opacity: %1$d%%</string>
+    <string name="touch_selected_button">Selected: %1$s — drag it to move</string>
+    <string name="touch_drag_help_short">Tap a button to select it, then drag to position it</string>
+    <string name="touch_button_label_hint">Button label (up to 8 characters)</string>
+    <string name="touch_edit_dialog_title">Button action</string>
+    <string name="touch_select_button_first">Select a button first</string>
+    <string name="touch_too_many_buttons">Maximum 20 buttons</string>
+    <string name="touch_saved">Touch controls saved. They apply on the next game launch.</string>
+    <string name="touch_editor_panel_hint">Game command panel (orientation guide)</string>
+    <string name="touch_export_button">Export</string>
+    <string name="touch_import_button">Import</string>
+    <string name="touch_exported">Controls mapping exported</string>
+    <string name="touch_imported">Controls mapping imported and saved</string>
+    <string name="touch_transfer_failed">Controls transfer failed: %1$s</string>
+    <string name="touch_text_color">Button text color</string>
+    <string name="touch_text_color_picker">Pick text color</string>
+    <string name="touch_fill_color">Button fill color</string>
+    <string name="touch_fill_color_picker">Pick fill color</string>
+    <string name="touch_color_picker_title">Pick a color</string>
+    <string name="touch_modifier_ctrl">Ctrl</string>
+    <string name="touch_modifier_shift">Shift</string>
+    <string name="touch_modifier_alt">Alt</string>
+    <string name="touch_width_dp">Width: %1$d dp</string>
+    <string name="touch_height_dp">Height: %1$d dp</string>
+    <string name="touch_shape_rectangle">Rectangle</string>
+    <string name="touch_shape_rounded">Rounded</string>
+    <string name="touch_shape_square">Square</string>
+    <string name="touch_shape_circle">Circle</string>
+    <string name="touch_shape_oval">Oval</string>
+
+    <!-- GeneralsX @feature Android Mod Manager 16/10/2026 The Mods card on the Game folder page:
+         a folder of *.big archives the engine mounts last, with overwrite, so the mod outranks the
+         retail archives and the community data patch (Mod > GeneralsZH > Base Generals). -->
+    <string name="setup_card_mod_folder">Mod Manager</string>
+    <string name="setup_button_select_mod_folder">Select Mod Folder…</string>
+    <string name="setup_button_clear_mod_folder">Clear Mod Folder</string>
+    <string name="setup_mod_status_not_set">No mod folder selected.</string>
+    <string name="setup_mod_status_set">Mod folder: %1$s\nBIG archives: %2$d</string>
+    <string name="setup_mod_folder_help">Mod *.big archives are loaded after Zero Hour and Base Generals, so the Mod has the highest priority: Mod > GeneralsZH > Base Generals.</string>
+    <string name="setup_mod_patch_parked">A Mod folder is active: the community data patch is not used with it, because both ship the game\'s INI files. Turn “Use the patch with mods” on in the Generals Online screen to use them together.</string>
+    <string name="setup_mod_folder_invalid">The selected mod folder is not readable.</string>
+    <string name="setup_mod_folder_no_big">No .big archives were found directly in the selected mod folder.</string>
+    <string name="setup_toast_mod_saved">Mod folder saved: %1$s (%2$d BIG archives).</string>
+    <string name="setup_toast_mod_saved_patch_still_on">Mod folder saved: %1$s (%2$d BIG archives). The community data patch stayed on because “Use the patch with mods” is set.</string>
+    <string name="setup_toast_mod_cleared">Mod folder cleared.</string>
 </resources>
