@@ -11,25 +11,27 @@
      checked. Without these attributes the shell's setCheckedItem() calls, at
      build time and every time the drawer closes, were silently dropped, so the
      drawer could never show which page the user was on, and tapping a
-     destination left every row looking the same. The section header below is
-     deliberately NOT checkable: it is a label, not a destination. -->
+     destination left every row looking the same. Section headers below are
+     deliberately NOT checkable: they are labels, not destinations.
+
+     Order: the dashboard (Home) first, then the game settings that belong to
+     the selected game, then the tools, then the account, then support. The
+     launch button is deliberately NOT in here: it stays on the dashboard,
+     where it is the first thing on the screen. -->
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!-- Primary destination -->
+    <!-- Dashboard -->
     <item
         android:id="@+id/nav_home"
         android:checkable="true"
         android:icon="@drawable/ic_gzh_home"
         android:title="@string/nav_drawer_home"/>
 
-    <!-- Storage / game-folder setup: existing FolderPickerActivity -->
+    <!-- Game settings group -->
     <item
-        android:id="@+id/nav_folder"
-        android:checkable="true"
-        android:icon="@drawable/ic_gzh_folder"
-        android:title="@string/nav_drawer_game_folder"/>
+        android:id="@+id/nav_settings_header"
+        android:title="@string/nav_drawer_settings"/>
 
-    <!-- Settings group -->
     <item
         android:id="@+id/nav_graphics"
         android:checkable="true"
@@ -41,6 +43,14 @@
         android:checkable="true"
         android:icon="@drawable/ic_gzh_globe"
         android:title="@string/nav_tab_interface"/>
+
+    <!-- Storage / game-folder setup: the folder page, which keeps the picker
+         plus the base-game folder and the clear actions for Zero Hour. -->
+    <item
+        android:id="@+id/nav_folder"
+        android:checkable="true"
+        android:icon="@drawable/ic_gzh_folder"
+        android:title="@string/nav_drawer_game_folder"/>
 
     <!-- Tools group -->
     <item
@@ -72,7 +82,7 @@
         android:icon="@drawable/ic_gzh_account"
         android:title="@string/online_window_title"/>
 
-    <!-- About / support -->
+    <!-- Support -->
     <item
         android:id="@+id/nav_help"
         android:checkable="true"

@@ -364,4 +364,12 @@
     <string name="setup_cursor_size_label">Tamaño del cursor: %1$d %%</string>
     <string name="setup_switch_skip_intro">Omitir vídeos de introducción</string>
     <string name="setup_switch_skip_intro_desc">Los logotipos de EA, la introducción y otros vídeos antes del menú se omiten; el juego carga directamente. Para ambos juegos, también con mods.</string>
+
+    <!-- Navigation drawer labels (added 15/10/2026 with the drawer reorder): the drawer
+         was never inflated before, so these five were left untranslated. -->
+    <string name="nav_drawer_home">Inicio</string>
+    <string name="nav_drawer_game_folder">Carpeta del juego</string>
+    <string name="nav_drawer_settings">Ajustes</string>
+    <string name="nav_drawer_tools">Herramientas</string>
+    <string name="nav_drawer_support">Ayuda</string>
 </resources>

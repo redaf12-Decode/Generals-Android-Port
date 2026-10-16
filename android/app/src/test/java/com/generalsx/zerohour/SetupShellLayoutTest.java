@@ -30,13 +30,16 @@ package com.generalsx.zerohour;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.res.Configuration;
+import android.view.Menu;
 import android.os.Bundle;
 import android.os.Looper;
 import android.view.MenuItem;
@@ -329,7 +332,7 @@ public class SetupShellLayoutTest {
             // The app bar's overline names the game the dashboard is showing.
             assertEquals(activity.getString(R.string.setup_title), appBarOverlineText(activity));
             int itemsBefore = navigationOf(drawerOf(activity).getChildAt(0)).getMenu().size();
-            assertTrue("the drawer started with " + itemsBefore + " items", itemsBefore >= 10);
+            assertTrue("the drawer started with " + itemsBefore + " items", itemsBefore >= 11);
 
             // What the dashboard's game selector does: set the pref and rebuild the whole shell.
             SetupActivity.setSelectedGame(activity, SetupActivity.GAME_GENERALS);
@@ -351,6 +354,207 @@ public class SetupShellLayoutTest {
             layOut(activity);
             assertEquals("switching back to Zero Hour did not change the app bar",
                 activity.getString(R.string.setup_title), appBarOverlineText(activity));
+        } finally {
+            controller.close();
+        }
+    }
+
+    @Test
+    public void theDashboardLeadsWithTheGameCardThenOnlineThenUpdates() {
+        ActivityController<SetupActivity> controller = Robolectric.buildActivity(SetupActivity.class);
+        SetupActivity activity = controller.setup().get();
+        try {
+            layOut(activity);
+            View host = pageHostOrNull(activity);
+            List<MaterialCardView> cards = new ArrayList<>();
+            collect(host, MaterialCardView.class, cards);
+            assertEquals("the dashboard has " + cards.size() + " cards; it is meant to lead with "
+                + "the game card, then Generals Online, then the brief updates line, and nothing else",
+                3, cards.size());
+            assertTrue("the game card is not above the Online section",
+                absoluteTop(cards.get(0)) < absoluteTop(cards.get(1)));
+            assertTrue("the Online section is not above the updates section",
+                absoluteTop(cards.get(1)) < absoluteTop(cards.get(2)));
+
+            // The main card answers "which game, is it playable, where is it": the selected game's
+            // name, the launch button, the folder action, and both games' names for the switch.
+            assertNotNull("the main card does not name the selected game",
+                textOnScreen(cards.get(0), HEIGHT_PX, activity.getString(R.string.setup_game_zero_hour)));
+            Button play = buttonWithText(cards.get(0), activity.getString(R.string.setup_button_launch_game));
+            assertNotNull("the dashboard has no launch button on screen", play);
+            assertTrue("the launch button is off screen: " + absoluteTop(play), absoluteTop(play) < HEIGHT_PX);
+            assertNotNull("the launch button is not wired to the launch path", listenerOf(play));
+            assertNotNull("the main card has no way to change the game folder",
+                buttonWithText(cards.get(0), activity.getString(R.string.setup_button_select_game_folder)));
+            assertNotNull("the main card does not offer Generals",
+                textOnScreen(cards.get(0), HEIGHT_PX, activity.getString(R.string.setup_game_generals)));
+
+            // Generals Online sits on the dashboard itself, with its real sign-in line (no invented
+            // status: refreshGeneralsOnlineStatus() reads the account state) and a button into the
+            // screen that owns it.
+            Button online = buttonWithText(cards.get(1), activity.getString(R.string.setup_button_online_account));
+            assertNotNull("the dashboard has no Generals Online section", online);
+            assertTrue("the Generals Online button is off screen", absoluteTop(online) < HEIGHT_PX);
+            online.performClick();
+            Intent started = anyStartedIntent(activity);
+            assertNotNull("the Generals Online button starts nothing", started);
+            assertNotNull(started.getComponent());
+            assertEquals(GeneralsOnlineActivity.class.getName(), started.getComponent().getClassName());
+
+            // The updates card is the brief version: a status line and its controls, not a page.
+            assertNotNull("the dashboard does not show the updates section",
+                textOnScreen(cards.get(2), HEIGHT_PX, activity.getString(R.string.setup_card_updates)));
+        } finally {
+            controller.close();
+        }
+    }
+
+    @Test
+    public void theDrawerOpensTheGameFolderPageWithItsActions() {
+        ActivityController<SetupActivity> controller = Robolectric.buildActivity(SetupActivity.class);
+        SetupActivity activity = controller.setup().get();
+        try {
+            layOut(activity);
+            NavigationView nav = navigationOf(drawerOf(activity).getChildAt(0));
+
+            // The drawer entry is a page, not a one-shot action: it has the folder work the dashboard
+            // used to stack under the launch card.
+            assertRowShowsPage(activity, nav, R.id.nav_folder, R.string.nav_drawer_game_folder);
+            View host = pageHostOrNull(activity);
+            assertNotNull("the Game folder destination attached no page", host);
+            assertNotNull("the Game folder page cannot change the folder",
+                buttonWithText(host, activity.getString(R.string.setup_button_select_game_folder)));
+            assertNotNull("the Game folder page cannot clear the folder",
+                buttonWithText(host, activity.getString(R.string.setup_button_clear_game_folder)));
+            // Zero Hour is the default game here, so the base-game folder row belongs on this page.
+            assertNotNull("the Game folder page cannot pick the base-game folder for Zero Hour",
+                buttonWithText(host, activity.getString(R.string.setup_button_select_base_generals)));
+        } finally {
+            controller.close();
+        }
+    }
+
+    @Test
+    public void theDrawerListsItsSectionsInTheRequestedOrder() {
+        ActivityController<SetupActivity> controller = Robolectric.buildActivity(SetupActivity.class);
+        SetupActivity activity = controller.setup().get();
+        try {
+            layOut(activity);
+            NavigationView nav = navigationOf(drawerOf(activity).getChildAt(0));
+            Menu menu = nav.getMenu();
+
+            int[] expected = {
+                R.id.nav_home, R.id.nav_settings_header, R.id.nav_graphics, R.id.nav_interface,
+                R.id.nav_folder, R.id.nav_tools_header, R.id.nav_logs, R.id.nav_netdiag,
+                R.id.nav_replay, R.id.nav_online, R.id.nav_help
+            };
+            assertEquals("the drawer has " + menu.size() + " items instead of " + expected.length,
+                expected.length, menu.size());
+            for (int i = 0; i < expected.length; i++) {
+                assertEquals("drawer item " + i + " is " + idName(menu.getItem(i).getItemId())
+                    + ", expected " + idName(expected[i]), expected[i], menu.getItem(i).getItemId());
+            }
+            // Both section headers are labels, not destinations.
+            assertFalse(menu.findItem(R.id.nav_settings_header).isCheckable());
+            assertFalse(menu.findItem(R.id.nav_tools_header).isCheckable());
+            for (int id : DESTINATIONS) {
+                assertTrue("drawer destination " + idName(id) + " is not checkable",
+                    menu.findItem(id).isCheckable());
+            }
+        } finally {
+            controller.close();
+        }
+    }
+
+    @Test
+    public void backClosesTheOpenDrawerBeforeLeavingTheApp() {
+        ActivityController<SetupActivity> controller = Robolectric.buildActivity(SetupActivity.class);
+        SetupActivity activity = controller.setup().get();
+        try {
+            layOut(activity);
+            DrawerLayout drawer = drawerOf(activity);
+            NavigationView nav = navigationOf(drawerOf(activity).getChildAt(0));
+            drawer.openDrawer(nav, false);
+            assertTrue("the drawer did not open", absoluteLeft(nav) == 0);
+
+            activity.onBackPressed();
+            settle();
+            // Back has to take the drawer branch (close it and return) rather than the app branch:
+            // the activity not finishing is what that branch looks like from out here. The panel's
+            // slide back off screen is the animated path, which this harness does not run (see the
+            // note at the top of the file).
+            assertFalse("Back left the app while the drawer was open", activity.isFinishing());
+
+            // With the drawer closed, Back is the app's own behaviour again. Closed has to be set
+            // up directly: the Back above asked the drawer to close with the animated path, which
+            // never runs here, so the drawer still reports itself open.
+            drawer.closeDrawer(nav, false);
+            activity.onBackPressed();
+            assertTrue("Back with the drawer closed should leave the launcher", activity.isFinishing());
+        } finally {
+            controller.close();
+        }
+    }
+
+    @Test
+    public void theSettingsPagesKeepTheirSectionsAndEngineOptions() {
+        ActivityController<SetupActivity> controller = Robolectric.buildActivity(SetupActivity.class);
+        SetupActivity activity = controller.setup().get();
+        try {
+            layOut(activity);
+            NavigationView nav = navigationOf(drawerOf(activity).getChildAt(0));
+
+            // Graphics keeps the simulation rate and the render backend (Vulkan/GLES/ANGLE), which
+            // is what "the engine options are preserved" means on screen. These pages scroll, so
+            // the sections are searched in the laid-out page rather than in the visible viewport:
+            // what is being checked is that the settings are still there, not where the reader is.
+            assertRowShowsPage(activity, nav, R.id.nav_graphics, R.string.nav_tab_graphics);
+            View host = pageHostOrNull(activity);
+            assertNotNull(activity.getString(R.string.setup_card_sim_rate),
+                textAnywhere(host, activity.getString(R.string.setup_card_sim_rate)));
+            assertNotNull(activity.getString(R.string.setup_card_render_backend),
+                textAnywhere(host, activity.getString(R.string.setup_card_render_backend)));
+
+            // Interface keeps language, text size, interface scale and controls.
+            assertRowShowsPage(activity, nav, R.id.nav_interface, R.string.nav_tab_interface);
+            host = pageHostOrNull(activity);
+            for (int label : new int[] { R.string.setup_card_language, R.string.setup_card_text_size,
+                    R.string.setup_card_interface_scale, R.string.setup_card_controls }) {
+                assertNotNull("the Interface page lost \"" + activity.getString(label) + "\"",
+                    textAnywhere(host, activity.getString(label)));
+            }
+        } finally {
+            controller.close();
+        }
+    }
+
+    @Test
+    public void eachGameKeepsItsOwnFolderWhenTheSelectionChanges() {
+        ActivityController<SetupActivity> controller = Robolectric.buildActivity(SetupActivity.class);
+        SetupActivity activity = controller.setup().get();
+        try {
+            // The two games must never share a folder preference: Zero Hour keeps the original key
+            // so existing installs do not lose their folder, and Generals gets its own.
+            assertNotEquals("the two games share one folder preference key",
+                SetupActivity.PREF_GAME_PATH, SetupActivity.PREF_GENERALS_GAME_PATH);
+
+            SharedPreferences prefs =
+                activity.getSharedPreferences(SetupActivity.PREFS_NAME, android.content.Context.MODE_PRIVATE);
+            prefs.edit()
+                .putString(SetupActivity.PREF_GAME_PATH, "/zh/folder")
+                .putString(SetupActivity.PREF_GENERALS_GAME_PATH, "/generals/folder")
+                .commit();
+            assertEquals("/zh/folder",
+                SetupActivity.getSavedGamePath(activity, SetupActivity.GAME_ZERO_HOUR));
+            assertEquals("/generals/folder",
+                SetupActivity.getSavedGamePath(activity, SetupActivity.GAME_GENERALS));
+
+            // Switching which game the dashboard shows must follow the selection, not leak one
+            // game's folder into the other's launch path -- Play uses getSavedGamePath().
+            SetupActivity.setSelectedGame(activity, SetupActivity.GAME_GENERALS);
+            assertEquals("/generals/folder", SetupActivity.getSavedGamePath(activity));
+            SetupActivity.setSelectedGame(activity, SetupActivity.GAME_ZERO_HOUR);
+            assertEquals("/zh/folder", SetupActivity.getSavedGamePath(activity));
         } finally {
             controller.close();
         }
@@ -771,6 +975,18 @@ public class SetupShellLayoutTest {
     private static TextView textOnScreen(View v, int screenHeight, String needle) {
         List<TextView> found = new ArrayList<>();
         collectText(v, screenHeight, found);
+        for (TextView t : found) {
+            if (String.valueOf(t.getText()).contains(needle)) {
+                return t;
+            }
+        }
+        return null;
+    }
+
+    /** The first laid-out text whose content contains {@code needle}, on screen or scrolled below. */
+    private static TextView textAnywhere(View v, String needle) {
+        List<TextView> found = new ArrayList<>();
+        collect(v, TextView.class, found);
         for (TextView t : found) {
             if (String.valueOf(t.getText()).contains(needle)) {
                 return t;

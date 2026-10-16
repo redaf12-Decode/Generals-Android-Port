@@ -127,12 +127,35 @@ final class UiKit {
     static TextView appBar(ViewGroup parent, CharSequence overline, CharSequence title,
                            int trailingIconRes, CharSequence trailingDescription,
                            Runnable trailingAction) {
+        return appBar(parent, 0, overline, title, trailingIconRes, trailingDescription, trailingAction);
+    }
+
+    /**
+     * The same bar with a leading mark. GeneralsX @feature Android port 15/10/2026 The dashboard
+     * bar carries the launcher's brand motif beside the game name, so "which game is this" is
+     * answered before the eye reaches the page. Passing 0 keeps the plain bar for callers that have
+     * no mark of their own.
+     */
+    static TextView appBar(ViewGroup parent, int leadingIconRes, CharSequence overline, CharSequence title,
+                           int trailingIconRes, CharSequence trailingDescription,
+                           Runnable trailingAction) {
         Context c = parent.getContext();
         LinearLayout bar = new LinearLayout(c);
         bar.setOrientation(LinearLayout.HORIZONTAL);
         bar.setGravity(Gravity.CENTER_VERTICAL);
         int gutter = dim(c, R.dimen.gzh_gutter);
         bar.setPadding(gutter, dp(c, 14), gutter, dp(c, 10));
+
+        if (leadingIconRes != 0) {
+            ImageView mark = new ImageView(c);
+            mark.setImageDrawable(ContextCompat.getDrawable(c, leadingIconRes));
+            mark.setImageTintList(tint(c, R.color.gzh_primary));
+            mark.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
+            int markSize = dim(c, R.dimen.gzh_icon_button);
+            LinearLayout.LayoutParams markLp = new LinearLayout.LayoutParams(markSize, markSize);
+            markLp.setMarginEnd(dim(c, R.dimen.gzh_item_gap));
+            bar.addView(mark, markLp);
+        }
 
         LinearLayout text = new LinearLayout(c);
         text.setOrientation(LinearLayout.VERTICAL);

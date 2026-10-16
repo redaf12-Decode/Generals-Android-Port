@@ -348,6 +348,10 @@ public class SetupActivity extends Activity {
     private static final int TAB_INTERFACE = 3;
     private static final int TAB_TOOLS = 4;
     private static final int TAB_HELP = 5;
+    // GeneralsX @feature Android port 15/10/2026 The drawer's "Game folder" entry is a page, not a
+    // one-shot action: the folder work (pick, change, clear, and Zero Hour's base-game archive
+    // folder) needs a screen of its own now that the dashboard leads with the launch button.
+    private static final int TAB_FOLDER = 6;
 
     private int currentTab = TAB_HOME;
     private FrameLayout contentHost;
@@ -378,9 +382,26 @@ public class SetupActivity extends Activity {
 
     // Drawer section headers: present in the menu so the drawer reads as a
     // structured navigation rail, but not selectable destinations.
+    //
+    // GeneralsX @bugfix Android port 15/10/2026 The lookup below used
+    // Arrays.binarySearch over this array, which nothing keeps sorted: R.id values
+    // are handed out by aapt, so adding a header changed the order and binarySearch
+    // over an unsorted array returns arbitrary results. A header missed that way
+    // would fall through to the destination checks below. A linear scan over two
+    // entries is both correct and cheaper than getting that wrong.
     private static final int[] DRAWER_SECTION_HEADERS = {
+        R.id.nav_settings_header,
         R.id.nav_tools_header
     };
+
+    private static boolean isDrawerSectionHeader(int id) {
+        for (int header : DRAWER_SECTION_HEADERS) {
+            if (header == id) {
+                return true;
+            }
+        }
+        return false;
+    }
 
 
     private void buildUi() {
@@ -467,7 +488,7 @@ public class SetupActivity extends Activity {
         // where it cannot consume layout space, and the real system-bar insets pad the
         // shell below.
 
-        appBarTitle = UiKit.appBar(shell, getString(isGeneralsSelected(this)
+        appBarTitle = UiKit.appBar(shell, R.drawable.ic_gzh_play, getString(isGeneralsSelected(this)
                 ? R.string.setup_title_generals : R.string.setup_title),
             getString(R.string.nav_drawer_home),
             R.drawable.ic_gzh_menu, null, this::toggleDrawer);
@@ -587,7 +608,7 @@ public class SetupActivity extends Activity {
         int id = item.getItemId();
         drawerLayout.closeDrawer(Gravity.START);
         // Section headers are not destinations.
-        if (java.util.Arrays.binarySearch(DRAWER_SECTION_HEADERS, id) >= 0) {
+        if (isDrawerSectionHeader(id)) {
             return false;
         }
         if (id == R.id.nav_home) {
@@ -597,7 +618,13 @@ public class SetupActivity extends Activity {
         }
         if (id == R.id.nav_folder) {
             currentDrawerDestination = id;
-            onSelectGameFolder();
+            // GeneralsX @feature Android port 15/10/2026 This used to jump straight
+            // into the folder picker, which made the drawer entry a one-shot action:
+            // the rest of the folder work (Zero Hour's base-game archive folder, and
+            // both clear actions) only lived on the dashboard, where the dashboard no
+            // longer stacks it. It opens the folder page now, which keeps every one of
+            // those actions and still starts with the picker.
+            showTab(TAB_FOLDER);
             return true;
         }
         if (id == R.id.nav_graphics) {
@@ -654,6 +681,8 @@ public class SetupActivity extends Activity {
         if (USE_DRAWER) {
             if (currentTab == TAB_HOME) {
                 dest = R.id.nav_home;
+            } else if (currentTab == TAB_FOLDER) {
+                dest = R.id.nav_folder;
             } else if (currentTab == TAB_GRAPHICS) {
                 dest = R.id.nav_graphics;
             } else if (currentTab == TAB_INTERFACE) {
@@ -714,6 +743,7 @@ public class SetupActivity extends Activity {
 
     private int tabTitle(int tab) {
         switch (tab) {
+            case TAB_FOLDER:    return R.string.nav_drawer_game_folder;
             case TAB_GRAPHICS:  return R.string.nav_tab_graphics;
             case TAB_INTERFACE: return R.string.nav_tab_interface;
             case TAB_TOOLS:     return R.string.nav_tab_tools;
@@ -745,6 +775,9 @@ public class SetupActivity extends Activity {
 
         LinearLayout page = UiKit.scrollingPage(contentHost);
         switch (tab) {
+            case TAB_FOLDER:
+                buildFolderSection(page);
+                break;
             case TAB_GRAPHICS:
                 buildSimRateSection(page);
                 // GeneralsX @tweak Android port 02/10/2026 The upscaler lives in the GLES translator
@@ -796,6 +829,10 @@ public class SetupActivity extends Activity {
         statusText = null;
         onlineStatusView = null;
         updatesStatusView = null;
+        // GeneralsX @bugfix Android port 15/10/2026 This one was missed: without it, the conditional
+        // "a newer data pack is out" button stayed reachable from a page that no longer shows it,
+        // and refreshUpdatesStatus() kept writing into a view the user cannot see.
+        updatesOpenOnlineButton = null;
         gameLanguageStatusView = null;
         renderBackendStatusView = null;
         customDriverStatusView = null;
@@ -835,7 +872,10 @@ public class SetupActivity extends Activity {
         launch.addView(brand);
 
         TextView heading = new TextView(this);
-        heading.setText(getString(R.string.setup_button_launch_game));
+        // GeneralsX @feature Android port 15/10/2026 The heading is the game this dashboard is
+        // about, not the action: the launch button sits directly under it, and the app bar carries
+        // the same name, so the card reads as "this is your game" first and "press to play" second.
+        heading.setText(getString(generals ? R.string.setup_game_generals : R.string.setup_game_zero_hour));
         heading.setTextSize(TypedValue.COMPLEX_UNIT_PX, UiKit.dim(this, R.dimen.gzh_text_display));
         heading.setTextColor(UiKit.color(this, R.color.gzh_on_surface));
         heading.setTypeface(Typeface.DEFAULT_BOLD);
@@ -845,24 +885,27 @@ public class SetupActivity extends Activity {
         hp.topMargin = dp(4);
         launch.addView(heading, hp);
 
-        UiKit.supporting(launch, getString(isGeneralsSelected(this)
-                ? R.string.setup_game_generals
-                : R.string.setup_game_zero_hour)
-            + " \u00b7 " + getString(R.string.setup_card_game));
+        // GeneralsX @feature Android port 15/10/2026 The folder state belongs in the main card: it
+        // is the first thing that can go wrong, and refreshStatus() colours it (not set / invalid /
+        // missing files) so an incomplete folder is visible without opening anything.
+        statusText = UiKit.body(launch, null);
+        statusText.setTextIsSelectable(true);
 
         UiKit.button(launch, UiKit.BTN_PRIMARY, R.drawable.ic_gzh_play,
             getString(R.string.setup_button_launch_game), this::onLaunchGame);
 
-        // Game selection card: Play choice, skip-intro, and the game this
-        // dashboard is showing. Kept on the dashboard because it controls the
-        // launch path and the app bar title.
-        LinearLayout game = UiKit.card(page);
-        UiKit.sectionHeader(game, R.drawable.ic_gzh_play, getString(R.string.setup_card_game), false);
+        // Small secondary action beside the launch path: change the game folder without leaving the
+        // card. The rest of the folder work lives on the drawer's Game folder page.
+        UiKit.button(launch, UiKit.BTN_TONAL, R.drawable.ic_gzh_folder,
+            getString(R.string.setup_button_select_game_folder), this::onSelectGameFolder);
+
+        // Game choice, kept on the dashboard because it controls the launch path and the app bar
+        // title. It lives inside the main card so switching games reads as part of launching one.
         CharSequence[] games = new CharSequence[] {
             getString(R.string.setup_game_generals),
             getString(R.string.setup_game_zero_hour)
         };
-        UiKit.segmented(game, games, generals ? 0 : 1, index -> {
+        UiKit.segmented(launch, games, generals ? 0 : 1, index -> {
             String picked = index == 0 ? GAME_GENERALS : GAME_ZERO_HOUR;
             if (picked.equals(getSelectedGame(this))) {
                 return;
@@ -871,69 +914,60 @@ public class SetupActivity extends Activity {
             // The app bar names the game, so rebuild the whole shell rather than only this page.
             buildUi();
         });
-        UiKit.supporting(game, getString(R.string.setup_game_desc));
+        UiKit.supporting(launch, getString(R.string.setup_game_desc));
 
-        SwitchCompat skipIntro = UiKit.switchRow(game,
+        SwitchCompat skipIntro = UiKit.switchRow(launch,
             getString(R.string.setup_switch_skip_intro), getString(R.string.setup_switch_skip_intro_desc));
         skipIntro.setChecked(isSkipIntroEnabled(this));
         skipIntro.setOnCheckedChangeListener((button, checked) ->
             getSharedPreferences(PREFS_NAME, MODE_PRIVATE).edit().putBoolean(PREF_SKIP_INTRO, checked).apply());
 
-        // Game-folder status and actions, kept honest: only the real folder
-        // state the rest of the app already computes.
-        LinearLayout folder = UiKit.card(page);
-        UiKit.sectionHeader(folder, R.drawable.ic_gzh_folder,
-            getString(R.string.setup_card_game_folder), false);
-
-        statusText = UiKit.body(folder, null);
-        statusText.setTextIsSelectable(true);
-
-        UiKit.button(folder, UiKit.BTN_TONAL, R.drawable.ic_gzh_folder,
-            getString(R.string.setup_button_select_game_folder), this::onSelectGameFolder);
-        // Zero Hour only: the base game's archives are the base game itself.
-        if (!generals) {
-            UiKit.button(folder, UiKit.BTN_TONAL, R.drawable.ic_gzh_folder,
-                getString(R.string.setup_button_select_base_generals), this::onSelectBaseGeneralsFolder);
-        }
-        UiKit.button(folder, UiKit.BTN_DANGER, R.drawable.ic_gzh_broom,
-            getString(R.string.setup_button_clear_game_folder), this::onClearGameFolder);
-        if (!generals && getBaseGeneralsPath() != null) {
-            UiKit.button(folder, UiKit.BTN_DANGER, R.drawable.ic_gzh_broom,
-                getString(R.string.setup_button_clear_base_generals), this::onClearBaseGeneralsFolder);
-        }
-
-        // Quick-access rows: fewer of them on the dashboard, the rest is in
-        // the navigation drawer.
-        LinearLayout quick = UiKit.card(page);
-        UiKit.sectionHeader(quick, R.drawable.ic_gzh_home, getString(R.string.nav_drawer_home), false);
-        UiKit.supporting(quick, getString(R.string.setup_how_it_works_body));
-
-        UiKit.listRow(quick, R.drawable.ic_gzh_folder,
-            getString(R.string.setup_button_select_game_folder),
-            getString(R.string.setup_card_game_folder),
-            this::onSelectGameFolder);
-        UiKit.divider(quick);
-        UiKit.listRow(quick, R.drawable.ic_gzh_doc,
-            getString(R.string.setup_button_view_logs),
-            getString(R.string.setup_status_logs_note),
-            this::onViewLogs);
-        UiKit.divider(quick);
-        UiKit.listRow(quick, R.drawable.ic_gzh_wrench,
-            getString(R.string.netdiag_title),
-            getString(R.string.netdiag_row_note),
-            this::onNetworkDiagnostics);
-        UiKit.divider(quick);
-        UiKit.listRow(quick, R.drawable.ic_gzh_play,
-            getString(R.string.replaycheck_title),
-            getString(R.string.replaycheck_row_note),
-            () -> startActivity(new Intent(this, ReplayCheckActivity.class)));
-
         // GeneralsX @bugfix Android port 01/08/2026 kept above the advanced
         // settings -- signing into GeneralsOnline is a primary action most
         // people want right after picking their game folder, not something to
-        // bury under settings most players never touch.
+        // bury under settings most players never touch. The folder work and the
+        // quick-access rows that used to sit between the launch card and this
+        // section are gone from the dashboard: the first moved to the drawer's
+        // Game folder page, the second to the drawer's own entries.
         buildGeneralsOnlineSection(page);
         buildUpdatesSection(page);
+    }
+
+    // ------------------------------------------------------------ Game folder
+
+    /**
+     * The folder work the dashboard used to stack under the launch card: pick or change the selected
+     * game's folder, and (for Zero Hour) the base-game archive folder beside it, plus both clear
+     * actions. GeneralsX @feature Android port 15/10/2026 The dashboard leads with launch + status
+     * now, so this page is what the drawer's "Game folder" entry opens: same buttons, same handlers
+     * as before, only the page they live on changed, so nothing here is a new code path.
+     */
+    private void buildFolderSection(LinearLayout page) {
+        LinearLayout card = UiKit.card(page);
+        UiKit.sectionHeader(card, R.drawable.ic_gzh_folder,
+            getString(R.string.setup_card_game_folder), false);
+
+        // The same status line the dashboard leads with, so this page and the main card can never
+        // disagree about the folder: refreshStatus() fills whichever of them is on screen.
+        statusText = UiKit.body(card, null);
+        statusText.setTextIsSelectable(true);
+
+        UiKit.button(card, UiKit.BTN_PRIMARY, R.drawable.ic_gzh_folder,
+            getString(R.string.setup_button_select_game_folder), this::onSelectGameFolder);
+        // Zero Hour only: the base game's archives are the base game itself.
+        if (!isGeneralsSelected(this)) {
+            UiKit.button(card, UiKit.BTN_TONAL, R.drawable.ic_gzh_folder,
+                getString(R.string.setup_button_select_base_generals), this::onSelectBaseGeneralsFolder);
+        }
+        UiKit.button(card, UiKit.BTN_DANGER, R.drawable.ic_gzh_broom,
+            getString(R.string.setup_button_clear_game_folder), this::onClearGameFolder);
+        if (!isGeneralsSelected(this) && getBaseGeneralsPath() != null) {
+            UiKit.button(card, UiKit.BTN_DANGER, R.drawable.ic_gzh_broom,
+                getString(R.string.setup_button_clear_base_generals), this::onClearBaseGeneralsFolder);
+        }
+
+        UiKit.supporting(card, getString(R.string.setup_how_it_works_body));
+        refreshStatus();
     }
 
     // ------------------------------------------------------------ Updates

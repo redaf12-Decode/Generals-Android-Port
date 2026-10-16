@@ -364,4 +364,12 @@
     <string name="setup_cursor_size_label">Розмір курсора: %1$d%%</string>
     <string name="setup_switch_skip_intro">Пропускати заставки</string>
     <string name="setup_switch_skip_intro_desc">Логотипи EA, вступне відео та інші ролики перед меню не показуються — гра одразу переходить до завантаження. Для обох ігор, і з модами теж.</string>
+
+    <!-- Navigation drawer labels (added 15/10/2026 with the drawer reorder): the drawer
+         was never inflated before, so these five were left untranslated. -->
+    <string name="nav_drawer_home">Головна</string>
+    <string name="nav_drawer_game_folder">Папка гри</string>
+    <string name="nav_drawer_settings">Налаштування</string>
+    <string name="nav_drawer_tools">Інструменти</string>
+    <string name="nav_drawer_support">Підтримка</string>
 </resources>

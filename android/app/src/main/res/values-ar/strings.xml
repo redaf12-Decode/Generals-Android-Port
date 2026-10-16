@@ -364,4 +364,12 @@
     <string name="setup_cursor_size_label">حجم المؤشر: %1$d%%</string>
     <string name="setup_switch_skip_intro">تخطي مقاطع المقدمة</string>
     <string name="setup_switch_skip_intro_desc">تُتخطى شعارات EA والمقدمة والمقاطع الأخرى قبل القائمة، وتبدأ اللعبة التحميل مباشرة. للعبتين، ومع التعديلات أيضًا.</string>
+
+    <!-- Navigation drawer labels (added 15/10/2026 with the drawer reorder): the drawer
+         was never inflated before, so these five were left untranslated. -->
+    <string name="nav_drawer_home">الرئيسية</string>
+    <string name="nav_drawer_game_folder">مجلد اللعبة</string>
+    <string name="nav_drawer_settings">الإعدادات</string>
+    <string name="nav_drawer_tools">الأدوات</string>
+    <string name="nav_drawer_support">الدعم</string>
 </resources>

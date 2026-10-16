@@ -177,3 +177,64 @@ bottom navigation, which the drawer shell does not build). Left as found, becaus
 is a navigation decision: either a new drawer item (and its string in all 13 launcher locales, per
 the repo rule) or pointing an existing item at the page instead of its own screen. Nothing was
 removed or hidden by this fix.
+
+---
+
+## Second pass: the dashboard reorganisation (same day, same branch)
+
+The owner asked for the launcher to be reorganised on top of the repaired shell: launch first,
+Generals Online second, the settings and tools behind the drawer, and nothing hidden that used to
+work. Everything below moved or was re-laid out; nothing was deleted.
+
+**Dashboard (`buildHomeSection`).** Three cards now, in this order, and the test pins the count:
+
+1. **Main game card** — the selected game's name as the heading, the *folder state* line under it
+   (`refreshStatus()` colours it: not set / invalid / missing files, so an incomplete folder is
+   visible without opening anything), the Play button wired to the existing `onLaunchGame()`, a
+   secondary change-folder button, the Generals/Zero Hour segmented switch, and the skip-intro row.
+   The game selection moved *into* this card: switching games is part of choosing what to launch.
+2. **Generals Online** — kept exactly as it was (the real sign-in line from
+   `GeneralsOnlineActivity.getSignedInDisplayName()`, the anti-cheat note, the button into the
+   Online screen), just raised to directly after the game card, and its button is now primary. No
+   status was invented and no shortcut was added that the Online screen does not have.
+3. **Updates** — the brief version (engine status, check button, auto-update row, and the
+   conditional "a newer data pack is out" button).
+
+The dashboard's quick-access card (folder/logs/network/replay rows) is gone: those were the drawer's
+entries in duplicate. Folder work moved to its own page, the rest to the drawer.
+
+**Drawer.** Ordered as requested — Home; *Settings* header (Graphics, Interface, Game folder); *Tools*
+header (Logs, Network Diagnostics, Replay Check); Generals Online; Help — with `nav_settings_header`
+reusing the existing `nav_drawer_settings` string. Two defects fixed along the way: the section
+header lookup used `Arrays.binarySearch` over an array nothing keeps sorted (aapt assigns R.id
+values), which is now a linear scan; and all five drawer labels were missing from the 12 locale
+files (the drawer had never been inflated, so nobody had needed them) — added, so the drawer is not
+English-only for Arabic, Russian, Persian, Korean and the rest.
+
+**Game folder page (new `TAB_FOLDER`).** The folder card the dashboard used to stack — pick, change,
+clear, and Zero Hour's base-game archive folder — now lives on the drawer's "Game folder" page,
+behind the same handlers. `nav_folder` opens that page instead of jumping straight into the picker,
+so the entry is a destination, not a one-shot action, and the picker is its first button.
+
+**App bar.** `UiKit.appBar` grew an overload with a leading mark (the launcher's brand icon, tinted
+in the accent); the drawer shell passes it, so the bar reads as [mark] "COMMAND & CONQUER GENERALS:
+ZERO HOUR" over "Home" [menu]. Existing callers keep the old signature.
+
+**Verification.** 12 tests (`tests="12" failures="0" errors="0"`): the previous six, plus the
+dashboard order and card count, the launch button being visible and wired on a cold start, the Online
+button opening `GeneralsOnlineActivity`, the drawer's exact item order and checkable/unselectable
+split, the Game folder page keeping its four actions, Back not leaving the app while the drawer is
+open (and leaving it when closed), the Graphics/Interface pages still carrying the simulation rate,
+the render backend and the Interface page's four sections, and each game keeping its own folder when
+the selection changes (two distinct keys, and switching never carries one game's path into the
+other's). `assembleDebug` exits 0; `assembleRelease` exits 0
+and produces a signed `app-release.apk` (11.7 MB, committed keystore,
+`CN=GeneralsX Android Debug`, matching the CI's known fingerprint). Source files are older than the
+test results and both APKs, so the green runs cover exactly what was delivered.
+
+**Limits, unchanged from above.** No device or emulator was available: none of this is a runtime
+test on hardware. The harness still cannot run `DrawerLayout`'s animated slide, still throws on
+`Environment.isExternalStorageManager()` (so `nav_folder`'s picker screen is not asserted), and still
+reports zero window insets. The debug APK built here has no native libraries in `jniLibs`; the
+engines, their names, the 30/60 Hz options, CMake, DXVK and the packaging scripts are untouched (the
+diff is two Java files, one menu, twelve locale files and the test).

@@ -364,4 +364,12 @@
     <string name="setup_cursor_size_label">اندازهٔ نشانگر: %1$d%%</string>
     <string name="setup_switch_skip_intro">رد کردن ویدیوهای آغازین</string>
     <string name="setup_switch_skip_intro_desc">لوگوهای EA، ویدیوی آغازین و ویدیوهای دیگر پیش از منو رد می‌شوند و بازی مستقیم بارگذاری می‌شود. برای هر دو بازی، با مادها هم.</string>
+
+    <!-- Navigation drawer labels (added 15/10/2026 with the drawer reorder): the drawer
+         was never inflated before, so these five were left untranslated. -->
+    <string name="nav_drawer_home">صفحه اصلی</string>
+    <string name="nav_drawer_game_folder">پوشه بازی</string>
+    <string name="nav_drawer_settings">تنظیمات</string>
+    <string name="nav_drawer_tools">ابزارها</string>
+    <string name="nav_drawer_support">پشتیبانی</string>
 </resources>
