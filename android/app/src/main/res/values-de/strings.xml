@@ -474,4 +474,7 @@
     <string name="toolbox_tool_restore_buttons">Standardtasten wiederherstellen</string>
     <string name="toolbox_close">Schließen</string>
     <string name="toolbox_toast_buttons_restored">Tastenfelder auf das Standardlayout zurückgesetzt. Die eigene Leiste des Spiels ändert sich beim nächsten Start.</string>
+    <string name="toolbox_tool_edit_layout">Tasten bearbeiten</string>
+    <string name="toolbox_edit_toggle">Taste ein-/ausschalten</string>
+    <string name="toolbox_toast_edits_discarded">Änderungen verworfen.</string>
 </resources>

@@ -474,4 +474,7 @@
     <string name="toolbox_tool_restore_buttons">Przywróć domyślne przyciski</string>
     <string name="toolbox_close">Zamknij</string>
     <string name="toolbox_toast_buttons_restored">Przywrócono domyślny układ przycisków dotykowych. Własny panel gry zmieni się przy następnym uruchomieniu.</string>
+    <string name="toolbox_tool_edit_layout">Edytuj przyciski</string>
+    <string name="toolbox_edit_toggle">Włącz/wyłącz przycisk</string>
+    <string name="toolbox_toast_edits_discarded">Zmiany odrzucone.</string>
 </resources>

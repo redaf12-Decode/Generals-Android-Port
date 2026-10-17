@@ -474,4 +474,7 @@
     <string name="toolbox_tool_restore_buttons">Restaurar botones por defecto</string>
     <string name="toolbox_close">Cerrar</string>
     <string name="toolbox_toast_buttons_restored">Botones táctiles restaurados al diseño por defecto. El panel propio del juego cambia en el próximo inicio.</string>
+    <string name="toolbox_tool_edit_layout">Editar botones</string>
+    <string name="toolbox_edit_toggle">Activar/desactivar botón</string>
+    <string name="toolbox_toast_edits_discarded">Cambios descartados.</string>
 </resources>

@@ -72,6 +72,14 @@ final class TouchControlConfig {
         String label;
         int keyCode;
         int modifiers;
+        /**
+         * GeneralsX @feature Android floating toolbox 17/10/2026 Whether this button is drawn
+         * and pressable. A disabled button keeps its place, its key and its geometry, so
+         * switching it back on restores exactly what was there -- and the field is additive in
+         * the stored JSON (absent means enabled), so a layout saved before it existed loads
+         * unchanged, which is what "preserve existing user layouts" requires.
+         */
+        boolean enabled = true;
         /** Position as a fraction of the screen (0..1), so it survives rotation and other sizes. */
         float x;
         float y;
@@ -104,9 +112,22 @@ final class TouchControlConfig {
         }
 
         ButtonSpec copy() {
-            return new ButtonSpec(label, keyCode, modifiers, x, y, widthDp, heightDp,
+            ButtonSpec copy = new ButtonSpec(label, keyCode, modifiers, x, y, widthDp, heightDp,
                 shape, fillColor, borderColor, textColor);
+            copy.enabled = enabled;
+            return copy;
         }
+    }
+
+    /** Every button, copied: an editor works on a copy and only writes on save. */
+    static TouchControlConfig copyOf(TouchControlConfig source) {
+        TouchControlConfig copy = new TouchControlConfig();
+        copy.enabled = source.enabled;
+        copy.panSensitivity = source.panSensitivity;
+        copy.buttonScale = source.buttonScale;
+        copy.buttonOpacity = source.buttonOpacity;
+        copy.buttons.addAll(copyButtons(source.buttons));
+        return copy;
     }
 
     boolean enabled = true;
@@ -237,8 +258,12 @@ final class TouchControlConfig {
                 int borderColor = parseColor(item.optString("borderColor", "#DCB556"), Color.rgb(220, 181, 86));
                 int textColor = parseColor(item.optString("textColor", "#FFFFFF"), Color.WHITE);
                 if (keyCode != KeyEvent.KEYCODE_UNKNOWN) {
-                    config.buttons.add(new ButtonSpec(label, keyCode, modifiers, x, y,
-                        widthDp, heightDp, shape, fillColor, borderColor, textColor));
+                    ButtonSpec spec = new ButtonSpec(label, keyCode, modifiers, x, y,
+                        widthDp, heightDp, shape, fillColor, borderColor, textColor);
+                    // Absent means enabled: layouts saved before this field existed must load
+                    // with every button exactly as usable as it was when it was saved.
+                    spec.enabled = item.optBoolean("enabled", true);
+                    config.buttons.add(spec);
                 }
             }
         } catch (Exception ignored) {
@@ -262,6 +287,7 @@ final class TouchControlConfig {
                 item.put("widthDp", button.widthDp);
                 item.put("heightDp", button.heightDp);
                 item.put("shape", button.shape);
+                item.put("enabled", button.enabled);
                 item.put("fillColor", colorToString(button.fillColor));
                 item.put("borderColor", colorToString(button.borderColor));
                 item.put("textColor", colorToString(button.textColor));
@@ -305,6 +331,7 @@ final class TouchControlConfig {
             item.put("widthDp", button.widthDp);
             item.put("heightDp", button.heightDp);
             item.put("shape", button.shape);
+            item.put("enabled", button.enabled);
             item.put("fillColor", colorToString(button.fillColor));
             item.put("borderColor", colorToString(button.borderColor));
             item.put("textColor", colorToString(button.textColor));
@@ -370,8 +397,10 @@ final class TouchControlConfig {
             int fillColor = parseColor(item.optString("fillColor", "#161F2C"), Color.rgb(22, 33, 44));
             int borderColor = parseColor(item.optString("borderColor", "#DCB556"), Color.rgb(220, 181, 86));
             int textColor = parseColor(item.optString("textColor", "#FFFFFF"), Color.WHITE);
-            config.buttons.add(new ButtonSpec(label, keyCode, modifiers, x, y,
-                widthDp, heightDp, shape, fillColor, borderColor, textColor));
+            ButtonSpec spec = new ButtonSpec(label, keyCode, modifiers, x, y,
+                widthDp, heightDp, shape, fillColor, borderColor, textColor);
+            spec.enabled = item.optBoolean("enabled", true);
+            config.buttons.add(spec);
         }
         if (config.buttons.isEmpty()) throw new Exception("The profile contains no valid buttons");
         return config;

@@ -119,8 +119,14 @@ final class HotkeyOverlayView extends View {
         TouchControlConfig config = TouchControlConfig.load(getContext());
         scale = config.buttonScale;
         opacity = config.buttonOpacity;
+        // A button switched off in the toolbox keeps its place in the layout but is not drawn
+        // and does not take touches -- that is what "turn this control off" means here.
         buttons.clear();
-        buttons.addAll(TouchControlConfig.copyButtons(config.buttons));
+        for (TouchControlConfig.ButtonSpec spec : config.buttons) {
+            if (spec.enabled) {
+                buttons.add(spec.copy());
+            }
+        }
         hitRects.clear();
         activeButton = -1;
         activePointer = -1;

@@ -473,4 +473,7 @@
     <string name="toolbox_tool_restore_buttons">기본 버튼 복원</string>
     <string name="toolbox_close">닫기</string>
     <string name="toolbox_toast_buttons_restored">터치 버튼을 기본 레이아웃으로 복원했습니다. 게임 자체 패널은 다음 실행 때 바뀝니다.</string>
+    <string name="toolbox_tool_edit_layout">버튼 편집</string>
+    <string name="toolbox_edit_toggle">버튼 켜기/끄기</string>
+    <string name="toolbox_toast_edits_discarded">변경 사항을 버렸습니다.</string>
 </resources>

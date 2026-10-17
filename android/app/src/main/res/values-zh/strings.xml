@@ -473,4 +473,7 @@
     <string name="toolbox_tool_restore_buttons">恢复默认按钮</string>
     <string name="toolbox_close">关闭</string>
     <string name="toolbox_toast_buttons_restored">触控按钮已恢复为默认布局。游戏自带的按钮面板将在下次启动时改变。</string>
+    <string name="toolbox_tool_edit_layout">编辑按钮</string>
+    <string name="toolbox_edit_toggle">启用/停用按钮</string>
+    <string name="toolbox_toast_edits_discarded">已放弃更改。</string>
 </resources>

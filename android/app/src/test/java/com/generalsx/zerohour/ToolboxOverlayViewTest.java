@@ -36,6 +36,7 @@ import static org.junit.Assert.assertTrue;
 import android.app.Activity;
 import android.content.Context;
 import android.graphics.RectF;
+import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.ViewConfiguration;
 
@@ -267,10 +268,11 @@ public class ToolboxOverlayViewTest {
     @Test
     public void everyPanelRowIsAToolThatIsImplemented() {
         view = laidOutOverlay();
-        assertEquals("the panel lists three tools", 3, view.toolCount());
-        assertEquals(activity.getString(R.string.toolbox_tool_touch_layer), view.rowLabel(0));
-        assertEquals(activity.getString(R.string.toolbox_tool_restore_buttons), view.rowLabel(1));
-        assertEquals(activity.getString(R.string.toolbox_close), view.rowLabel(2));
+        assertEquals("the panel lists four tools", 4, view.toolCount());
+        assertEquals(activity.getString(R.string.toolbox_tool_edit_layout), view.rowLabel(0));
+        assertEquals(activity.getString(R.string.toolbox_tool_touch_layer), view.rowLabel(1));
+        assertEquals(activity.getString(R.string.toolbox_tool_restore_buttons), view.rowLabel(2));
+        assertEquals(activity.getString(R.string.toolbox_close), view.rowLabel(3));
     }
 
     @Test
@@ -281,12 +283,12 @@ public class ToolboxOverlayViewTest {
         layout.save(ctx);
 
         view = laidOutOverlay();
-        view.pressRow(0);
-        assertEquals(activity.getString(R.string.toolbox_state_off), view.rowValue(0));
+        view.pressRow(1);
+        assertEquals(activity.getString(R.string.toolbox_state_off), view.rowValue(1));
         assertFalse("the row must switch the touch layer off", TouchControlConfig.load(ctx).enabled);
 
-        view.pressRow(0);
-        assertEquals(activity.getString(R.string.toolbox_state_on), view.rowValue(0));
+        view.pressRow(1);
+        assertEquals(activity.getString(R.string.toolbox_state_on), view.rowValue(1));
         assertTrue(TouchControlConfig.load(ctx).enabled);
     }
 
@@ -299,9 +301,164 @@ public class ToolboxOverlayViewTest {
         assertEquals(0, TouchControlConfig.load(ctx).buttons.size());
 
         view = laidOutOverlay();
-        view.pressRow(1);
+        view.pressRow(2);
         assertEquals("the shipped buttons must come back",
             TouchControlConfig.defaults().buttons.size(), TouchControlConfig.load(ctx).buttons.size());
+    }
+
+    // ------------------------------------------------------------- editing the layout
+
+    /** Opens the panel and the editor, and returns the editor. */
+    private TouchLayoutEditor openEditor() {
+        view = laidOutOverlay();
+        view.onTouchEvent(event(MotionEvent.ACTION_DOWN, iconCx(), iconCy()));
+        view.onTouchEvent(event(MotionEvent.ACTION_UP, iconCx(), iconCy()));
+        view.pressRow(0);   // PLAY_TOOLS[0] is "Edit buttons"
+        assertTrue(view.isEditing());
+        return view.editorForTest();
+    }
+
+    /** Centre of a layout button, in the overlay's coordinates. */
+    private float[] buttonCentre(TouchLayoutEditor editor, int index) {
+        RectF rect = editor.rectOf(index);
+        return new float[] { rect.centerX(), rect.centerY() };
+    }
+
+    @Test
+    public void theEditRowOpensTheEditorAndItsOwnRows() {
+        TouchLayoutEditor editor = openEditor();
+        assertNotNull(editor);
+        assertEquals("the editor lists its own six rows", 6, view.toolCount());
+        assertEquals(activity.getString(R.string.touch_add_button), view.rowLabel(0));
+        assertEquals(activity.getString(R.string.common_cancel), view.rowLabel(5));
+    }
+
+    @Test
+    public void whileEditingEveryPressIsConsumedSoNoGameplayCommandCanBeIssued() {
+        openEditor();
+        assertTrue("empty space must not reach the battlefield while editing",
+            view.onTouchEvent(event(MotionEvent.ACTION_DOWN, 6f, 300f)));
+        assertTrue(view.onTouchEvent(event(MotionEvent.ACTION_MOVE, 20f, 320f)));
+        assertTrue(view.onTouchEvent(event(MotionEvent.ACTION_UP, 20f, 320f)));
+        assertTrue("an empty press only clears the selection", view.isEditing());
+        assertEquals(-1, view.editorForTest().selectedIndex());
+    }
+
+    @Test
+    public void draggingAButtonMovesItAndNeverChangesItsAction() {
+        TouchLayoutEditor editor = openEditor();
+        int index = 4;
+        int keyBefore = editor.working.buttons.get(index).keyCode;
+        int modsBefore = editor.working.buttons.get(index).modifiers;
+        float xBefore = editor.working.buttons.get(index).x;
+        float[] centre = buttonCentre(editor, index);
+
+        assertTrue(view.onTouchEvent(event(MotionEvent.ACTION_DOWN, centre[0], centre[1])));
+        assertEquals("a press on a button selects it", index, editor.selectedIndex());
+        view.onTouchEvent(event(MotionEvent.ACTION_MOVE, centre[0] + 120f, centre[1] - 60f));
+        view.onTouchEvent(event(MotionEvent.ACTION_UP, centre[0] + 120f, centre[1] - 60f));
+
+        assertTrue(editor.working.buttons.get(index).x > xBefore);
+        assertEquals("moving a button must not change the key it presses",
+            keyBefore, editor.working.buttons.get(index).keyCode);
+        assertEquals(modsBefore, editor.working.buttons.get(index).modifiers);
+        assertTrue("dragging a button must not run a tool", view.isEditing());
+    }
+
+    @Test
+    public void draggingTheSelectedButtonsCornerResizesIt() {
+        TouchLayoutEditor editor = openEditor();
+        int index = 4;
+        float[] centre = buttonCentre(editor, index);
+        view.onTouchEvent(event(MotionEvent.ACTION_DOWN, centre[0], centre[1]));
+        view.onTouchEvent(event(MotionEvent.ACTION_UP, centre[0], centre[1]));
+        assertEquals(index, editor.selectedIndex());
+
+        float widthBefore = editor.working.buttons.get(index).widthDp;
+        RectF rect = editor.rectOf(index);
+        view.onTouchEvent(event(MotionEvent.ACTION_DOWN, rect.right - 2f, rect.bottom - 2f));
+        view.onTouchEvent(event(MotionEvent.ACTION_MOVE, rect.right + 60f, rect.bottom + 60f));
+        view.onTouchEvent(event(MotionEvent.ACTION_UP, rect.right + 60f, rect.bottom + 60f));
+
+        assertTrue("the corner must resize, not move",
+            editor.working.buttons.get(index).widthDp > widthBefore);
+        assertEquals("resizing must not change the key it presses",
+            KeyEvent.KEYCODE_A, editor.working.buttons.get(index).keyCode);
+    }
+
+    @Test
+    public void theAddRowAddsAButtonAndTheDeleteRowNeedsOne() {
+        TouchLayoutEditor editor = openEditor();
+        int before = editor.buttonCount();
+
+        view.pressRow(1);   // Delete, with nothing selected
+        assertEquals("Delete must not guess what to remove", before, editor.buttonCount());
+
+        view.pressRow(0);   // Add
+        assertEquals(before + 1, editor.buttonCount());
+        assertEquals(editor.buttonCount() - 1, editor.selectedIndex());
+
+        view.pressRow(1);
+        assertEquals(before, editor.buttonCount());
+    }
+
+    @Test
+    public void theDefaultsRowPutsTheShippedLayoutInTheEditor() {
+        TouchLayoutEditor editor = openEditor();
+        view.pressRow(3);   // Restore defaults
+        assertEquals(TouchControlConfig.defaults().buttons.size(), editor.buttonCount());
+    }
+
+    @Test
+    public void savingKeepsTheEditAndLeavesTheEditor() {
+        TouchLayoutEditor editor = openEditor();
+        int index = 4;
+        float[] centre = buttonCentre(editor, index);
+        view.onTouchEvent(event(MotionEvent.ACTION_DOWN, centre[0], centre[1]));
+        view.onTouchEvent(event(MotionEvent.ACTION_MOVE, centre[0] + 90f, centre[1]));
+        view.onTouchEvent(event(MotionEvent.ACTION_UP, centre[0] + 90f, centre[1]));
+        float movedTo = editor.working.buttons.get(index).x;
+
+        view.pressRow(4);   // Save
+
+        assertFalse("saving must leave the editor", view.isEditing());
+        assertEquals("the panel is back to its play rows", 4, view.toolCount());
+        assertEquals("the edited position must be stored", movedTo,
+            TouchControlConfig.load(activity).buttons.get(index).x, 0.0001f);
+    }
+
+    @Test
+    public void cancellingThrowsTheEditsAway() {
+        TouchLayoutEditor editor = openEditor();
+        int index = 4;
+        float storedBefore = TouchControlConfig.load(activity).buttons.get(index).x;
+        float[] centre = buttonCentre(editor, index);
+        view.onTouchEvent(event(MotionEvent.ACTION_DOWN, centre[0], centre[1]));
+        view.onTouchEvent(event(MotionEvent.ACTION_MOVE, centre[0] + 120f, centre[1]));
+        view.onTouchEvent(event(MotionEvent.ACTION_UP, centre[0] + 120f, centre[1]));
+
+        view.pressRow(5);   // Cancel
+
+        assertFalse(view.isEditing());
+        assertEquals("Cancel must leave the stored layout alone",
+            storedBefore, TouchControlConfig.load(activity).buttons.get(index).x, 0.0001f);
+    }
+
+    @Test
+    public void closingTheToolboxWhileEditingDiscardsTheEdits() {
+        TouchLayoutEditor editor = openEditor();
+        int index = 4;
+        float storedBefore = TouchControlConfig.load(activity).buttons.get(index).x;
+        float[] centre = buttonCentre(editor, index);
+        view.onTouchEvent(event(MotionEvent.ACTION_DOWN, centre[0], centre[1]));
+        view.onTouchEvent(event(MotionEvent.ACTION_MOVE, centre[0] + 120f, centre[1]));
+        view.onTouchEvent(event(MotionEvent.ACTION_UP, centre[0] + 120f, centre[1]));
+
+        assertTrue(view.closePanel());
+
+        assertFalse(view.isPanelOpen());
+        assertFalse(view.isEditing());
+        assertEquals(storedBefore, TouchControlConfig.load(activity).buttons.get(index).x, 0.0001f);
     }
 
     @Test
@@ -310,7 +467,7 @@ public class ToolboxOverlayViewTest {
         view.onTouchEvent(event(MotionEvent.ACTION_DOWN, iconCx(), iconCy()));
         view.onTouchEvent(event(MotionEvent.ACTION_UP, iconCx(), iconCy()));
         assertTrue(view.isPanelOpen());
-        view.pressRow(2);
+        view.pressRow(3);
         assertFalse(view.isPanelOpen());
     }
 }

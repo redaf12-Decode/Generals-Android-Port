@@ -474,4 +474,7 @@
     <string name="toolbox_tool_restore_buttons">Obnoviti umolčena dugma</string>
     <string name="toolbox_close">Zatvoriti</string>
     <string name="toolbox_toast_buttons_restored">Dotyčne dugma obnovjena na umolčeny črt. Sama panela igry se prěměni prě drugim startom.</string>
+    <string name="toolbox_tool_edit_layout">Upravljati dugma</string>
+    <string name="toolbox_edit_toggle">Vključiti/vykľučiti dugme</string>
+    <string name="toolbox_toast_edits_discarded">Změny odvržene.</string>
 </resources>

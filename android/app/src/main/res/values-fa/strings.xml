@@ -473,4 +473,7 @@
     <string name="toolbox_tool_restore_buttons">بازگردانی دکمه‌های پیش‌فرض</string>
     <string name="toolbox_close">بستن</string>
     <string name="toolbox_toast_buttons_restored">دکمه‌های لمسی به چیدمان پیش‌فرض بازگردانده شد. پنل خود بازی در اجرای بعدی تغییر می‌کند.</string>
+    <string name="toolbox_tool_edit_layout">ویرایش دکمه‌ها</string>
+    <string name="toolbox_edit_toggle">روشن/خاموش کردن دکمه</string>
+    <string name="toolbox_toast_edits_discarded">تغییرات کنار گذاشته شد.</string>
 </resources>

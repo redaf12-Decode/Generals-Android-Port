@@ -476,4 +476,7 @@
     <string name="toolbox_tool_restore_buttons">Вернуть кнопки по умолчанию</string>
     <string name="toolbox_close">Закрыть</string>
     <string name="toolbox_toast_buttons_restored">Кнопки управления восстановлены по умолчанию. Собственная панель игры изменится при следующем запуске.</string>
+    <string name="toolbox_tool_edit_layout">Редактировать кнопки</string>
+    <string name="toolbox_edit_toggle">Вкл/выкл кнопку</string>
+    <string name="toolbox_toast_edits_discarded">Изменения отменены.</string>
 </resources>
