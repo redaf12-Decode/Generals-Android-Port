@@ -467,4 +467,11 @@
     <string name="toolbox_size_small">Mały</string>
     <string name="toolbox_size_medium">Średni</string>
     <string name="toolbox_size_large">Duży</string>
+    <string name="toolbox_icon_description">Pasek pływający</string>
+    <string name="toolbox_tool_touch_layer">Przyciski dotykowe</string>
+    <string name="toolbox_state_on">włączone</string>
+    <string name="toolbox_state_off">wyłączone</string>
+    <string name="toolbox_tool_restore_buttons">Przywróć domyślne przyciski</string>
+    <string name="toolbox_close">Zamknij</string>
+    <string name="toolbox_toast_buttons_restored">Przywrócono domyślny układ przycisków dotykowych. Własny panel gry zmieni się przy następnym uruchomieniu.</string>
 </resources>

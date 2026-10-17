@@ -466,4 +466,11 @@
     <string name="toolbox_size_small">کوچک</string>
     <string name="toolbox_size_medium">متوسط</string>
     <string name="toolbox_size_large">بزرگ</string>
+    <string name="toolbox_icon_description">نوار ابزار شناور</string>
+    <string name="toolbox_tool_touch_layer">دکمه‌های لمسی</string>
+    <string name="toolbox_state_on">روشن</string>
+    <string name="toolbox_state_off">خاموش</string>
+    <string name="toolbox_tool_restore_buttons">بازگردانی دکمه‌های پیش‌فرض</string>
+    <string name="toolbox_close">بستن</string>
+    <string name="toolbox_toast_buttons_restored">دکمه‌های لمسی به چیدمان پیش‌فرض بازگردانده شد. پنل خود بازی در اجرای بعدی تغییر می‌کند.</string>
 </resources>

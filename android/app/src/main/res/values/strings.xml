@@ -434,6 +434,16 @@
     <string name="toolbox_size_medium">Medium</string>
     <string name="toolbox_size_large">Large</string>
 
+    <!-- The in-game overlay (ToolboxOverlayView): the icon, its panel, and the tools in it.
+         Each label names a real, implemented tool, so the panel has no decorative rows. -->
+    <string name="toolbox_icon_description">Floating toolbox</string>
+    <string name="toolbox_tool_touch_layer">Touch buttons</string>
+    <string name="toolbox_state_on">on</string>
+    <string name="toolbox_state_off">off</string>
+    <string name="toolbox_tool_restore_buttons">Restore default buttons</string>
+    <string name="toolbox_close">Close</string>
+    <string name="toolbox_toast_buttons_restored">Touch buttons restored to the default layout. The game\'s own panel changes on the next launch.</string>
+
     <string name="touch_editor_title">Touch Controls Editor</string>
     <string name="touch_add_button">Add</string>
     <string name="touch_edit_button">Edit</string>

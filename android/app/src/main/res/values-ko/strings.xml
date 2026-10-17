@@ -466,4 +466,11 @@
     <string name="toolbox_size_small">작게</string>
     <string name="toolbox_size_medium">보통</string>
     <string name="toolbox_size_large">크게</string>
+    <string name="toolbox_icon_description">플로팅 도구 모음</string>
+    <string name="toolbox_tool_touch_layer">터치 버튼</string>
+    <string name="toolbox_state_on">켜짐</string>
+    <string name="toolbox_state_off">꺼짐</string>
+    <string name="toolbox_tool_restore_buttons">기본 버튼 복원</string>
+    <string name="toolbox_close">닫기</string>
+    <string name="toolbox_toast_buttons_restored">터치 버튼을 기본 레이아웃으로 복원했습니다. 게임 자체 패널은 다음 실행 때 바뀝니다.</string>
 </resources>

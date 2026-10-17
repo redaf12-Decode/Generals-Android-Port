@@ -467,4 +467,11 @@
     <string name="toolbox_size_small">Малий</string>
     <string name="toolbox_size_medium">Середній</string>
     <string name="toolbox_size_large">Великий</string>
+    <string name="toolbox_icon_description">Плаваюча панель</string>
+    <string name="toolbox_tool_touch_layer">Кнопки керування</string>
+    <string name="toolbox_state_on">увімк.</string>
+    <string name="toolbox_state_off">вимк.</string>
+    <string name="toolbox_tool_restore_buttons">Відновити кнопки типово</string>
+    <string name="toolbox_close">Закрити</string>
+    <string name="toolbox_toast_buttons_restored">Кнопки керування відновлено до типового розкладу. Власна панель гри зміниться під час наступного запуску.</string>
 </resources>

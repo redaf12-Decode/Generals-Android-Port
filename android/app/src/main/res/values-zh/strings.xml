@@ -466,4 +466,11 @@
     <string name="toolbox_size_small">小</string>
     <string name="toolbox_size_medium">中</string>
     <string name="toolbox_size_large">大</string>
+    <string name="toolbox_icon_description">浮动工具栏</string>
+    <string name="toolbox_tool_touch_layer">触控按钮</string>
+    <string name="toolbox_state_on">开</string>
+    <string name="toolbox_state_off">关</string>
+    <string name="toolbox_tool_restore_buttons">恢复默认按钮</string>
+    <string name="toolbox_close">关闭</string>
+    <string name="toolbox_toast_buttons_restored">触控按钮已恢复为默认布局。游戏自带的按钮面板将在下次启动时改变。</string>
 </resources>

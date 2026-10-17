@@ -66,18 +66,17 @@ final class HotkeyOverlayView extends View {
     private final Paint borderPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint textPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Handler handler = new Handler(Looper.getMainLooper());
-    private final float scale;
-    private final float opacity;
+    // Not final: the toolbox can change the layout mid-match and calls reload() to pick the
+    // new size and transparency up without a restart.
+    private float scale;
+    private float opacity;
     private final int accentColor;
 
     private int activeButton = -1;
     private int activePointer = -1;
 
-    private HotkeyOverlayView(GeneralsZHActivity activity, TouchControlConfig config) {
+    private HotkeyOverlayView(GeneralsZHActivity activity) {
         super(activity);
-        buttons.addAll(TouchControlConfig.copyButtons(config.buttons));
-        scale = config.buttonScale;
-        opacity = config.buttonOpacity;
         accentColor = ThemeHelper.accentColor(activity);
         setClickable(false);
         setFocusable(false);
@@ -90,21 +89,48 @@ final class HotkeyOverlayView extends View {
         textPaint.setTextAlign(Paint.Align.CENTER);
         textPaint.setFakeBoldText(true);
         textPaint.setShadowLayer(dp(2), 0, dp(1), Color.BLACK);
+        reload();
     }
 
     /**
-     * Attaches the overlay to a launching game surface, or does nothing when
-     * the panel is switched off or has no buttons -- the caller can then treat
-     * "no overlay" and "empty overlay" the same way.
+     * Attaches the overlay to a launching game surface and returns it.
+     *
+     * GeneralsX @feature Android floating toolbox 17/10/2026 The view is now always attached and
+     * reload() decides whether anything is drawn: it is GONE -- and therefore not hit-tested at
+     * all -- while the panel is switched off or has no buttons, so a game that never turned the
+     * touch layer on pays nothing for it, while the toolbox can still switch the panel on and off
+     * during a match (it holds this view and calls reload()).
      */
-    static void attach(GeneralsZHActivity activity) {
-        TouchControlConfig config = TouchControlConfig.load(activity);
-        if (!config.enabled || config.buttons.isEmpty()) return;
-        HotkeyOverlayView overlay = new HotkeyOverlayView(activity, config);
+    static HotkeyOverlayView attach(GeneralsZHActivity activity) {
+        HotkeyOverlayView overlay = new HotkeyOverlayView(activity);
         activity.addContentView(overlay, new ViewGroup.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
         overlay.bringToFront();
         overlay.setElevation(1000f);
+        return overlay;
+    }
+
+    /**
+     * Re-reads the saved layout and shows or hides the panel accordingly. Called when the panel
+     * is attached, and whenever the toolbox changes the layout or the layer's on/off state during
+     * a match, so a change is visible without restarting the game.
+     */
+    void reload() {
+        TouchControlConfig config = TouchControlConfig.load(getContext());
+        scale = config.buttonScale;
+        opacity = config.buttonOpacity;
+        buttons.clear();
+        buttons.addAll(TouchControlConfig.copyButtons(config.buttons));
+        hitRects.clear();
+        activeButton = -1;
+        activePointer = -1;
+        if (!config.enabled || buttons.isEmpty()) {
+            setVisibility(GONE);
+        } else {
+            setVisibility(VISIBLE);
+            rebuildHitRects();
+        }
+        invalidate();
     }
 
     @Override

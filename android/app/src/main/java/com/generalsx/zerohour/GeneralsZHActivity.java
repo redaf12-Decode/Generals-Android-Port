@@ -147,6 +147,17 @@ public class GeneralsZHActivity extends SDLActivity {
             }
             return true;
         }
+        // GeneralsX @feature Android floating toolbox 17/10/2026 Back closes the toolbox panel
+        // while it is open, before the game sees the key at all: the engine's own Back handling
+        // would otherwise open the in-game menu behind the panel. The text field's bar above
+        // keeps priority -- while a text box is being edited, Back belongs to it.
+        if (event.getKeyCode() == KeyEvent.KEYCODE_BACK && toolboxOverlay != null
+                && toolboxOverlay.isPanelOpen()) {
+            if (event.getAction() == KeyEvent.ACTION_UP) {
+                toolboxOverlay.closePanel();
+            }
+            return true;
+        }
         return super.dispatchKeyEvent(event);
     }
 
@@ -425,8 +436,19 @@ public class GeneralsZHActivity extends SDLActivity {
         // SDLActivity has created its native surface/layout by now. Put the configurable hotkey layer
         // above it; only a configured button rectangle consumes a touch, so battlefield gestures
         // continue to reach SDL unchanged (HotkeyOverlayView's header).
-        HotkeyOverlayView.attach(this);
+        hotkeyOverlay = HotkeyOverlayView.attach(this);
+
+        // GeneralsX @feature Android floating toolbox 17/10/2026 The floating toolbox, one layer
+        // above the hotkey panel and built only when the launcher has it switched on for the game
+        // being launched: attach() adds nothing to the window and returns null when it is off, so
+        // a disabled toolbox cannot draw over the battlefield or consume a touch.
+        toolboxOverlay = ToolboxOverlayView.attach(this, hotkeyOverlay);
     }
+
+    /** The touch-button layer, kept so the toolbox can switch it on and off mid-match. */
+    private HotkeyOverlayView hotkeyOverlay;
+    /** The floating toolbox, or null when it is switched off for this game. */
+    private ToolboxOverlayView toolboxOverlay;
 
     // GeneralsX @bugfix Android port 02/08/2026 A tester reported the camera
     // panning to the map's left edge and then not responding to further

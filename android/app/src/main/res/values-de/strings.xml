@@ -467,4 +467,11 @@
     <string name="toolbox_size_small">Klein</string>
     <string name="toolbox_size_medium">Mittel</string>
     <string name="toolbox_size_large">Groß</string>
+    <string name="toolbox_icon_description">Schwebende Werkzeugleiste</string>
+    <string name="toolbox_tool_touch_layer">Tastenfelder</string>
+    <string name="toolbox_state_on">an</string>
+    <string name="toolbox_state_off">aus</string>
+    <string name="toolbox_tool_restore_buttons">Standardtasten wiederherstellen</string>
+    <string name="toolbox_close">Schließen</string>
+    <string name="toolbox_toast_buttons_restored">Tastenfelder auf das Standardlayout zurückgesetzt. Die eigene Leiste des Spiels ändert sich beim nächsten Start.</string>
 </resources>

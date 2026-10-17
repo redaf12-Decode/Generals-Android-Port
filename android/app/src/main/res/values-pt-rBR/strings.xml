@@ -467,4 +467,11 @@
     <string name="toolbox_size_small">Pequeno</string>
     <string name="toolbox_size_medium">Médio</string>
     <string name="toolbox_size_large">Grande</string>
+    <string name="toolbox_icon_description">Barra flutuante</string>
+    <string name="toolbox_tool_touch_layer">Botões de toque</string>
+    <string name="toolbox_state_on">ativados</string>
+    <string name="toolbox_state_off">desativados</string>
+    <string name="toolbox_tool_restore_buttons">Restaurar botões padrão</string>
+    <string name="toolbox_close">Fechar</string>
+    <string name="toolbox_toast_buttons_restored">Botões de toque restaurados para o layout padrão. O painel do próprio jogo muda no próximo início.</string>
 </resources>

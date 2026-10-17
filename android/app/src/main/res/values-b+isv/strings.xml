@@ -467,4 +467,11 @@
     <string name="toolbox_size_small">Maly</string>
     <string name="toolbox_size_medium">Srědny</string>
     <string name="toolbox_size_large">Veliky</string>
+    <string name="toolbox_icon_description">Plavajuća panela orudij</string>
+    <string name="toolbox_tool_touch_layer">Dotyčne dugma</string>
+    <string name="toolbox_state_on">vključeno</string>
+    <string name="toolbox_state_off">vykľučeno</string>
+    <string name="toolbox_tool_restore_buttons">Obnoviti umolčena dugma</string>
+    <string name="toolbox_close">Zatvoriti</string>
+    <string name="toolbox_toast_buttons_restored">Dotyčne dugma obnovjena na umolčeny črt. Sama panela igry se prěměni prě drugim startom.</string>
 </resources>

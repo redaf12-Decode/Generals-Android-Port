@@ -467,4 +467,11 @@
     <string name="toolbox_size_small">Petit</string>
     <string name="toolbox_size_medium">Moyen</string>
     <string name="toolbox_size_large">Grand</string>
+    <string name="toolbox_icon_description">Barre flottante</string>
+    <string name="toolbox_tool_touch_layer">Boutons tactiles</string>
+    <string name="toolbox_state_on">activés</string>
+    <string name="toolbox_state_off">désactivés</string>
+    <string name="toolbox_tool_restore_buttons">Restaurer les boutons par défaut</string>
+    <string name="toolbox_close">Fermer</string>
+    <string name="toolbox_toast_buttons_restored">Boutons tactiles restaurés sur la disposition par défaut. Le panneau du jeu change au prochain lancement.</string>
 </resources>
