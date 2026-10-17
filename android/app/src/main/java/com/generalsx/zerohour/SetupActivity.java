@@ -383,43 +383,21 @@ public class SetupActivity extends Activity {
     private NavigationView drawerNav;
     private int currentDrawerDestination = R.id.nav_home;
 
-    // Selectable drawer destinations only -- section headers are labels, not
-    // navigation entries, so they are intentionally excluded here.
+    // Selectable drawer destinations only. GeneralsX @tweak drawer-dedup
+    // 17/10/2026 R.menu.drawer no longer lists the three launcher tools
+    // (View Logs, Network diagnostics, Replay check): they are grouped on the
+    // Tools page, and the drawer reaches them through the single nav_tools row.
+    // The two section headers are gone from the menu too, so there is nothing
+    // left to classify as "label, not destination".
     private static final int[] DRAWER_DESTINATIONS = {
         R.id.nav_home,
         R.id.nav_folder,
         R.id.nav_graphics,
         R.id.nav_interface,
-        R.id.nav_logs,
-        R.id.nav_netdiag,
-        R.id.nav_replay,
+        R.id.nav_tools,
         R.id.nav_online,
         R.id.nav_help
     };
-
-    // Drawer section headers: present in the menu so the drawer reads as a
-    // structured navigation rail, but not selectable destinations.
-    //
-    // GeneralsX @bugfix Android port 15/10/2026 The lookup below used
-    // Arrays.binarySearch over this array, which nothing keeps sorted: R.id values
-    // are handed out by aapt, so adding a header changed the order and binarySearch
-    // over an unsorted array returns arbitrary results. A header missed that way
-    // would fall through to the destination checks below. A linear scan over two
-    // entries is both correct and cheaper than getting that wrong.
-    private static final int[] DRAWER_SECTION_HEADERS = {
-        R.id.nav_settings_header,
-        R.id.nav_tools_header
-    };
-
-    private static boolean isDrawerSectionHeader(int id) {
-        for (int header : DRAWER_SECTION_HEADERS) {
-            if (header == id) {
-                return true;
-            }
-        }
-        return false;
-    }
-
 
     private void buildUi() {
         Log.e(TAG, "buildUi: begin (drawerShell=" + USE_DRAWER + ")");
@@ -544,8 +522,8 @@ public class SetupActivity extends Activity {
         // onDrawerItemSelected() handles every id in it.
         //
         // Guarded so the menu is inflated exactly once per NavigationView:
-        // DRAWER_DESTINATIONS, DRAWER_SECTION_HEADERS and onDrawerItemSelected() are all
-        // written against the ids this menu defines, and a second inflate on the same view
+        // DRAWER_DESTINATIONS and onDrawerItemSelected() are all written against
+        // the ids this menu defines, and a second inflate on the same view
         // would append a duplicate copy of every item. buildUi() does run again (language
         // change, and every recreate), but each run builds a new shell with a new
         // NavigationView -- the guard keeps that a property of this method instead of a
@@ -630,10 +608,6 @@ public class SetupActivity extends Activity {
     private boolean onDrawerItemSelected(MenuItem item) {
         int id = item.getItemId();
         drawerLayout.closeDrawer(Gravity.START);
-        // Section headers are not destinations.
-        if (isDrawerSectionHeader(id)) {
-            return false;
-        }
         if (id == R.id.nav_home) {
             currentDrawerDestination = id;
             showTab(TAB_HOME);
@@ -666,21 +640,6 @@ public class SetupActivity extends Activity {
             // of its own now: it used to have none, so opening it from the bottom rail left the
             // drawer highlighting "View logs", a different screen.
             showTab(TAB_TOOLS);
-            return true;
-        }
-        if (id == R.id.nav_logs) {
-            currentDrawerDestination = id;
-            onViewLogs();
-            return true;
-        }
-        if (id == R.id.nav_netdiag) {
-            currentDrawerDestination = id;
-            onNetworkDiagnostics();
-            return true;
-        }
-        if (id == R.id.nav_replay) {
-            currentDrawerDestination = id;
-            startActivity(new Intent(this, ReplayCheckActivity.class));
             return true;
         }
         if (id == R.id.nav_online) {

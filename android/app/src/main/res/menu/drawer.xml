@@ -11,16 +11,23 @@
      checked. Without these attributes the shell's setCheckedItem() calls, at
      build time and every time the drawer closes, were silently dropped, so the
      drawer could never show which page the user was on, and tapping a
-     destination left every row looking the same. Section headers below are
-     deliberately NOT checkable: they are labels, not destinations.
+     destination left every row looking the same.
 
-     GeneralsX @tweak Android port ui-organisation 16/10/2026 One entry per
-     destination, in the order the work is actually done. The Tools page is an
-     entry of its own now: it used to be missing, so opening it from the bottom
-     rail left the     drawer highlighting "View logs", which is a different screen. The three
-     launcher tools under it are direct entries because they are separate
-     activities; the Tools page groups the same shortcuts together with the
-     logging switches.
+     GeneralsX @tweak Android port drawer-dedup 17/10/2026 The drawer repeated
+     things the user could already reach elsewhere, so five rows are gone:
+
+       * the two section headers ("Settings", "Tools & diagnostics"): labels
+         that duplicated the destinations sitting right under them, and the
+         Tools header sat directly above a "Tools" row of its own;
+       * "View Logs", "Network diagnostics" and "Replay check": the three
+         launcher tools are already grouped on the Tools page (SetupActivity's
+         TAB_TOOLS), which is where the drawer now sends you via one "Tools"
+         row instead of three shortcuts repeated per screen.
+
+     Removed from the DRAWER only (the Tools page keeps all three tools, and
+     every other entry below is untouched). Section headers would return here
+     as grouped labels of their own; until then the drawer is a flat list of
+     destinations, which keeps each row one tap from its screen.
 
      Order: the dashboard (Home) first, then what the selected game needs
      (its folder and mod folder, then how it is rendered, then how it and the
@@ -35,11 +42,6 @@
         android:checkable="true"
         android:icon="@drawable/ic_gzh_home"
         android:title="@string/nav_drawer_home"/>
-
-    <!-- Game settings group -->
-    <item
-        android:id="@+id/nav_settings_header"
-        android:title="@string/nav_drawer_settings"/>
 
     <!-- Storage first: which game folder is in use (and, for Zero Hour, the
          base-game archive folder), the mod folder, and the checks that decide
@@ -62,34 +64,14 @@
         android:icon="@drawable/ic_gzh_sliders"
         android:title="@string/nav_tab_interface"/>
 
-    <!-- Tools group -->
-    <item
-        android:id="@+id/nav_tools_header"
-        android:title="@string/nav_drawer_tools"/>
-
+    <!-- The Tools page groups the logging switches AND the three launcher
+         tools (View Logs, Network diagnostics, Replay check) themselves, so
+         this one row replaces the four rows the drawer used to repeat. -->
     <item
         android:id="@+id/nav_tools"
         android:checkable="true"
         android:icon="@drawable/ic_gzh_terminal"
         android:title="@string/nav_tab_tools"/>
-
-    <item
-        android:id="@+id/nav_logs"
-        android:checkable="true"
-        android:icon="@drawable/ic_gzh_doc"
-        android:title="@string/setup_button_view_logs"/>
-
-    <item
-        android:id="@+id/nav_netdiag"
-        android:checkable="true"
-        android:icon="@drawable/ic_gzh_wrench"
-        android:title="@string/netdiag_title"/>
-
-    <item
-        android:id="@+id/nav_replay"
-        android:checkable="true"
-        android:icon="@drawable/ic_gzh_play"
-        android:title="@string/replaycheck_title"/>
 
     <!-- Community / account -->
     <item

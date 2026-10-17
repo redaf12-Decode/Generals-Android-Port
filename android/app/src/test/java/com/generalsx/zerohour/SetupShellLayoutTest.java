@@ -84,11 +84,15 @@ public class SetupShellLayoutTest {
     // in the fallback test, where it is documented to be a no-op.
     private static final int TAB_HOME = 1;
 
-    /** The ten selectable destinations R.menu.drawer defines. */
+    /**
+     * The seven selectable destinations R.menu.drawer defines. GeneralsX @tweak
+     * drawer-dedup 17/10/2026: the drawer no longer repeats the three launcher
+     * tools (View Logs, Network diagnostics, Replay check) -- they are grouped
+     * on the Tools page, which the single nav_tools row opens.
+     */
     private static final int[] DESTINATIONS = {
         R.id.nav_home, R.id.nav_folder, R.id.nav_graphics, R.id.nav_interface,
-        R.id.nav_tools, R.id.nav_logs, R.id.nav_netdiag, R.id.nav_replay,
-        R.id.nav_online, R.id.nav_help
+        R.id.nav_tools, R.id.nav_online, R.id.nav_help
     };
 
     @Test
@@ -142,7 +146,7 @@ public class SetupShellLayoutTest {
             assertTrue("only " + onScreen + " text views are actually on screen; "
                 + "the page is not visible to the user", onScreen >= 5);
 
-            // 5. The drawer must carry its destinations, all nine plus the section header. An empty
+            // 5. The drawer must carry its destinations, all seven. An empty
             //    NavigationView opens as a full-width blank panel -- the same "black screen" from the
             //    other side, and R.menu.drawer was referenced nowhere until this was found.
             NavigationView nav = navigationOf(shell);
@@ -150,8 +154,6 @@ public class SetupShellLayoutTest {
             for (int id : DESTINATIONS) {
                 assertNotNull("drawer menu is missing item " + idName(id), nav.getMenu().findItem(id));
             }
-            assertNotNull("drawer menu is missing its section header nav_tools_header",
-                nav.getMenu().findItem(R.id.nav_tools_header));
         } finally {
             controller.close();
         }
@@ -205,26 +207,11 @@ public class SetupShellLayoutTest {
             assertRowShowsPage(activity, nav, R.id.nav_graphics, R.string.nav_tab_graphics);
             assertRowShowsPage(activity, nav, R.id.nav_interface, R.string.nav_tab_interface);
             // GeneralsX @tweak Android port ui-organisation 16/10/2026 The Tools page has a drawer
-            // entry of its own, so it is checked here too. Deliberately before nav_help: the header
-            // check below needs the page to be Help again.
+            // entry of its own, so it is checked here too. GeneralsX @tweak drawer-dedup 17/10/2026:
+            // the section headers were de-duplicated out of the drawer, so nothing else has to
+            // leave the page on Help afterwards.
             assertRowShowsPage(activity, nav, R.id.nav_tools, R.string.nav_tab_tools);
             assertRowShowsPage(activity, nav, R.id.nav_help, R.string.nav_tab_help);
-
-            // The section header is a label, not a destination: it has to be displayed in the open
-            // drawer, must not be checkable, and tapping it must not move the user (who is on Help
-            // after the loop above).
-            MenuItem header = nav.getMenu().findItem(R.id.nav_tools_header);
-            assertNotNull("the drawer menu has no Tools section header", header);
-            assertFalse("the Tools section header is checkable; section headers are labels, not "
-                + "destinations", header.isCheckable());
-            TextView headerLabel = labelView(nav, header.getTitle());
-            assertNotNull("the drawer shows no Tools section header", headerLabel);
-            assertTrue("the Tools section header is off screen horizontally: left="
-                + absoluteLeft(headerLabel), onScreenX(headerLabel, WIDTH_PX));
-            headerLabel.performClick();
-            settle();
-            assertEquals("tapping the Tools section header changed the page",
-                activity.getString(R.string.nav_tab_help), appBarTitleText(activity));
 
             // Closing it again -- how it is left after a destination is chosen -- takes the panel off
             // screen, so it cannot sit invisibly over the page.
@@ -248,9 +235,9 @@ public class SetupShellLayoutTest {
             // question rather than the default.
             assertRowShowsPage(activity, nav, R.id.nav_interface, R.string.nav_tab_interface);
 
-            assertRowStartsScreen(activity, nav, R.id.nav_logs, LogViewerActivity.class);
-            assertRowStartsScreen(activity, nav, R.id.nav_netdiag, NetworkDiagnosticsActivity.class);
-            assertRowStartsScreen(activity, nav, R.id.nav_replay, ReplayCheckActivity.class);
+            // GeneralsX @tweak drawer-dedup 17/10/2026 View Logs, Network diagnostics and Replay
+            // check no longer have drawer rows: the Tools page groups them, and the drawer reaches
+            // them through nav_tools. The account is still a destination of its own, unchanged.
             assertRowStartsScreen(activity, nav, R.id.nav_online, GeneralsOnlineActivity.class);
 
             // nav_folder is asserted for presence and label only: on API >= R its handler reads
@@ -453,9 +440,8 @@ public class SetupShellLayoutTest {
             // none, so the drawer highlighted "View logs" -- a different screen -- whenever it was
             // opened from the bottom rail).
             int[] expected = {
-                R.id.nav_home, R.id.nav_settings_header, R.id.nav_folder, R.id.nav_graphics,
-                R.id.nav_interface, R.id.nav_tools_header, R.id.nav_tools, R.id.nav_logs,
-                R.id.nav_netdiag, R.id.nav_replay, R.id.nav_online, R.id.nav_help
+                R.id.nav_home, R.id.nav_folder, R.id.nav_graphics, R.id.nav_interface,
+                R.id.nav_tools, R.id.nav_online, R.id.nav_help
             };
             assertEquals("the drawer has " + menu.size() + " items instead of " + expected.length,
                 expected.length, menu.size());
@@ -463,9 +449,6 @@ public class SetupShellLayoutTest {
                 assertEquals("drawer item " + i + " is " + idName(menu.getItem(i).getItemId())
                     + ", expected " + idName(expected[i]), expected[i], menu.getItem(i).getItemId());
             }
-            // Both section headers are labels, not destinations.
-            assertFalse(menu.findItem(R.id.nav_settings_header).isCheckable());
-            assertFalse(menu.findItem(R.id.nav_tools_header).isCheckable());
             for (int id : DESTINATIONS) {
                 assertTrue("drawer destination " + idName(id) + " is not checkable",
                     menu.findItem(id).isCheckable());
@@ -871,12 +854,8 @@ public class SetupShellLayoutTest {
         if (id == R.id.nav_graphics)     return "nav_graphics";
         if (id == R.id.nav_interface)    return "nav_interface";
         if (id == R.id.nav_tools)        return "nav_tools";
-        if (id == R.id.nav_logs)         return "nav_logs";
-        if (id == R.id.nav_netdiag)      return "nav_netdiag";
-        if (id == R.id.nav_replay)       return "nav_replay";
         if (id == R.id.nav_online)       return "nav_online";
         if (id == R.id.nav_help)         return "nav_help";
-        if (id == R.id.nav_tools_header) return "nav_tools_header";
         return "id " + id;
     }
 
