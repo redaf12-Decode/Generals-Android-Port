@@ -31,7 +31,7 @@
 
      Order: the dashboard (Home) first, then what the selected game needs
      (its folder and mod folder, then how it is rendered, then how it and the
-     launcher look), then the tools, then the account, then support. The
+     launcher look), then the tools, then the account, then help. The
      launch button is deliberately NOT in here: it stays on the dashboard,
      where it is the first thing on the screen. -->
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
@@ -80,7 +80,7 @@
         android:icon="@drawable/ic_gzh_account"
         android:title="@string/online_window_title"/>
 
-    <!-- Support -->
+    <!-- Help -->
     <item
         android:id="@+id/nav_help"
         android:checkable="true"

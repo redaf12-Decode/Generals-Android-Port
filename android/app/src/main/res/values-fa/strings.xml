@@ -371,7 +371,6 @@
     <string name="nav_drawer_game_folder">پوشه بازی</string>
     <string name="nav_drawer_settings">تنظیمات</string>
     <string name="nav_drawer_tools">ابزارها و تشخیص</string>
-    <string name="nav_drawer_support">پشتیبانی</string>
 
     <!-- GeneralsX @feature Android port 16/10/2026 ظاهر، رنگ تأکید، مدیریت مودها و ویرایشگر کنترل لمسی. -->
     <string name="setup_card_appearance">ظاهر</string>

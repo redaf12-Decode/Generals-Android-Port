@@ -371,7 +371,6 @@
     <string name="nav_drawer_game_folder">游戏目录</string>
     <string name="nav_drawer_settings">设置</string>
     <string name="nav_drawer_tools">工具与诊断</string>
-    <string name="nav_drawer_support">支持</string>
 
     <!-- GeneralsX @feature Android port 16/10/2026 外观、强调色、模组管理器和触控操作编辑器。 -->
     <string name="setup_card_appearance">外观</string>

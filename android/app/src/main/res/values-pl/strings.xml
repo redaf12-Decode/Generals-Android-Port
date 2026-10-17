@@ -371,7 +371,6 @@
     <string name="nav_drawer_game_folder">Folder gry</string>
     <string name="nav_drawer_settings">Ustawienia</string>
     <string name="nav_drawer_tools">Narzędzia i diagnostyka</string>
-    <string name="nav_drawer_support">Pomoc</string>
 
     <!-- GeneralsX @feature Android port 16/10/2026 Wygląd, kolor akcentu, menedżer modów i edytor
          sterowania dotykowego. -->

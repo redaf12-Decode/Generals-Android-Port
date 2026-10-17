@@ -373,7 +373,6 @@
     <string name="nav_drawer_game_folder">Папка игры</string>
     <string name="nav_drawer_settings">Настройки</string>
     <string name="nav_drawer_tools">Инструменты и диагностика</string>
-    <string name="nav_drawer_support">Поддержка</string>
 
     <!-- GeneralsX @feature Android port 16/10/2026 Оформление, цвет акцента, менеджер модов и
          редактор сенсорного управления. -->

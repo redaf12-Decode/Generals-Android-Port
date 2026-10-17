@@ -371,7 +371,6 @@
     <string name="nav_drawer_game_folder">Carpeta del juego</string>
     <string name="nav_drawer_settings">Ajustes</string>
     <string name="nav_drawer_tools">Herramientas y diagnóstico</string>
-    <string name="nav_drawer_support">Ayuda</string>
 
     <!-- GeneralsX @feature Android port 16/10/2026 Aspecto, color de acento, gestor de mods y
          editor de controles táctiles. -->

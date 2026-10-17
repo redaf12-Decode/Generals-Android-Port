@@ -371,7 +371,6 @@
     <string name="nav_drawer_game_folder">مجلد اللعبة</string>
     <string name="nav_drawer_settings">الإعدادات</string>
     <string name="nav_drawer_tools">الأدوات والتشخيص</string>
-    <string name="nav_drawer_support">الدعم</string>
 
     <!-- GeneralsX @feature Android port 16/10/2026 Appearance (daylight/darkmode), the accent
          picker, the Mod Manager card and the touch-controls editor. -->

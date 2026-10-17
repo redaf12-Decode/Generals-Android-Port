@@ -371,7 +371,6 @@
     <string name="nav_drawer_game_folder">Фајлер игре</string>
     <string name="nav_drawer_settings">Настројки</string>
     <string name="nav_drawer_tools">Alati i diagnostika</string>
-    <string name="nav_drawer_support">Podrška</string>
 
     <!-- GeneralsX @feature Android port 16/10/2026 Izgled, boja akcenta, menadžer modow i editor
          dodirnog upravljanja. -->

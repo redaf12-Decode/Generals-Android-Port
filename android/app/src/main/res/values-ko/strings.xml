@@ -371,7 +371,6 @@
     <string name="nav_drawer_game_folder">게임 폴더</string>
     <string name="nav_drawer_settings">설정</string>
     <string name="nav_drawer_tools">도구 및 진단</string>
-    <string name="nav_drawer_support">도움말</string>
 
     <!-- GeneralsX @feature Android port 16/10/2026 테마, 강조 색상, 모드 관리자, 터치 조작 편집기. -->
     <string name="setup_card_appearance">테마</string>
