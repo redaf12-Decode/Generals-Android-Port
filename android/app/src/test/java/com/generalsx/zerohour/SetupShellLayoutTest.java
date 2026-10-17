@@ -55,6 +55,7 @@ import androidx.drawerlayout.widget.DrawerLayout;
 
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.card.MaterialCardView;
+import com.google.android.material.materialswitch.MaterialSwitch;
 import com.google.android.material.navigation.NavigationView;
 
 import org.junit.Test;
@@ -521,6 +522,43 @@ public class SetupShellLayoutTest {
                 assertNotNull("the Interface page lost \"" + activity.getString(label) + "\"",
                     textAnywhere(host, activity.getString(label)));
             }
+        } finally {
+            controller.close();
+        }
+    }
+
+    @Test
+    public void theInterfacePageCarriesTheToolboxCardAndItsSwitchIsOffByDefault() {
+        ActivityController<SetupActivity> controller = Robolectric.buildActivity(SetupActivity.class);
+        SetupActivity activity = controller.setup().get();
+        try {
+            layOut(activity);
+            NavigationView nav = navigationOf(drawerOf(activity).getChildAt(0));
+            assertRowShowsPage(activity, nav, R.id.nav_interface, R.string.nav_tab_interface);
+
+            View host = pageHostOrNull(activity);
+            assertNotNull(activity.getString(R.string.setup_card_toolbox),
+                textAnywhere(host, activity.getString(R.string.setup_card_toolbox)));
+            View card = viewWithTag(host, SetupActivity.TOOLBOX_CARD_TAG);
+            assertNotNull("the Interface page has no floating-toolbox card", card);
+
+            // Off by default is a promise the game relies on: GeneralsZHActivity only builds the
+            // overlay when this switch has been turned on.
+            List<MaterialSwitch> switches = new ArrayList<>();
+            collect(card, MaterialSwitch.class, switches);
+            assertFalse("the toolbox card has no switch", switches.isEmpty());
+            MaterialSwitch enable = switches.get(0);
+            assertFalse("the toolbox must start disabled", enable.isChecked());
+            assertFalse(ToolboxConfig.load(activity).enabled);
+
+            // Turning it on is written for the game the dashboard shows, and only for that game.
+            enable.setChecked(true);
+            assertTrue("turning the switch on did not persist",
+                ToolboxConfig.load(activity, SetupActivity.getSelectedGame(activity)).enabled);
+            String other = SetupActivity.isGeneralsSelected(activity)
+                ? SetupActivity.GAME_ZERO_HOUR : SetupActivity.GAME_GENERALS;
+            assertFalse("the toolbox setting leaked into the other game",
+                ToolboxConfig.load(activity, other).enabled);
         } finally {
             controller.close();
         }
@@ -1003,6 +1041,29 @@ public class SetupShellLayoutTest {
                 collectText(g.getChildAt(i), screenHeight, out);
             }
         }
+    }
+
+    /**
+     * A card built in code has no resource id to look up, so the toolbox card is found by the
+     * tag SetupActivity.buildToolboxSection puts on it.
+     */
+    private static View viewWithTag(View v, String tag) {
+        if (v == null) {
+            return null;
+        }
+        if (tag.equals(v.getTag())) {
+            return v;
+        }
+        if (v instanceof ViewGroup) {
+            ViewGroup group = (ViewGroup) v;
+            for (int i = 0; i < group.getChildCount(); i++) {
+                View found = viewWithTag(group.getChildAt(i), tag);
+                if (found != null) {
+                    return found;
+                }
+            }
+        }
+        return null;
     }
 
     private static <T extends View> void collect(View v, Class<T> type, List<T> out) {

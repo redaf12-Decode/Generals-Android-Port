@@ -449,4 +449,21 @@
     <string name="touch_button_opacity">不透明度：%1$d%%</string>
     <string name="touch_too_many_buttons">最多 20 个按钮</string>
     <string name="touch_select_button_first">请先选择一个按钮</string>
+    <!-- Floating toolbox (SetupActivity.buildToolboxSection + the in-game overlay). -->
+    <string name="setup_card_toolbox">浮动工具栏</string>
+    <string name="setup_toolbox_help">战场上一个可移动的小图标,无需退出对局即可打开面板处理按钮布局。默认关闭:开关关闭时不绘制任何内容,也不会截获任何触摸。工具栏编辑的按钮与“移动端控制”完全相同,不会给游戏加上它本来就做不到的功能。</string>
+    <string name="setup_toolbox_enable_row">显示浮动工具栏</string>
+    <string name="setup_toolbox_enable_row_desc">对局中绘制工具栏图标。下次启动游戏时生效。</string>
+    <string name="setup_toolbox_icon_style">图标样式</string>
+    <string name="setup_toolbox_icon_size">图标大小</string>
+    <string name="setup_toolbox_layout_desc">工具栏会就地编辑并恢复该布局——按钮仍是你为当前游戏配置的那一套。</string>
+    <string name="setup_toolbox_saved">已保存。下次启动游戏时工具栏将会出现。</string>
+    <string name="setup_toolbox_reset">恢复工具栏默认设置</string>
+    <string name="setup_toolbox_toast_reset">浮动工具栏设置已恢复默认。</string>
+    <string name="toolbox_style_rounded">圆角</string>
+    <string name="toolbox_style_circle">圆形</string>
+    <string name="toolbox_style_diamond">菱形</string>
+    <string name="toolbox_size_small">小</string>
+    <string name="toolbox_size_medium">中</string>
+    <string name="toolbox_size_large">大</string>
 </resources>

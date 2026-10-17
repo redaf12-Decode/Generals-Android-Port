@@ -798,6 +798,10 @@ public class SetupActivity extends Activity {
                 buildInterfaceScaleSection(page);
                 buildMouseModeSection(page);
                 buildTouchControlsSection(page);
+                // GeneralsX @feature Android floating toolbox 17/10/2026 Its own card, below the
+                // layout it edits, and deliberately not on the Graphics page: nothing here
+                // touches the renderer.
+                buildToolboxSection(page);
                 break;
             case TAB_TOOLS:
                 buildLogsSection(page);
@@ -1149,6 +1153,130 @@ public class SetupActivity extends Activity {
 
     private void onTouchControls() {
         startActivity(new Intent(this, TouchControlsActivity.class));
+    }
+
+    // ------------------------------------------------------ Floating toolbox
+
+    /**
+     * GeneralsX @feature Android floating toolbox 17/10/2026 Tag on the toolbox card, so
+     * SetupShellLayoutTest can find it in the laid-out page without inventing a resource id
+     * for a card that is built in code.
+     */
+    static final String TOOLBOX_CARD_TAG = "gx_toolbox_card";
+
+    /**
+     * The Interface page's Floating toolbox card: whether the in-game icon exists, what it
+     * looks like, and a way back to the buttons it edits.
+     *
+     * Everything here is stored per game (SetupActivity.getSelectedGame) and applies to the
+     * game that is selected at the top of the dashboard, not globally: an icon placed for
+     * Zero Hour must not appear over Generals' battlefield, and vice versa.
+     *
+     * The card is the whole of Phase 2's launcher work -- no part of the overlay is built
+     * here, and ToolboxConfig is read again at launch by GeneralsZHActivity.
+     */
+    private void buildToolboxSection(LinearLayout root) {
+        final String game = getSelectedGame(this);
+        LinearLayout content = UiKit.card(root);
+        content.setTag(TOOLBOX_CARD_TAG);
+        final TextView summary = UiKit.sectionHeader(content, R.drawable.ic_gzh_sliders,
+            getString(R.string.setup_card_toolbox), true);
+        UiKit.helpText(content, getString(R.string.setup_toolbox_help));
+
+        // One instance for the whole card: every control below writes through it, so the
+        // on-screen summary and the stored file can never disagree about what was chosen.
+        final ToolboxConfig config = ToolboxConfig.load(this, game);
+        summary.setText(toolboxSummary(config));
+
+        SwitchCompat enable = UiKit.switchRow(content,
+            getString(R.string.setup_toolbox_enable_row),
+            getString(R.string.setup_toolbox_enable_row_desc));
+        enable.setChecked(config.enabled);
+        enable.setOnCheckedChangeListener((button, checked) -> {
+            config.enabled = checked;
+            saveToolbox(config, game);
+            summary.setText(toolboxSummary(config));
+        });
+
+        UiKit.body(content, getString(R.string.setup_toolbox_icon_style));
+        UiKit.segmented(content, new CharSequence[] {
+                getString(R.string.toolbox_style_rounded),
+                getString(R.string.toolbox_style_circle),
+                getString(R.string.toolbox_style_diamond) },
+            ToolboxConfig.clampStyle(config.iconStyle), index -> {
+                config.iconStyle = index;
+                saveToolbox(config, game);
+                summary.setText(toolboxSummary(config));
+            });
+
+        UiKit.body(content, getString(R.string.setup_toolbox_icon_size));
+        UiKit.segmented(content, new CharSequence[] {
+                getString(R.string.toolbox_size_small),
+                getString(R.string.toolbox_size_medium),
+                getString(R.string.toolbox_size_large) },
+            ToolboxConfig.sizeIndex(config.iconSizeDp), index -> {
+                config.iconSizeDp = ToolboxConfig.sizeForIndex(index);
+                saveToolbox(config, game);
+                summary.setText(toolboxSummary(config));
+            });
+
+        // Opacity, 35-100%, built the same way as this page's cursor-size slider: the label
+        // follows the thumb, and only a change the user made is written to the file.
+        final TextView opacityLabel = UiKit.body(content, null);
+        final Slider opacity = new Slider(this);
+        opacity.setValueFrom(Math.round(ToolboxConfig.MIN_OPACITY * 100f));
+        opacity.setValueTo(Math.round(ToolboxConfig.MAX_OPACITY * 100f));
+        opacity.setStepSize(5f);
+        opacity.setValue(Math.round(config.iconOpacity * 100f));
+        opacity.setLabelBehavior(LabelFormatter.LABEL_GONE);
+        opacity.setTrackActiveTintList(UiKit.accentTint(this));
+        opacity.setTrackInactiveTintList(UiKit.surfaceContainerHighestTint(this));
+        opacity.setThumbTintList(UiKit.accentTint(this));
+        opacity.setHaloTintList(UiKit.accentRippleTint(this));
+        opacityLabel.setText(getString(R.string.touch_button_opacity, (int) opacity.getValue()));
+        opacity.addOnChangeListener((slider, value, fromUser) -> {
+            opacityLabel.setText(getString(R.string.touch_button_opacity, (int) value));
+            if (fromUser) {
+                config.iconOpacity = ToolboxConfig.clampOpacity(value / 100f);
+                saveToolbox(config, game);
+            }
+        });
+        content.addView(opacity, new LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+
+        // The stored default layout is the same one the Mobile Controls card above edits --
+        // there is exactly one button layout per game, so this card links to that editor
+        // rather than growing a second one.
+        UiKit.supporting(content, getString(R.string.setup_toolbox_layout_desc));
+        UiKit.button(content, UiKit.BTN_TONAL, R.drawable.ic_gzh_sliders,
+            getString(R.string.setup_button_touch_controls), this::onTouchControls);
+        UiKit.button(content, UiKit.BTN_OUTLINE, R.drawable.ic_gzh_refresh,
+            getString(R.string.setup_toolbox_reset), () -> onToolboxReset(game));
+    }
+
+    /**
+     * The card header's trailing value: what the icon will look like once the toolbox is on.
+     * Empty while it is off -- the switch right below already says so, and repeating "off"
+     * next to a switch that is visibly off reads as a second, competing state.
+     */
+    private CharSequence toolboxSummary(ToolboxConfig config) {
+        return config.enabled ? config.iconStyleName(this) + " · " + config.iconSizeName(this) : "";
+    }
+
+    private void saveToolbox(ToolboxConfig config, String game) {
+        config.save(this, game);
+        Toast.makeText(this, R.string.setup_toolbox_saved, Toast.LENGTH_SHORT).show();
+    }
+
+    /**
+     * Back to the shipped defaults for the selected game only. The card is rebuilt from the
+     * file rather than from the values in memory, so what is on screen after this is what a
+     * fresh install would show -- including the switch going back to off.
+     */
+    private void onToolboxReset(String game) {
+        ToolboxConfig.reset(this, game);
+        showTab(TAB_INTERFACE);
+        Toast.makeText(this, R.string.setup_toolbox_toast_reset, Toast.LENGTH_SHORT).show();
     }
 
     // ------------------------------------------------------------ Updates

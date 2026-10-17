@@ -411,6 +411,29 @@
     <string name="setup_touch_hotkey_row">Show hotkey panel</string>
     <string name="setup_touch_hotkey_row_desc">Shows the custom on-map shortcut buttons while you play. Full layout editing stays in the editor below.</string>
     <string name="setup_touch_controls_help">Build your own in-game hotkey panel: add or remove buttons, choose keyboard keys and Ctrl/Shift/Alt modifiers, drag every button to its preferred screen position, and tune button size and transparency.</string>
+
+    <!-- GeneralsX @feature Android floating toolbox 17/10/2026 The Interface page's Floating
+         toolbox card (SetupActivity.buildToolboxSection) and the in-game overlay it controls.
+         Separate from the Mobile Controls card above: that one is the layout, this one is the
+         icon the toolbox is opened from. The toolbox itself edits the same button layout, so it
+         never introduces a second set of actions. -->
+    <string name="setup_card_toolbox">Floating toolbox</string>
+    <string name="setup_toolbox_help">A small movable icon over the battlefield that opens a panel of layout shortcuts without leaving the match. Off by default: with the switch below off, nothing is drawn and no touch is consumed. The toolbox edits the same buttons as Mobile Controls, so nothing is added to the game that it cannot already do.</string>
+    <string name="setup_toolbox_enable_row">Show floating toolbox</string>
+    <string name="setup_toolbox_enable_row_desc">Draws the toolbox icon while you play. Takes effect the next time you start the game.</string>
+    <string name="setup_toolbox_icon_style">Icon style</string>
+    <string name="setup_toolbox_icon_size">Icon size</string>
+    <string name="setup_toolbox_layout_desc">The toolbox edits and restores this layout in place — the buttons stay exactly the ones you configured for the game you are playing.</string>
+    <string name="setup_toolbox_saved">Saved. The toolbox appears the next time you start the game.</string>
+    <string name="setup_toolbox_reset">Restore toolbox defaults</string>
+    <string name="setup_toolbox_toast_reset">Floating toolbox settings restored to their defaults.</string>
+    <string name="toolbox_style_rounded">Rounded</string>
+    <string name="toolbox_style_circle">Circle</string>
+    <string name="toolbox_style_diamond">Diamond</string>
+    <string name="toolbox_size_small">Small</string>
+    <string name="toolbox_size_medium">Medium</string>
+    <string name="toolbox_size_large">Large</string>
+
     <string name="touch_editor_title">Touch Controls Editor</string>
     <string name="touch_add_button">Add</string>
     <string name="touch_edit_button">Edit</string>

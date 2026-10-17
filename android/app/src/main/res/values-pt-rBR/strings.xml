@@ -450,4 +450,21 @@
     <string name="touch_button_opacity">Opacidade: %1$d%%</string>
     <string name="touch_too_many_buttons">No máximo 20 botões</string>
     <string name="touch_select_button_first">Selecione um botão primeiro</string>
+    <!-- Floating toolbox (SetupActivity.buildToolboxSection + the in-game overlay). -->
+    <string name="setup_card_toolbox">Barra flutuante</string>
+    <string name="setup_toolbox_help">Um ícone pequeno e móvel sobre o campo de batalha que abre um painel para mexer no layout dos botões sem sair da partida. Desativado por padrão: com o interruptor desligado nada é desenhado e nenhum toque é capturado. A barra edita os mesmos botões de “Controles móveis”, então não acrescenta ao jogo nada que ele já não faça.</string>
+    <string name="setup_toolbox_enable_row">Mostrar a barra flutuante</string>
+    <string name="setup_toolbox_enable_row_desc">Desenha o ícone da barra enquanto você joga. Vale a partir da próxima vez que você iniciar o jogo.</string>
+    <string name="setup_toolbox_icon_style">Estilo do ícone</string>
+    <string name="setup_toolbox_icon_size">Tamanho do ícone</string>
+    <string name="setup_toolbox_layout_desc">A barra edita e restaura este layout na hora — os botões continuam exatamente os que você configurou para o jogo em uso.</string>
+    <string name="setup_toolbox_saved">Salvo. A barra aparecerá na próxima vez que você iniciar o jogo.</string>
+    <string name="setup_toolbox_reset">Restaurar padrões da barra</string>
+    <string name="setup_toolbox_toast_reset">Configurações da barra flutuante restauradas.</string>
+    <string name="toolbox_style_rounded">Arredondado</string>
+    <string name="toolbox_style_circle">Círculo</string>
+    <string name="toolbox_style_diamond">Losango</string>
+    <string name="toolbox_size_small">Pequeno</string>
+    <string name="toolbox_size_medium">Médio</string>
+    <string name="toolbox_size_large">Grande</string>
 </resources>

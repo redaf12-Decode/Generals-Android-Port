@@ -450,4 +450,21 @@
     <string name="touch_button_opacity">Prozračnost: %1$d%%</string>
     <string name="touch_too_many_buttons">Najviše 20 dugmad</string>
     <string name="touch_select_button_first">Najprve izberite dugme</string>
+    <!-- Floating toolbox (SetupActivity.buildToolboxSection + the in-game overlay). -->
+    <string name="setup_card_toolbox">Plavajuća panela orudij</string>
+    <string name="setup_toolbox_help">Mala prěmišćajuća ikona nad bojnym poljem, ktora otvara panelu za rabotu s črtom dugmad bez vyhoda iz meča. Vykľučena po umolčenju: kogda vykľučatel jest izkľučen, ničto se ne risuje i ni jedno dotykanje se ne prěchvataje. Panela upravlja tymi samymi dugmami kako Dodirno upravljanje, tedy ne dodava igrě ničto, čego ona ne uměje.</string>
+    <string name="setup_toolbox_enable_row">Pokazati plavajuću panelu orudij</string>
+    <string name="setup_toolbox_enable_row_desc">Risuje ikonu panely v času igry. Dejstvuje prě drugim startom igry.</string>
+    <string name="setup_toolbox_icon_style">Stil ikony</string>
+    <string name="setup_toolbox_icon_size">Veličina ikony</string>
+    <string name="setup_toolbox_layout_desc">Panela prěupravlja i obnavlja toj črt na městu — dugma ostavajut točno te, ktore jest nastavil za igru, ktoru igraje.</string>
+    <string name="setup_toolbox_saved">Sačuvano. Panela se javi prě drugim startom igry.</string>
+    <string name="setup_toolbox_reset">Obnoviti umolčenja panely</string>
+    <string name="setup_toolbox_toast_reset">Nastojenja plavajuće panely obnovjena.</string>
+    <string name="toolbox_style_rounded">Obkruženo</string>
+    <string name="toolbox_style_circle">Krug</string>
+    <string name="toolbox_style_diamond">Romb</string>
+    <string name="toolbox_size_small">Maly</string>
+    <string name="toolbox_size_medium">Srědny</string>
+    <string name="toolbox_size_large">Veliky</string>
 </resources>

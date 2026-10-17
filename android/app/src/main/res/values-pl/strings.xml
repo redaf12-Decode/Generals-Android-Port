@@ -450,4 +450,21 @@
     <string name="touch_button_opacity">Krycie: %1$d%%</string>
     <string name="touch_too_many_buttons">Maksymalnie 20 przycisków</string>
     <string name="touch_select_button_first">Najpierw zaznacz przycisk</string>
+    <!-- Floating toolbox (SetupActivity.buildToolboxSection + the in-game overlay). -->
+    <string name="setup_card_toolbox">Pasek pływający</string>
+    <string name="setup_toolbox_help">Mała, przesuwana ikona nad polem bitwy, która otwiera panel do pracy nad układem przycisków bez wychodzenia z meczu. Domyślnie wyłączona: przy wyłączonym przełączniku nic nie jest rysowane i żaden dotyk nie jest przechwytywany. Pasek edytuje te same przyciski co „Sterowanie mobilne”, więc nie dodaje do gry niczego, czego już nie potrafi.</string>
+    <string name="setup_toolbox_enable_row">Pokaż pasek pływający</string>
+    <string name="setup_toolbox_enable_row_desc">Rysuje ikonę paska podczas gry. Zadziała przy następnym uruchomieniu gry.</string>
+    <string name="setup_toolbox_icon_style">Styl ikony</string>
+    <string name="setup_toolbox_icon_size">Rozmiar ikony</string>
+    <string name="setup_toolbox_layout_desc">Pasek edytuje i przywraca ten układ na miejscu — przyciski pozostają dokładnie tymi, które skonfigurowano dla bieżącej gry.</string>
+    <string name="setup_toolbox_saved">Zapisano. Pasek pojawi się przy następnym uruchomieniu gry.</string>
+    <string name="setup_toolbox_reset">Przywróć domyślne paska</string>
+    <string name="setup_toolbox_toast_reset">Przywrócono domyślne ustawienia paska pływającego.</string>
+    <string name="toolbox_style_rounded">Zaokrąglony</string>
+    <string name="toolbox_style_circle">Koło</string>
+    <string name="toolbox_style_diamond">Romb</string>
+    <string name="toolbox_size_small">Mały</string>
+    <string name="toolbox_size_medium">Średni</string>
+    <string name="toolbox_size_large">Duży</string>
 </resources>

@@ -450,4 +450,21 @@
     <string name="touch_button_opacity">Прозорість: %1$d%%</string>
     <string name="touch_too_many_buttons">Не більше 20 кнопок</string>
     <string name="touch_select_button_first">Спочатку оберіть кнопку</string>
+    <!-- Floating toolbox (SetupActivity.buildToolboxSection + the in-game overlay). -->
+    <string name="setup_card_toolbox">Плаваюча панель</string>
+    <string name="setup_toolbox_help">Невелика рухома кнопка над полем бою, що відкриває панель роботи з розкладкою, не виходячи з матчу. Типово вимкнено: коли перемикач вимкнено, нічого не малюється й жоден дотик не перехоплюється. Панель редагує ті самі кнопки, що й «Мобільне керування», тож у гру не додається нічого, чого вона вже не вміє.</string>
+    <string name="setup_toolbox_enable_row">Показувати плаваючу панель</string>
+    <string name="setup_toolbox_enable_row_desc">Малює кнопку панелі під час гри. Набуде чинності під час наступного запуску гри.</string>
+    <string name="setup_toolbox_icon_style">Стиль кнопки</string>
+    <string name="setup_toolbox_icon_size">Розмір кнопки</string>
+    <string name="setup_toolbox_layout_desc">Панель редагує й відновлює цю розкладку на місці — кнопки залишаються саме тими, що налаштовані для поточної гри.</string>
+    <string name="setup_toolbox_saved">Збережено. Панель з\'явиться під час наступного запуску гри.</string>
+    <string name="setup_toolbox_reset">Відновити типові налаштування панелі</string>
+    <string name="setup_toolbox_toast_reset">Налаштування плаваючої панелі відновлено.</string>
+    <string name="toolbox_style_rounded">Заокруглений</string>
+    <string name="toolbox_style_circle">Коло</string>
+    <string name="toolbox_style_diamond">Ромб</string>
+    <string name="toolbox_size_small">Малий</string>
+    <string name="toolbox_size_medium">Середній</string>
+    <string name="toolbox_size_large">Великий</string>
 </resources>

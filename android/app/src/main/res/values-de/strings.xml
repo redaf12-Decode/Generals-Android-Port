@@ -450,4 +450,21 @@
     <string name="touch_button_opacity">Deckkraft: %1$d%%</string>
     <string name="touch_too_many_buttons">Höchstens 20 Schaltflächen</string>
     <string name="touch_select_button_first">Zuerst eine Schaltfläche wählen</string>
+    <!-- Floating toolbox (SetupActivity.buildToolboxSection + the in-game overlay). -->
+    <string name="setup_card_toolbox">Schwebende Werkzeugleiste</string>
+    <string name="setup_toolbox_help">Ein kleines, verschiebbares Symbol über dem Schlachtfeld, das ohne Verlassen der Partie ein Bedienfeld für das Tastenlayout öffnet. Standardmäßig aus: bei ausgeschaltetem Schalter wird nichts gezeichnet und keine Berührung abgefangen. Die Leiste bearbeitet dieselben Tasten wie „Mobile Steuerung“, also kommt nichts ins Spiel, was es nicht schon kann.</string>
+    <string name="setup_toolbox_enable_row">Schwebende Werkzeugleiste anzeigen</string>
+    <string name="setup_toolbox_enable_row_desc">Zeichnet das Symbol der Leiste während des Spiels. Wird beim nächsten Spielstart wirksam.</string>
+    <string name="setup_toolbox_icon_style">Symbolstil</string>
+    <string name="setup_toolbox_icon_size">Symbolgröße</string>
+    <string name="setup_toolbox_layout_desc">Die Leiste bearbeitet und restauriert dieses Layout direkt — die Tasten bleiben genau die, die du für das laufende Spiel eingerichtet hast.</string>
+    <string name="setup_toolbox_saved">Gespeichert. Die Leiste erscheint beim nächsten Spielstart.</string>
+    <string name="setup_toolbox_reset">Werkzeugleiste zurücksetzen</string>
+    <string name="setup_toolbox_toast_reset">Einstellungen der schwebenden Werkzeugleiste zurückgesetzt.</string>
+    <string name="toolbox_style_rounded">Abgerundet</string>
+    <string name="toolbox_style_circle">Kreis</string>
+    <string name="toolbox_style_diamond">Raute</string>
+    <string name="toolbox_size_small">Klein</string>
+    <string name="toolbox_size_medium">Mittel</string>
+    <string name="toolbox_size_large">Groß</string>
 </resources>

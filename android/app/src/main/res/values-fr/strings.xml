@@ -450,4 +450,21 @@
     <string name="touch_button_opacity">Opacité : %1$d%%</string>
     <string name="touch_too_many_buttons">20 boutons maximum</string>
     <string name="touch_select_button_first">Sélectionnez d’abord un bouton</string>
+    <!-- Floating toolbox (SetupActivity.buildToolboxSection + the in-game overlay). -->
+    <string name="setup_card_toolbox">Barre flottante</string>
+    <string name="setup_toolbox_help">Une petite icône déplaçable au-dessus du champ de bataille, qui ouvre un panneau pour travailler sur la disposition des boutons sans quitter la partie. Désactivée par défaut : interrupteur éteint, rien n\'est dessiné et aucun toucher n\'est capté. La barre modifie les mêmes boutons que « Commandes mobiles » : elle n\'ajoute rien au jeu qu\'il ne sache déjà faire.</string>
+    <string name="setup_toolbox_enable_row">Afficher la barre flottante</string>
+    <string name="setup_toolbox_enable_row_desc">Dessine l\'icône de la barre pendant que vous jouez. Prend effet au prochain lancement du jeu.</string>
+    <string name="setup_toolbox_icon_style">Style de l\'icône</string>
+    <string name="setup_toolbox_icon_size">Taille de l\'icône</string>
+    <string name="setup_toolbox_layout_desc">La barre modifie et restaure cette disposition sur place : les boutons restent exactement ceux configurés pour le jeu en cours.</string>
+    <string name="setup_toolbox_saved">Enregistré. La barre apparaîtra au prochain lancement du jeu.</string>
+    <string name="setup_toolbox_reset">Réinitialiser la barre flottante</string>
+    <string name="setup_toolbox_toast_reset">Réglages de la barre flottante réinitialisés.</string>
+    <string name="toolbox_style_rounded">Arrondi</string>
+    <string name="toolbox_style_circle">Cercle</string>
+    <string name="toolbox_style_diamond">Losange</string>
+    <string name="toolbox_size_small">Petit</string>
+    <string name="toolbox_size_medium">Moyen</string>
+    <string name="toolbox_size_large">Grand</string>
 </resources>

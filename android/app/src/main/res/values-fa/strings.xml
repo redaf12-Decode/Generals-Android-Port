@@ -449,4 +449,21 @@
     <string name="touch_button_opacity">شفافیت: %1$d%%</string>
     <string name="touch_too_many_buttons">حداکثر ۲۰ دکمه</string>
     <string name="touch_select_button_first">ابتدا یک دکمه را انتخاب کنید</string>
+    <!-- Floating toolbox (SetupActivity.buildToolboxSection + the in-game overlay). -->
+    <string name="setup_card_toolbox">نوار ابزار شناور</string>
+    <string name="setup_toolbox_help">یک نماد کوچک و جابه‌جاشدنی روی میدان نبرد که بدون خروج از مسابقه، پنلی برای کار روی چیدمان دکمه‌ها باز می‌کند. به‌طور پیش‌فرض خاموش است: با خاموش بودن کلید، چیزی ترسیم نمی‌شود و لمسی گرفته نمی‌شود. نوار همان دکمه‌هایی را ویرایش می‌کند که «کنترل موبایل» ویرایش می‌کند، پس چیزی به بازی اضافه نمی‌کند که از پیش نمی‌تواند.</string>
+    <string name="setup_toolbox_enable_row">نمایش نوار ابزار شناور</string>
+    <string name="setup_toolbox_enable_row_desc">نماد نوار را هنگام بازی ترسیم می‌کند. بار بعد که بازی را شروع کنید اعمال می‌شود.</string>
+    <string name="setup_toolbox_icon_style">سبک نماد</string>
+    <string name="setup_toolbox_icon_size">اندازه نماد</string>
+    <string name="setup_toolbox_layout_desc">نوار همین چیدمان را در جا ویرایش و بازگردانی می‌کند — دکمه‌ها دقیقاً همان‌هایی می‌مانند که برای بازی در حال اجرا تنظیم کرده‌اید.</string>
+    <string name="setup_toolbox_saved">ذخیره شد. نوار بار بعد که بازی را شروع کنید ظاهر می‌شود.</string>
+    <string name="setup_toolbox_reset">بازگردانی پیش‌فرض‌های نوار</string>
+    <string name="setup_toolbox_toast_reset">تنظیمات نوار ابزار شناور بازگردانی شد.</string>
+    <string name="toolbox_style_rounded">گرد</string>
+    <string name="toolbox_style_circle">دایره</string>
+    <string name="toolbox_style_diamond">لوزی</string>
+    <string name="toolbox_size_small">کوچک</string>
+    <string name="toolbox_size_medium">متوسط</string>
+    <string name="toolbox_size_large">بزرگ</string>
 </resources>
