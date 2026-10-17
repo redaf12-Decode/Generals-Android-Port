@@ -324,7 +324,13 @@ public class SetupShellLayoutTest {
             // The app bar's overline names the game the dashboard is showing.
             assertEquals(activity.getString(R.string.setup_title), appBarOverlineText(activity));
             int itemsBefore = navigationOf(drawerOf(activity).getChildAt(0)).getMenu().size();
-            assertTrue("the drawer started with " + itemsBefore + " items", itemsBefore >= 11);
+            // GeneralsX @tweak drawer-dedup 17/10/2026 The old floor ("at least 11")
+            // counted the rows the drawer no longer carries: the two section headers and
+            // the three launcher tools. Assert the exact list instead -- one row per
+            // destination -- so a duplicated OR a dropped row both fail here.
+            assertEquals("the drawer has " + itemsBefore + " rows before the switch; it lists "
+                + "exactly one row per destination",
+                DESTINATIONS.length, itemsBefore);
 
             // What the dashboard's game selector does: set the pref and rebuild the whole shell.
             SetupActivity.setSelectedGame(activity, SetupActivity.GAME_GENERALS);
