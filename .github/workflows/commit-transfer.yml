@@ -5,12 +5,12 @@ on:
   workflow_dispatch:
     inputs:
       source_branch:
-        description: "اسم فرع المصدر — انسخه من قائمة الفروع في سجل التشغيل"
+        description: "اسم فرع المصدر من قائمة الفروع في سجل التشغيل"
         required: true
         type: string
 
       target_branch:
-        description: "اسم الفرع المستهدف — انسخه من قائمة الفروع في سجل التشغيل"
+        description: "اسم الفرع المستهدف من قائمة الفروع في سجل التشغيل"
         required: true
         type: string
 
@@ -20,7 +20,7 @@ on:
         type: string
 
       confirm_main:
-        description: "تأكيد الدفع المباشر إلى main عند اختياره"
+        description: "تأكيد الدفع المباشر إلى main"
         required: true
         type: boolean
         default: false
@@ -34,13 +34,13 @@ concurrency:
 
 jobs:
   list-branches:
-    name: Discover actual repository branches
+    name: Discover repository branches
     runs-on: ubuntu-latest
     outputs:
       branches: ${{ steps.get-branches.outputs.branches }}
 
     steps:
-      - name: Fetch actual branches from GitHub API
+      - name: Fetch actual branches from GitHub
         id: get-branches
         env:
           GH_TOKEN: ${{ github.token }}
@@ -49,32 +49,31 @@ jobs:
         run: |
           set -euo pipefail
 
-          branches="$(gh api \
-            --paginate \
+          branches="$(gh api --paginate \
             "repos/${REPOSITORY}/branches?per_page=100" \
             --jq '.[].name' | sort -u)"
 
           if [[ -z "$branches" ]]; then
-            echo "::error::No branches were returned by the GitHub API."
+            echo "::error::No branches found in the repository."
             exit 1
           fi
 
-          echo "Actual branches currently found in ${REPOSITORY}:"
+          echo "Branches currently present in ${REPOSITORY}:"
           printf '%s\n' "$branches"
 
           {
-            echo "## Branches currently present in the repository"
+            echo "## Available repository branches"
             echo
-            printf '%s\n' "$branches" | sed 's/^/- `/; s/$/`/'
+            printf '%s\n' "$branches" | sed 's/^/- `/' | sed 's/$/`/'
             echo
-            echo "Copy the exact source and target branch names into the workflow inputs."
+            echo "Copy the exact branch names into the workflow inputs."
           } >> "$GITHUB_STEP_SUMMARY"
 
           json="$(printf '%s\n' "$branches" | jq -R . | jq -s -c .)"
           echo "branches=$json" >> "$GITHUB_OUTPUT"
 
   transfer-commit:
-    name: Validate and cherry-pick one commit
+    name: Validate and cherry-pick commit
     needs: list-branches
     runs-on: ubuntu-latest
 
@@ -92,7 +91,7 @@ jobs:
           fetch-depth: 0
           persist-credentials: true
 
-      - name: Validate selected branches and commit
+      - name: Validate inputs and branch names
         shell: bash
         run: |
           set -euo pipefail
@@ -107,16 +106,15 @@ jobs:
             exit 1
           fi
 
-          if ! printf '%s' "$SOURCE_BRANCH" |
-            jq -e --arg b "$SOURCE_BRANCH" \
-              'index($b) != null' <<< "$AVAILABLE_BRANCHES" >/dev/null; then
-            echo "::error::Source branch is not in the discovered branch list."
+          if ! jq -e --arg b "$SOURCE_BRANCH" \
+            'index($b) != null' <<< "$AVAILABLE_BRANCHES" >/dev/null; then
+            echo "::error::Source branch does not exist in the discovered branch list."
             exit 1
           fi
 
           if ! jq -e --arg b "$TARGET_BRANCH" \
             'index($b) != null' <<< "$AVAILABLE_BRANCHES" >/dev/null; then
-            echo "::error::Target branch is not in the discovered branch list."
+            echo "::error::Target branch does not exist in the discovered branch list."
             exit 1
           fi
 
@@ -125,9 +123,9 @@ jobs:
             exit 1
           fi
 
-          echo "Branch and input validation passed."
+          echo "Input validation passed."
 
-      - name: Fetch and verify selected commit
+      - name: Fetch branches and verify commit
         shell: bash
         run: |
           set -euo pipefail
@@ -137,17 +135,18 @@ jobs:
             "+refs/heads/${TARGET_BRANCH}:refs/remotes/origin/${TARGET_BRANCH}"
 
           if ! git cat-file -e "${COMMIT_SHA}^{commit}" 2>/dev/null; then
-            echo "::error::Commit does not exist in the fetched repository."
+            echo "::error::Commit was not found in the fetched repository."
             exit 1
           fi
 
           if ! git merge-base --is-ancestor \
             "$COMMIT_SHA" "refs/remotes/origin/${SOURCE_BRANCH}"; then
-            echo "::error::Commit is not part of the selected source branch history."
+            echo "::error::Commit is not in the source branch history."
             exit 1
           fi
 
-          echo "Commit exists and belongs to the source branch history."
+          echo "Commit verified."
+          git show --no-patch --format=fuller "$COMMIT_SHA"
 
       - name: Create temporary branch from target
         shell: bash
@@ -165,35 +164,73 @@ jobs:
 
           echo "TEMP_BRANCH=$TEMP_BRANCH" >> "$GITHUB_ENV"
 
-      - name: Cherry-pick selected commit
+      - name: Cherry-pick regular or merge commit
         shell: bash
         run: |
           set -euo pipefail
 
-          if ! git cherry-pick "$COMMIT_SHA"; then
-            git cherry-pick --abort || true
-            echo "::error::Cherry-pick failed. No changes were pushed."
+          # Count parents: one parent means a regular commit;
+          # two or more parents means a merge commit.
+          PARENT_COUNT="$(git rev-list --parents -n 1 "$COMMIT_SHA" | awk '{print NF-1}')"
+
+          if [[ "$PARENT_COUNT" -eq 1 ]]; then
+            echo "Regular commit detected."
+            if ! git cherry-pick "$COMMIT_SHA"; then
+              git cherry-pick --abort >/dev/null 2>&1 || true
+              echo "::error::Cherry-pick failed. No changes were pushed."
+              exit 1
+            fi
+
+          elif [[ "$PARENT_COUNT" -gt 1 ]]; then
+            echo "Merge commit detected with ${PARENT_COUNT} parents."
+            echo "Using mainline parent 1."
+
+            if ! git cherry-pick -m 1 "$COMMIT_SHA"; then
+              git cherry-pick --abort >/dev/null 2>&1 || true
+              echo "::error::Merge cherry-pick failed. No changes were pushed."
+              exit 1
+            fi
+
+          else
+            echo "::error::Could not determine commit parent count."
             exit 1
           fi
 
-      - name: Push without force
+          echo "Cherry-pick completed successfully."
+
+      - name: Check resulting commit
         shell: bash
         run: |
           set -euo pipefail
 
+          git diff-tree --check HEAD^ HEAD
+
+          echo "New commit:"
+          git log -1 --format='%H%n%s'
+
+      - name: Push to target without force
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          # Never force-push. Concurrent target changes or branch protection
+          # may cause the push to fail safely.
           git push origin "HEAD:refs/heads/${TARGET_BRANCH}"
 
-          echo "Successfully transferred the selected commit."
+          echo "Successfully pushed to ${TARGET_BRANCH}."
 
-      - name: Transfer summary
+      - name: Write transfer summary
         if: success()
         shell: bash
         run: |
           {
             echo "## Commit transfer successful"
             echo
-            echo "- Source: \`${SOURCE_BRANCH}\`"
-            echo "- Target: \`${TARGET_BRANCH}\`"
-            echo "- Original commit: \`${COMMIT_SHA}\`"
-            echo "- New commit: \`$(git rev-parse HEAD)\`"
+            echo "- **Repository:** \`${GITHUB_REPOSITORY}\`"
+            echo "- **Source:** \`${SOURCE_BRANCH}\`"
+            echo "- **Target:** \`${TARGET_BRANCH}\`"
+            echo "- **Original commit:** \`${COMMIT_SHA}\`"
+            echo "- **Transferred commit:** \`$(git rev-parse HEAD)\`"
+            echo
+            echo "Only the selected commit was cherry-picked; the source branch was not merged wholesale."
           } >> "$GITHUB_STEP_SUMMARY"
