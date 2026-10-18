@@ -1,28 +1,22 @@
 
-name: Download and Compress to 7z
+name: Download, Compress and Upload Artifact
 
 on:
   workflow_dispatch:
     inputs:
       download_url:
-        description: "Direct download or mirror URL"
+        description: "Direct download URL or mirror URL"
         required: true
-        type: string
-
-      source_filename:
-        description: "Downloaded filename (e.g. game.iso)"
-        required: true
-        default: "download.bin"
         type: string
 
       archive_name:
-        description: "Output 7z filename without extension"
-        required: true
-        default: "compressed-file"
+        description: "Optional output archive name without .7z"
+        required: false
+        default: ""
         type: string
 
       retention_days:
-        description: "Artifact retention in days (1-90)"
+        description: "Artifact retention days (1-90)"
         required: true
         default: "30"
         type: string
@@ -32,133 +26,371 @@ permissions:
 
 jobs:
   download-compress:
-    name: Download, compress and upload
-    runs-on: ubuntu-latest
+    name: Download, Compress and Upload
+    runs-on: windows-latest
     timeout-minutes: 360
 
     steps:
+      - name: Prepare workspace
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+
+          Remove-Item work, release -Recurse -Force `
+            -ErrorAction SilentlyContinue
+
+          New-Item -ItemType Directory -Force work | Out-Null
+          New-Item -ItemType Directory -Force release | Out-Null
+
       - name: Validate inputs
-        shell: bash
+        shell: pwsh
         env:
           DOWNLOAD_URL: ${{ inputs.download_url }}
-          SOURCE_NAME: ${{ inputs.source_filename }}
-          ARCHIVE_NAME: ${{ inputs.archive_name }}
+          ARCHIVE_INPUT: ${{ inputs.archive_name }}
           RETENTION: ${{ inputs.retention_days }}
         run: |
-          set -euo pipefail
+          $ErrorActionPreference = "Stop"
 
-          case "$DOWNLOAD_URL" in
-            https://*|http://*) ;;
-            *) echo "Error: URL must use HTTP or HTTPS."; exit 1 ;;
-          esac
-
-          [[ "$SOURCE_NAME" =~ ^[a-zA-Z0-9._-]+$ ]] || {
-            echo "Invalid source filename"; exit 1;
+          $uri = $null
+          if (-not [System.Uri]::TryCreate(
+              $env:DOWNLOAD_URL,
+              [System.UriKind]::Absolute,
+              [ref]$uri
+          )) {
+              throw "Invalid download URL."
           }
 
-          [[ "$ARCHIVE_NAME" =~ ^[a-zA-Z0-9._-]+$ ]] || {
-            echo "Invalid archive name"; exit 1;
+          if ($uri.Scheme -notin @("http", "https")) {
+              throw "Only HTTP and HTTPS URLs are supported."
           }
 
-          [[ "$RETENTION" =~ ^[0-9]+$ ]] &&
-            (( RETENTION >= 1 && RETENTION <= 90 )) || {
-              echo "Retention must be between 1 and 90 days"; exit 1;
-            }
+          if ([string]::IsNullOrWhiteSpace($env:ARCHIVE_INPUT) -eq $false) {
+              if ($env:ARCHIVE_INPUT -notmatch '^[a-zA-Z0-9._-]+$') {
+                  throw "Archive name contains invalid characters."
+              }
 
-          if [[ "$SOURCE_NAME" == "." || "$SOURCE_NAME" == ".." ||
-                "$ARCHIVE_NAME" == "." || "$ARCHIVE_NAME" == ".." ]]; then
-            echo "Invalid filename"; exit 1
-          fi
+              if ($env:ARCHIVE_INPUT -in @(".", "..")) {
+                  throw "Invalid archive name."
+              }
+          }
 
-          if [[ "$SOURCE_NAME" == *.* &&
-                "$SOURCE_NAME" == *.7z ]]; then
-            echo "Source file cannot use the .7z extension"
-            exit 1
-          fi
+          $days = 0
+          if (-not [int]::TryParse($env:RETENTION, [ref]$days) -or
+              $days -lt 1 -or $days -gt 90) {
+              throw "Retention must be between 1 and 90 days."
+          }
 
-      - name: Install 7-Zip
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y 7zip
+          Write-Host "Inputs validated."
 
-      - name: Download file
-        shell: bash
+      - name: Download file from mirror
+        shell: pwsh
         env:
           DOWNLOAD_URL: ${{ inputs.download_url }}
-          SOURCE_NAME: ${{ inputs.source_filename }}
         run: |
-          set -euo pipefail
-          mkdir -p downloaded output
+          $ErrorActionPreference = "Stop"
 
-          curl \
-            --fail \
-            --location \
-            --retry 5 \
-            --retry-all-errors \
-            --connect-timeout 30 \
-            --output "downloaded/$SOURCE_NAME" \
-            "$DOWNLOAD_URL"
+          $url = $env:DOWNLOAD_URL
+          $output = "work\downloaded.file"
 
-          test -s "downloaded/$SOURCE_NAME"
+          $headers = @{
+              "User-Agent" = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/140 Safari/537.36"
+              "Accept" = "*/*"
+          }
 
-          echo "Download completed."
-          du -h "downloaded/$SOURCE_NAME"
+          Write-Host "Downloading from the supplied URL..."
 
-      - name: Compress with maximum 7z settings
-        shell: bash
+          try {
+              Invoke-WebRequest `
+                  -Uri $url `
+                  -Headers $headers `
+                  -MaximumRedirection 20 `
+                  -UseBasicParsing `
+                  -OutFile $output
+          }
+          catch {
+              Write-Host "Download failed:"
+              Write-Host $_.Exception.Message
+              throw
+          }
+
+          if (!(Test-Path $output)) {
+              throw "Download did not create a file."
+          }
+
+          $file = Get-Item $output
+
+          if ($file.Length -le 0) {
+              throw "Downloaded file is empty."
+          }
+
+          Write-Host "Download successful."
+          Write-Host "Size: $($file.Length) bytes"
+
+      - name: Detect original filename
+        shell: pwsh
         env:
-          SOURCE_NAME: ${{ inputs.source_filename }}
-          ARCHIVE_NAME: ${{ inputs.archive_name }}
+          DOWNLOAD_URL: ${{ inputs.download_url }}
+          ARCHIVE_INPUT: ${{ inputs.archive_name }}
         run: |
-          set -euo pipefail
+          $ErrorActionPreference = "Stop"
 
-          7zz a \
-            -t7z \
-            -mx=9 \
-            -m0=lzma2 \
-            -ms=on \
-            "output/${ARCHIVE_NAME}.7z" \
-            "downloaded/${SOURCE_NAME}"
+          $url = $env:DOWNLOAD_URL
+          $filename = $null
 
-          7zz t "output/${ARCHIVE_NAME}.7z"
+          # Prefer the server's Content-Disposition header.
+          try {
+              $head = Invoke-WebRequest `
+                  -Uri $url `
+                  -Method Head `
+                  -Headers @{
+                      "User-Agent" = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/140 Safari/537.36"
+                      "Accept" = "*/*"
+                  } `
+                  -MaximumRedirection 20 `
+                  -UseBasicParsing
 
-      - name: Generate size report
-        shell: bash
-        env:
-          SOURCE_NAME: ${{ inputs.source_filename }}
-          ARCHIVE_NAME: ${{ inputs.archive_name }}
+              $cd = $head.Headers["Content-Disposition"]
+
+              if ($cd -match "filename\*\s*=\s*UTF-8''([^;]+)") {
+                  $filename = [System.Uri]::UnescapeDataString(
+                      $Matches[1].Trim('"')
+                  )
+              }
+              elseif ($cd -match 'filename\s*=\s*"?([^";]+)') {
+                  $filename = $Matches[1].Trim()
+              }
+          }
+          catch {
+              Write-Host "HEAD unavailable; trying the URL filename."
+          }
+
+          if ([string]::IsNullOrWhiteSpace($filename)) {
+              try {
+                  $uri = [System.Uri]$url
+                  $filename = [System.IO.Path]::GetFileName(
+                      $uri.AbsolutePath
+                  )
+                  $filename = [System.Uri]::UnescapeDataString($filename)
+              }
+              catch {
+                  $filename = $null
+              }
+          }
+
+          if ([string]::IsNullOrWhiteSpace($filename)) {
+              $filename = "downloaded-file"
+          }
+
+          $filename = [System.IO.Path]::GetFileName($filename)
+
+          $filename = $filename -replace '[<>:"/\\|?*\x00-\x1F]', '_'
+          $filename = $filename.TrimEnd('.', ' ')
+
+          if ([string]::IsNullOrWhiteSpace($filename) -or
+              $filename -in @(".", "..")) {
+              $filename = "downloaded-file"
+          }
+
+          $destination = Join-Path "work" $filename
+
+          Move-Item -Path "work\downloaded.file" `
+              -Destination $destination -Force
+
+          $file = Get-Item $destination
+
+          "FILE_NAME=$filename" >> $env:GITHUB_ENV
+          "FILE_PATH=$destination" >> $env:GITHUB_ENV
+          "FILE_SIZE=$($file.Length)" >> $env:GITHUB_ENV
+
+          Write-Host "Detected filename: $filename"
+          Write-Host "Size: $($file.Length) bytes"
+
+          # Use a custom archive name if provided; otherwise
+          # remove the original extension.
+          $base = $env:ARCHIVE_INPUT
+
+          if ([string]::IsNullOrWhiteSpace($base)) {
+              $base = [System.IO.Path]::GetFileNameWithoutExtension(
+                  $filename
+              )
+          }
+
+          $base = $base -replace '\.7z$', ''
+
+          if ([string]::IsNullOrWhiteSpace($base) -or
+              $base -in @(".", "..")) {
+              $base = "downloaded-file"
+          }
+
+          "ARCHIVE_BASE=$base" >> $env:GITHUB_ENV
+
+      - name: Locate or install 7-Zip
+        shell: pwsh
         run: |
-          set -euo pipefail
+          $ErrorActionPreference = "Stop"
 
-          ORIGINAL=$(stat -c '%s' "downloaded/$SOURCE_NAME")
-          COMPRESSED=$(stat -c '%s' "output/$ARCHIVE_NAME.7z")
+          $candidates = @(
+              "$env:ProgramFiles\7-Zip\7z.exe",
+              "${env:ProgramFiles(x86)}\7-Zip\7z.exe",
+              "C:\ProgramData\chocolatey\bin\7z.exe"
+          )
 
-          ORIGINAL="$ORIGINAL" COMPRESSED="$COMPRESSED" \
-            python3 - <<'PY'
-          import os
+          $sevenZip = $null
 
-          original = int(os.environ["ORIGINAL"])
-          compressed = int(os.environ["COMPRESSED"])
+          foreach ($path in $candidates) {
+              if ($path -and (Test-Path $path)) {
+                  $sevenZip = $path
+                  break
+              }
+          }
 
-          saved = original - compressed
-          percent = (saved / original * 100) if original else 0
+          if (-not $sevenZip) {
+              choco install 7zip -y --no-progress
 
-          with open("output/REPORT.txt", "w") as report:
-              report.write(f"Original size: {original:,} bytes\n")
-              report.write(f"7z size: {compressed:,} bytes\n")
-              report.write(f"Space saved: {saved:,} bytes\n")
-              report.write(f"Reduction: {percent:.2f}%\n")
+              if ($LASTEXITCODE -ne 0) {
+                  throw "7-Zip installation failed."
+              }
 
-          print(open("output/REPORT.txt").read())
-          PY
+              foreach ($path in $candidates) {
+                  if ($path -and (Test-Path $path)) {
+                      $sevenZip = $path
+                      break
+                  }
+              }
+          }
 
-      - name: Upload 7z as GitHub Artifact
+          if (-not $sevenZip) {
+              $cmd = Get-Command 7z.exe -ErrorAction SilentlyContinue
+              if ($cmd) {
+                  $sevenZip = $cmd.Source
+              }
+          }
+
+          if (-not $sevenZip) {
+              throw "Could not locate 7-Zip."
+          }
+
+          "SEVENZIP=$sevenZip" >> $env:GITHUB_ENV
+
+          Write-Host "Using: $sevenZip"
+          & $sevenZip i
+
+          if ($LASTEXITCODE -ne 0) {
+              throw "7-Zip verification failed."
+          }
+
+      - name: Compress with maximum 7-Zip settings
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+
+          $archive = "release\$env:ARCHIVE_BASE.7z"
+
+          Write-Host "Compression: Ultra / Level 9"
+          Write-Host "Method: LZMA2"
+          Write-Host "Dictionary: 64 MB"
+          Write-Host "Fast bytes: 273"
+          Write-Host "Solid mode: enabled"
+          Write-Host "Multithreading: enabled"
+
+          & "$env:SEVENZIP" a `
+              "-t7z" `
+              "-mx=9" `
+              "-m0=lzma2" `
+              "-mfb=273" `
+              "-md=64m" `
+              "-ms=on" `
+              "-mmt=on" `
+              "-y" `
+              "$archive" `
+              "$env:FILE_PATH"
+
+          if ($LASTEXITCODE -ne 0) {
+              throw "Compression failed: exit code $LASTEXITCODE"
+          }
+
+          if (!(Test-Path $archive)) {
+              throw "Archive was not created."
+          }
+
+          $item = Get-Item $archive
+          if ($item.Length -le 0) {
+              throw "Archive is empty."
+          }
+
+          "ARCHIVE_PATH=$archive" >> $env:GITHUB_ENV
+          "ARCHIVE_SIZE=$($item.Length)" >> $env:GITHUB_ENV
+
+          Write-Host "Archive created: $archive"
+          Write-Host "Compressed size: $($item.Length) bytes"
+
+      - name: Verify 7-Zip archive
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+
+          & "$env:SEVENZIP" t "$env:ARCHIVE_PATH"
+
+          if ($LASTEXITCODE -ne 0) {
+              throw "Archive verification failed."
+          }
+
+          Write-Host "Archive integrity verified."
+
+      - name: Generate SHA-256 and report
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+
+          $original = Get-Item "$env:FILE_PATH"
+          $archive = Get-Item "$env:ARCHIVE_PATH"
+
+          $originalHash = (
+              Get-FileHash $original.FullName -Algorithm SHA256
+          ).Hash.ToLowerInvariant()
+
+          $archiveHash = (
+              Get-FileHash $archive.FullName -Algorithm SHA256
+          ).Hash.ToLowerInvariant()
+
+          $shaPath = "$env:ARCHIVE_PATH.sha256"
+
+          "$archiveHash *$($archive.Name)" |
+              Set-Content -Path $shaPath -Encoding ascii
+
+          $saved = $original.Length - $archive.Length
+          $ratio = [math]::Round(
+              ($archive.Length / $original.Length) * 100, 2
+          )
+
+          $reduction = [math]::Round(
+              (1 - ($archive.Length / $original.Length)) * 100, 2
+          )
+
+          @"
+          Original file: $($original.Name)
+          Original size: $($original.Length) bytes
+          Original SHA-256: $originalHash
+
+          Archive: $($archive.Name)
+          Archive size: $($archive.Length) bytes
+          Archive SHA-256: $archiveHash
+
+          Archive/original ratio: $ratio%
+          Size reduction: $reduction%
+          Bytes saved: $saved
+          "@ | Set-Content "release\REPORT.txt" -Encoding utf8
+
+          Get-Content "release\REPORT.txt"
+
+      - name: Upload 7z Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ inputs.archive_name }}-7z
+          name: ${{ inputs.archive_name != '' && inputs.archive_name || '7z-archive' }}-${{ github.run_number }}
           path: |
-            output/${{ inputs.archive_name }}.7z
-            output/REPORT.txt
+            release/*.7z
+            release/*.sha256
+            release/REPORT.txt
           if-no-files-found: error
-          retention-days: ${{ inputs.retention_days }}
           compression-level: 0
+          retention-days: ${{ inputs.retention_days }}
