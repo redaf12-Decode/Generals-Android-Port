@@ -1,0 +1,88 @@
+name: Clean GitHub Actions Cache
+
+on:
+  workflow_dispatch:
+    inputs:
+      scope:
+        description: "Choose which Actions caches to delete"
+        type: choice
+        required: true
+        default: current_branch
+        options:
+          - current_branch
+          - all_branches
+      target_branch:
+        description: "Branch to clean when scope is current_branch"
+        type: string
+        required: true
+        default: claude/ui-redesign-dashboard-drawer
+      confirm:
+        description: "Type CLEAN to confirm deletion"
+        type: string
+        required: true
+
+permissions:
+  actions: write
+  contents: read
+
+concurrency:
+  group: clean-actions-cache
+  cancel-in-progress: false
+
+jobs:
+  clean-cache:
+    name: Delete Actions cache entries
+    runs-on: ubuntu-latest
+    if: ${{ inputs.confirm == 'CLEAN' }}
+    steps:
+      - name: Validate inputs
+        shell: bash
+        env:
+          SCOPE: ${{ inputs.scope }}
+          TARGET_BRANCH: ${{ inputs.target_branch }}
+        run: |
+          set -euo pipefail
+          if [[ "$SCOPE" == "current_branch" && -z "$TARGET_BRANCH" ]]; then
+            echo "::error::target_branch cannot be empty."
+            exit 1
+          fi
+          if [[ "$TARGET_BRANCH" == *$'\n'* || "$TARGET_BRANCH" == *$'\r'* ]]; then
+            echo "::error::Invalid branch name."
+            exit 1
+          fi
+
+      - name: Delete cache entries
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          SCOPE: ${{ inputs.scope }}
+          TARGET_BRANCH: ${{ inputs.target_branch }}
+        run: |
+          set -euo pipefail
+
+          if [[ "$SCOPE" == "current_branch" ]]; then
+            REF="refs/heads/$TARGET_BRANCH"
+            echo "Listing caches for $REF"
+            CACHE_IDS="$(gh api --paginate --jq '.actions_caches[].id' \
+              "repos/$REPOSITORY/actions/caches?ref=$REF&per_page=100" || true)"
+          else
+            echo "Listing caches across all branches"
+            CACHE_IDS="$(gh api --paginate --jq '.actions_caches[].id' \
+              "repos/$REPOSITORY/actions/caches?per_page=100" || true)"
+          fi
+
+          if [[ -z "$CACHE_IDS" ]]; then
+            echo "No matching cache entries found."
+            exit 0
+          fi
+
+          TOTAL=0
+          while IFS= read -r CACHE_ID; do
+            [[ -z "$CACHE_ID" ]] && continue
+            echo "Deleting cache ID: $CACHE_ID"
+            gh api --method DELETE "repos/$REPOSITORY/actions/caches/$CACHE_ID"
+            TOTAL=$((TOTAL + 1))
+          done <<< "$CACHE_IDS"
+
+          echo "Deleted $TOTAL cache entr(y/ies)."
