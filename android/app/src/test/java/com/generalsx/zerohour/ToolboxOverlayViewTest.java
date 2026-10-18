@@ -328,12 +328,23 @@ public class ToolboxOverlayViewTest {
     }
 
     @Test
-    public void theEditRowOpensTheEditorAndItsOwnRows() {
+    public void whileEditingTheRowListIsGoneAndASaveCheckTakesItsPlace() {
         TouchLayoutEditor editor = openEditor();
         assertNotNull(editor);
-        assertEquals("the editor lists its own six rows", 6, view.toolCount());
-        assertEquals(activity.getString(R.string.touch_add_button), view.rowLabel(0));
-        assertEquals(activity.getString(R.string.common_cancel), view.rowLabel(5));
+        assertFalse("the request: the toolbox's row list is not shown while editing",
+            view.isPanelVisible());
+        assertEquals("the play rows stay the seven tools for when editing ends",
+            7, view.toolCount());
+
+        // The check is beside the icon (never on it), on screen, and big enough to hit.
+        RectF check = view.checkBounds();
+        RectF icon = view.iconBounds();
+        assertFalse("the save check overlaps the icon", RectF.intersects(check, icon));
+        assertTrue("check left " + check.left, check.left >= 0f);
+        assertTrue("check right " + check.right, check.right <= WIDTH_PX);
+        assertTrue("check top " + check.top, check.top >= 0f);
+        assertTrue("check bottom " + check.bottom, check.bottom <= HEIGHT_PX);
+        assertTrue("the check is too small to tap: " + check.width(), check.width() >= 30f);
     }
 
     @Test
@@ -390,26 +401,40 @@ public class ToolboxOverlayViewTest {
     }
 
     @Test
-    public void theAddRowAddsAButtonAndTheDeleteRowNeedsOne() {
+    public void theRowListCannotRunAnythingWhileEditing() {
         TouchLayoutEditor editor = openEditor();
         int before = editor.buttonCount();
 
-        view.pressRow(1);   // Delete, with nothing selected
-        assertEquals("Delete must not guess what to remove", before, editor.buttonCount());
+        // Every former editor action was a row; rows are refused outright while editing, so a
+        // hit-test mistake can neither add, delete, restore -- nor silently SAVE behind the
+        // check's back.
+        view.pressRow(0);   // would have been Add
+        view.pressRow(1);   // would have been Delete
+        view.pressRow(3);   // would have been Restore defaults
+        view.pressRow(4);   // would have been Save
 
-        view.pressRow(0);   // Add
-        assertEquals(before + 1, editor.buttonCount());
-        assertEquals(editor.buttonCount() - 1, editor.selectedIndex());
-
-        view.pressRow(1);
-        assertEquals(before, editor.buttonCount());
+        assertEquals("no row may change the working layout while editing",
+            before, editor.buttonCount());
+        assertTrue("and none may exit the editor behind the check's back", view.isEditing());
     }
 
     @Test
-    public void theDefaultsRowPutsTheShippedLayoutInTheEditor() {
-        TouchLayoutEditor editor = openEditor();
-        view.pressRow(3);   // Restore defaults
-        assertEquals(TouchControlConfig.defaults().buttons.size(), editor.buttonCount());
+    public void theCheckFollowsTheIconAndStaysOnScreen() {
+        openEditor();
+        // Drag the floating bar into the far corner while editing: the check rides along and
+        // re-picks whichever side has room, so both stay reachable at any corner.
+        view.onTouchEvent(event(MotionEvent.ACTION_DOWN, iconCx(), iconCy()));
+        view.onTouchEvent(event(MotionEvent.ACTION_MOVE, 5000f, -5000f));
+        view.onTouchEvent(event(MotionEvent.ACTION_UP, 5000f, -5000f));
+
+        RectF check = view.checkBounds();
+        assertTrue("the check left the screen on the right", check.right <= WIDTH_PX);
+        assertTrue("the check left the screen at the top", check.top >= 0f);
+        assertTrue(check.left >= 0f);
+        assertTrue(check.bottom <= HEIGHT_PX);
+        assertFalse("the check must not cover the icon it sits beside",
+            RectF.intersects(check, view.iconBounds()));
+        assertTrue("editing continues through the drag", view.isEditing());
     }
 
     @Test
@@ -422,9 +447,12 @@ public class ToolboxOverlayViewTest {
         view.onTouchEvent(event(MotionEvent.ACTION_UP, centre[0] + 90f, centre[1]));
         float movedTo = editor.working.buttons.get(index).x;
 
-        view.pressRow(4);   // Save
+        // The check is the Save row now: a real tap on it, through the gesture path.
+        view.onTouchEvent(event(MotionEvent.ACTION_DOWN, view.checkCx(), view.checkCy()));
+        view.onTouchEvent(event(MotionEvent.ACTION_UP, view.checkCx(), view.checkCy()));
 
-        assertFalse("saving must leave the editor", view.isEditing());
+        assertFalse("tapping the check must leave the editor", view.isEditing());
+        assertTrue("and the play rows are back on screen", view.isPanelVisible());
         assertEquals("the panel is back to its play rows", 7, view.toolCount());
         assertEquals("the edited position must be stored", movedTo,
             TouchControlConfig.load(activity).buttons.get(index).x, 0.0001f);
@@ -440,10 +468,13 @@ public class ToolboxOverlayViewTest {
         view.onTouchEvent(event(MotionEvent.ACTION_MOVE, centre[0] + 120f, centre[1]));
         view.onTouchEvent(event(MotionEvent.ACTION_UP, centre[0] + 120f, centre[1]));
 
-        view.pressRow(5);   // Cancel
+        // With the Cancel row gone, the cancel route is closing the bar (the same path Back
+        // takes): leaveEditMode(true) drops the working copy and says so.
+        view.onTouchEvent(event(MotionEvent.ACTION_DOWN, iconCx(), iconCy()));
+        view.onTouchEvent(event(MotionEvent.ACTION_UP, iconCx(), iconCy()));
 
         assertFalse(view.isEditing());
-        assertEquals("Cancel must leave the stored layout alone",
+        assertEquals("leaving without the check must leave the stored layout alone",
             storedBefore, TouchControlConfig.load(activity).buttons.get(index).x, 0.0001f);
     }
 

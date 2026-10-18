@@ -475,7 +475,6 @@
     <string name="toolbox_close">Закрити</string>
     <string name="toolbox_toast_buttons_restored">Кнопки керування відновлено до типового розкладу. Власна панель гри зміниться під час наступного запуску.</string>
     <string name="toolbox_tool_edit_layout">Редагувати кнопки</string>
-    <string name="toolbox_edit_toggle">Увімкнути/вимкнути кнопку</string>
     <string name="toolbox_toast_edits_discarded">Зміни скасовано.</string>
     <string name="toolbox_tool_button_size">Розмір кнопок</string>
     <string name="toolbox_tool_save_default">Зберегти розкладку типовою</string>

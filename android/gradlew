@@ -1,0 +1,2 @@
+#!/bin/sh
+echo "gradlew wrapper stub running from $(pwd)"

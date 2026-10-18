@@ -475,7 +475,6 @@
     <string name="toolbox_close">إغلاق</string>
     <string name="toolbox_toast_buttons_restored">تمت استعادة أزرار اللمس إلى التخطيط الافتراضي. تتغيّر لوحة اللعبة نفسها في التشغيل التالي.</string>
     <string name="toolbox_tool_edit_layout">تحرير الأزرار</string>
-    <string name="toolbox_edit_toggle">تشغيل/إيقاف الزر</string>
     <string name="toolbox_toast_edits_discarded">تم تجاهل التغييرات.</string>
     <string name="toolbox_tool_button_size">حجم الأزرار</string>
     <string name="toolbox_tool_save_default">حفظ التخطيط كافتراضي</string>

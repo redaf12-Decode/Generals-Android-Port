@@ -475,7 +475,6 @@
     <string name="toolbox_close">Fermer</string>
     <string name="toolbox_toast_buttons_restored">Boutons tactiles restaurés sur la disposition par défaut. Le panneau du jeu change au prochain lancement.</string>
     <string name="toolbox_tool_edit_layout">Modifier les boutons</string>
-    <string name="toolbox_edit_toggle">Activer/désactiver le bouton</string>
     <string name="toolbox_toast_edits_discarded">Modifications abandonnées.</string>
     <string name="toolbox_tool_button_size">Taille des boutons</string>
     <string name="toolbox_tool_save_default">Enregistrer comme disposition par défaut</string>

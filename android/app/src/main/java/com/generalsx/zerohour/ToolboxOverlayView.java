@@ -91,19 +91,13 @@ final class ToolboxOverlayView extends View {
      */
     private static final float[] BUTTON_SIZE_PRESETS = { 0.75f, 1.0f, 1.25f, 1.5f };
 
-    // GeneralsX @feature Android floating toolbox 17/10/2026 The editor's rows, shown in place of
-    // the tools above while the layout is being edited. Same model, same buttons, same keys --
-    // this only changes where they sit and whether they are switched on.
-    private static final int EDIT_ADD = 10;
-    private static final int EDIT_DELETE = 11;
-    private static final int EDIT_TOGGLE = 12;
-    private static final int EDIT_DEFAULTS = 13;
-    private static final int EDIT_SAVE = 14;
-    private static final int EDIT_CANCEL = 15;
-    private static final int[] EDIT_TOOLS = {
-        EDIT_ADD, EDIT_DELETE, EDIT_TOGGLE, EDIT_DEFAULTS, EDIT_SAVE, EDIT_CANCEL };
+    // GeneralsX @feature Android floating toolbox 18/10/2026 While the layout is being edited
+    // there is NO row list: the request replaces the panel's editor rows with a check whose tap
+    // saves the edit (drawCheck, hit-tested first in ACTION_DOWN). Add/delete/toggle/restore stay
+    // in the launcher's full editor (TouchControlsActivity), where layout authoring belongs;
+    // Back and a tap on the icon still leave without saving, both saying so.
 
-    /** Room for either list without re-allocating the row rectangles. */
+    /** Room for the list without re-allocating the row rectangles. */
     private static final int MAX_ROWS = 8;
 
     private static final float ROW_HEIGHT_DP = 46f;
@@ -134,8 +128,12 @@ final class ToolboxOverlayView extends View {
     private final Paint editSelectedStroke = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint editHandle = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint editTextPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    /** The save check shown while editing: accent disc, white tick. */
+    private final Paint checkFill = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint checkStroke = new Paint(Paint.ANTI_ALIAS_FLAG);
 
     private final RectF iconRect = new RectF();
+    private final RectF checkRect = new RectF();
     private final RectF panelRect = new RectF();
     private final RectF buttonRect = new RectF();
     private final RectF handleRect = new RectF();
@@ -165,6 +163,7 @@ final class ToolboxOverlayView extends View {
     private int activePointer = -1;
     private int pressedRow = -1;
     private boolean iconPressed;
+    private boolean checkPressed;
     private boolean dragging;
     private boolean panelOpen;
     private float downX;
@@ -222,6 +221,12 @@ final class ToolboxOverlayView extends View {
         editTextPaint.setTextAlign(Paint.Align.CENTER);
         editTextPaint.setFakeBoldText(true);
         editTextPaint.setShadowLayer(dp(2), 0, dp(1), Color.BLACK);
+        checkFill.setColor(accent);
+        checkStroke.setColor(Color.WHITE);
+        checkStroke.setStyle(Paint.Style.STROKE);
+        checkStroke.setStrokeCap(Paint.Cap.ROUND);
+        checkStroke.setStrokeJoin(Paint.Join.ROUND);
+        checkStroke.setStrokeWidth(dp(3f));
 
         for (int i = 0; i < MAX_ROWS; i++) {
             rowRects[i] = new RectF();
@@ -335,9 +340,14 @@ final class ToolboxOverlayView extends View {
         invalidate();
     }
 
-    /** The row list for the mode the toolbox is in. */
+    /**
+     * The row list: the match tools, always. The editor has no rows while it is up -- there is
+     * no reliance on that here, because onDraw skips the panel, ACTION_DOWN never hit-tests a
+     * row while editing, and runRow refuses outright, so even a hit-test mistake cannot turn an
+     * editing touch into a tool.
+     */
     private int[] tools() {
-        return editing ? EDIT_TOOLS : PLAY_TOOLS;
+        return PLAY_TOOLS;
     }
 
     private void layoutPanel() {
@@ -399,48 +409,8 @@ final class ToolboxOverlayView extends View {
                     rowLabels[i] = getContext().getString(R.string.toolbox_close);
                     rowValues[i] = "";
                     break;
-                case EDIT_ADD:
-                    rowLabels[i] = getContext().getString(R.string.touch_add_button);
-                    rowValues[i] = "";
-                    break;
-                case EDIT_DELETE:
-                    rowLabels[i] = getContext().getString(R.string.touch_delete_button);
-                    // The row names what it would delete, so "Delete" is never a blind action.
-                    rowValues[i] = selectedLabel();
-                    break;
-                case EDIT_TOGGLE:
-                    rowLabels[i] = getContext().getString(R.string.toolbox_edit_toggle);
-                    rowValues[i] = selectedEnabledLabel();
-                    break;
-                case EDIT_DEFAULTS:
-                    rowLabels[i] = getContext().getString(R.string.touch_reset_button);
-                    rowValues[i] = "";
-                    break;
-                case EDIT_SAVE:
-                    rowLabels[i] = getContext().getString(R.string.touch_save_button);
-                    rowValues[i] = "";
-                    break;
-                case EDIT_CANCEL:
-                default:
-                    rowLabels[i] = getContext().getString(R.string.common_cancel);
-                    rowValues[i] = "";
-                    break;
             }
         }
-    }
-
-    private String selectedLabel() {
-        TouchControlConfig.ButtonSpec spec = editor != null ? editor.selectedButton() : null;
-        return spec != null ? spec.label : "";
-    }
-
-    private String selectedEnabledLabel() {
-        TouchControlConfig.ButtonSpec spec = editor != null ? editor.selectedButton() : null;
-        if (spec == null) {
-            return "";
-        }
-        return getContext().getString(
-            spec.enabled ? R.string.toolbox_state_on : R.string.toolbox_state_off);
     }
 
     private int rowAt(float x, float y) {
@@ -462,7 +432,11 @@ final class ToolboxOverlayView extends View {
             drawButtons(canvas);
         }
         drawIcon(canvas);
-        if (panelOpen) {
+        if (editing) {
+            // The request, in one condition: while editing the toolbox's row list is not drawn
+            // at all -- the save check beside the icon is the only control it shows.
+            drawCheck(canvas);
+        } else if (panelOpen) {
             drawPanel(canvas);
         }
     }
@@ -509,6 +483,56 @@ final class ToolboxOverlayView extends View {
         iconRenderer.draw(canvas, iconRect, config.iconStyle, config.iconOpacity);
     }
 
+    /**
+     * The save check: an accent disc beside the icon with a white tick, drawn only while the
+     * editor is up. It is deliberately NOT the icon -- the icon keeps its identity, its drag
+     * and its transparency setting; the check is this edit session's one affirmative action,
+     * drawn at full strength whatever the transparency says (it is a control, not the floating
+     * bar). Its tap runs exactly what the old Save row ran.
+     */
+    private void drawCheck(Canvas canvas) {
+        layoutCheckRect();
+        checkFill.setAlpha(checkPressed ? 190 : 236);
+        canvas.drawOval(checkRect, checkFill);
+        float cx = checkRect.centerX();
+        float cy = checkRect.centerY();
+        float s = checkRect.width();
+        // Two round-capped segments: the caps overlap at the elbow, giving a clean tick with
+        // no Path object and no per-frame allocation.
+        canvas.drawLine(cx - 0.24f * s, cy + 0.04f * s,
+            cx - 0.06f * s, cy + 0.21f * s, checkStroke);
+        canvas.drawLine(cx - 0.06f * s, cy + 0.21f * s,
+            cx + 0.25f * s, cy - 0.17f * s, checkStroke);
+    }
+
+    /**
+     * Where the check sits: next to the icon, on whichever side has room, clamped inside the
+     * same screen bounds the icon itself is clamped into -- so both stay reachable at any
+     * corner and under any cutout. Computed where it is needed (draw, hit-test, tests), never
+     * stored stale across a move.
+     */
+    private void layoutCheckRect() {
+        float size = Math.max(dp(32f), Math.min(dp(46f), iconRect.width() * 0.62f + dp(6f)));
+        float half = size / 2f;
+        float gap = dp(3f);
+        float cx;
+        if (getWidth() - insetRight - edgeGutter - (iconRect.right + gap + size) >= 0f) {
+            cx = iconRect.right + gap + half;
+        } else if ((iconRect.left - gap - size) - (insetLeft + edgeGutter) >= 0f) {
+            cx = iconRect.left - gap - half;
+        } else {
+            // No room beside: sit on the icon and let the check win the hit-test -- saving
+            // must stay possible even where the bar is pinned against both edges.
+            cx = iconCx;
+        }
+        float cy = iconCy;
+        cx = Math.max(insetLeft + edgeGutter + half,
+            Math.min(getWidth() - insetRight - edgeGutter - half, cx));
+        cy = Math.max(insetTop + edgeGutter + half,
+            Math.min(getHeight() - insetBottom - edgeGutter - half, cy));
+        checkRect.set(cx - half, cy - half, cx + half, cy + half);
+    }
+
     private void drawPanel(Canvas canvas) {
         float radius = dp(14f);
         canvas.drawRoundRect(panelRect, radius, radius, panelFill);
@@ -539,13 +563,25 @@ final class ToolboxOverlayView extends View {
                 downY = event.getY();
                 lastTouchX = downX;
                 lastTouchY = downY;
+                if (editing) {
+                    // The check is the first thing under the finger while editing: it never
+                    // overlaps the icon (layoutCheckRect puts a gap), but it is tested first
+                    // anyway so saving can never be shadowed by anything.
+                    layoutCheckRect();
+                    if (checkRect.contains(downX, downY)) {
+                        checkPressed = true;
+                        activePointer = event.getPointerId(0);
+                        invalidate();
+                        return true;
+                    }
+                }
                 if (iconRect.contains(downX, downY)) {
                     iconPressed = true;
                     dragging = false;
                     activePointer = event.getPointerId(0);
                     return true;
                 }
-                int row = panelOpen ? rowAt(downX, downY) : -1;
+                int row = (panelOpen && !editing) ? rowAt(downX, downY) : -1;
                 if (row >= 0) {
                     pressedRow = row;
                     dragging = false;
@@ -597,6 +633,14 @@ final class ToolboxOverlayView extends View {
                     }
                     return true;
                 }
+                if (checkPressed) {
+                    if (!checkRect.contains(x, y)) {
+                        // Dragged off the check before lifting: not a tap, so no save.
+                        checkPressed = false;
+                        invalidate();
+                    }
+                    return true;
+                }
                 if (movingButton || resizingButton) {
                     float dx = x - lastTouchX;
                     float dy = y - lastTouchY;
@@ -640,11 +684,16 @@ final class ToolboxOverlayView extends View {
      * the icon somewhere the player did not put it.
      */
     private boolean finishGesture(MotionEvent event, boolean commit) {
-        if (!iconPressed && pressedRow < 0 && !editGesture) {
+        if (!iconPressed && !checkPressed && pressedRow < 0 && !editGesture) {
             activePointer = -1;
             return false;
         }
-        if (iconPressed) {
+        if (checkPressed) {
+            if (commit && checkRect.contains(event.getX(), event.getY())) {
+                // The tick: the edit session's Save, exactly what its old row used to run.
+                onEditorSave();
+            }
+        } else if (iconPressed) {
             if (!commit) {
                 iconCx = settledCx;
                 iconCy = settledCy;
@@ -672,6 +721,7 @@ final class ToolboxOverlayView extends View {
         activePointer = -1;
         pressedRow = -1;
         iconPressed = false;
+        checkPressed = false;
         dragging = false;
         editGesture = false;
         movingButton = false;
@@ -712,6 +762,12 @@ final class ToolboxOverlayView extends View {
     // ------------------------------------------------------------------ tools
 
     private void runRow(int index) {
+        if (editing) {
+            // While the editor is up the panel is not drawn and rows are not hit-tested, so a
+            // row cannot be pressed -- and this guard makes the refusal real even if a hit-test
+            // mistake ever aimed a press here: an editing touch must never become a tool.
+            return;
+        }
         int tool = tools()[index];
         switch (tool) {
             case TOOL_EDIT_LAYOUT:
@@ -733,26 +789,8 @@ final class ToolboxOverlayView extends View {
                 onRestoreButtons();
                 break;
             case TOOL_CLOSE:
-                setPanelOpen(false);
-                break;
-            case EDIT_ADD:
-                onEditorAdd();
-                break;
-            case EDIT_DELETE:
-                onEditorDelete();
-                break;
-            case EDIT_TOGGLE:
-                onEditorToggle();
-                break;
-            case EDIT_DEFAULTS:
-                onEditorDefaults();
-                break;
-            case EDIT_SAVE:
-                onEditorSave();
-                break;
-            case EDIT_CANCEL:
             default:
-                onEditorCancel();
+                setPanelOpen(false);
                 break;
         }
     }
@@ -764,8 +802,9 @@ final class ToolboxOverlayView extends View {
         editor = new TouchLayoutEditor(TouchControlConfig.load(getContext()));
         editor.setViewport(getWidth(), getHeight(), getResources().getDisplayMetrics().density);
         editing = true;
-        rebuildRows();
-        layoutPanel();
+        // The cached play labels are left untouched (no rebuildRows): nothing draws them while
+        // editing, and leaving re-shows them exactly as they were.
+        setContentDescription(activity.getString(R.string.touch_save_button));
         invalidate();
         toast(getContext().getString(R.string.touch_drag_help_short));
     }
@@ -786,57 +825,12 @@ final class ToolboxOverlayView extends View {
         movingButton = false;
         resizingButton = false;
         editGesture = false;
-        rebuildRows();
-        layoutPanel();
+        checkPressed = false;
+        setContentDescription(activity.getString(R.string.toolbox_icon_description));
         invalidate();
         if (lost) {
             toast(getContext().getString(R.string.toolbox_toast_edits_discarded));
         }
-    }
-
-    private void onEditorAdd() {
-        if (editor == null) {
-            return;
-        }
-        if (!editor.addButton()) {
-            toast(getContext().getString(R.string.touch_too_many_buttons));
-            return;
-        }
-        rebuildRows();
-        invalidate();
-    }
-
-    private void onEditorDelete() {
-        if (editor == null) {
-            return;
-        }
-        if (!editor.deleteSelected()) {
-            toast(getContext().getString(R.string.touch_select_button_first));
-            return;
-        }
-        rebuildRows();
-        invalidate();
-    }
-
-    private void onEditorToggle() {
-        if (editor == null) {
-            return;
-        }
-        if (!editor.toggleSelectedEnabled()) {
-            toast(getContext().getString(R.string.touch_select_button_first));
-            return;
-        }
-        rebuildRows();
-        invalidate();
-    }
-
-    private void onEditorDefaults() {
-        if (editor == null) {
-            return;
-        }
-        editor.restoreDefaults();
-        rebuildRows();
-        invalidate();
     }
 
     /**
@@ -855,13 +849,6 @@ final class ToolboxOverlayView extends View {
         }
         leaveEditMode(false);
         toast(getContext().getString(R.string.touch_saved));
-    }
-
-    private void onEditorCancel() {
-        if (editor == null) {
-            return;
-        }
-        leaveEditMode(true);
     }
 
     /**
@@ -997,6 +984,27 @@ final class ToolboxOverlayView extends View {
     /** The icon's current hit rectangle, in this view's coordinates. */
     RectF iconBounds() {
         return new RectF(iconRect);
+    }
+
+    /** True when the panel's rows are on screen: open AND not editing. */
+    boolean isPanelVisible() {
+        return panelOpen && !editing;
+    }
+
+    /** The save check's hit rectangle, computed exactly like the real hit-test. */
+    RectF checkBounds() {
+        layoutCheckRect();
+        return new RectF(checkRect);
+    }
+
+    float checkCx() {
+        layoutCheckRect();
+        return checkRect.centerX();
+    }
+
+    float checkCy() {
+        layoutCheckRect();
+        return checkRect.centerY();
     }
 
     /** The panel's current rectangle; only meaningful while the panel is open. */
