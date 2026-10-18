@@ -1,0 +1,164 @@
+
+name: Download and Compress to 7z
+
+on:
+  workflow_dispatch:
+    inputs:
+      download_url:
+        description: "Direct download or mirror URL"
+        required: true
+        type: string
+
+      source_filename:
+        description: "Downloaded filename (e.g. game.iso)"
+        required: true
+        default: "download.bin"
+        type: string
+
+      archive_name:
+        description: "Output 7z filename without extension"
+        required: true
+        default: "compressed-file"
+        type: string
+
+      retention_days:
+        description: "Artifact retention in days (1-90)"
+        required: true
+        default: "30"
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  download-compress:
+    name: Download, compress and upload
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+
+    steps:
+      - name: Validate inputs
+        shell: bash
+        env:
+          DOWNLOAD_URL: ${{ inputs.download_url }}
+          SOURCE_NAME: ${{ inputs.source_filename }}
+          ARCHIVE_NAME: ${{ inputs.archive_name }}
+          RETENTION: ${{ inputs.retention_days }}
+        run: |
+          set -euo pipefail
+
+          case "$DOWNLOAD_URL" in
+            https://*|http://*) ;;
+            *) echo "Error: URL must use HTTP or HTTPS."; exit 1 ;;
+          esac
+
+          [[ "$SOURCE_NAME" =~ ^[a-zA-Z0-9._-]+$ ]] || {
+            echo "Invalid source filename"; exit 1;
+          }
+
+          [[ "$ARCHIVE_NAME" =~ ^[a-zA-Z0-9._-]+$ ]] || {
+            echo "Invalid archive name"; exit 1;
+          }
+
+          [[ "$RETENTION" =~ ^[0-9]+$ ]] &&
+            (( RETENTION >= 1 && RETENTION <= 90 )) || {
+              echo "Retention must be between 1 and 90 days"; exit 1;
+            }
+
+          if [[ "$SOURCE_NAME" == "." || "$SOURCE_NAME" == ".." ||
+                "$ARCHIVE_NAME" == "." || "$ARCHIVE_NAME" == ".." ]]; then
+            echo "Invalid filename"; exit 1
+          fi
+
+          if [[ "$SOURCE_NAME" == *.* &&
+                "$SOURCE_NAME" == *.7z ]]; then
+            echo "Source file cannot use the .7z extension"
+            exit 1
+          fi
+
+      - name: Install 7-Zip
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y 7zip
+
+      - name: Download file
+        shell: bash
+        env:
+          DOWNLOAD_URL: ${{ inputs.download_url }}
+          SOURCE_NAME: ${{ inputs.source_filename }}
+        run: |
+          set -euo pipefail
+          mkdir -p downloaded output
+
+          curl \
+            --fail \
+            --location \
+            --retry 5 \
+            --retry-all-errors \
+            --connect-timeout 30 \
+            --output "downloaded/$SOURCE_NAME" \
+            "$DOWNLOAD_URL"
+
+          test -s "downloaded/$SOURCE_NAME"
+
+          echo "Download completed."
+          du -h "downloaded/$SOURCE_NAME"
+
+      - name: Compress with maximum 7z settings
+        shell: bash
+        env:
+          SOURCE_NAME: ${{ inputs.source_filename }}
+          ARCHIVE_NAME: ${{ inputs.archive_name }}
+        run: |
+          set -euo pipefail
+
+          7zz a \
+            -t7z \
+            -mx=9 \
+            -m0=lzma2 \
+            -ms=on \
+            "output/${ARCHIVE_NAME}.7z" \
+            "downloaded/${SOURCE_NAME}"
+
+          7zz t "output/${ARCHIVE_NAME}.7z"
+
+      - name: Generate size report
+        shell: bash
+        env:
+          SOURCE_NAME: ${{ inputs.source_filename }}
+          ARCHIVE_NAME: ${{ inputs.archive_name }}
+        run: |
+          set -euo pipefail
+
+          ORIGINAL=$(stat -c '%s' "downloaded/$SOURCE_NAME")
+          COMPRESSED=$(stat -c '%s' "output/$ARCHIVE_NAME.7z")
+
+          ORIGINAL="$ORIGINAL" COMPRESSED="$COMPRESSED" \
+            python3 - <<'PY'
+          import os
+
+          original = int(os.environ["ORIGINAL"])
+          compressed = int(os.environ["COMPRESSED"])
+
+          saved = original - compressed
+          percent = (saved / original * 100) if original else 0
+
+          with open("output/REPORT.txt", "w") as report:
+              report.write(f"Original size: {original:,} bytes\n")
+              report.write(f"7z size: {compressed:,} bytes\n")
+              report.write(f"Space saved: {saved:,} bytes\n")
+              report.write(f"Reduction: {percent:.2f}%\n")
+
+          print(open("output/REPORT.txt").read())
+          PY
+
+      - name: Upload 7z as GitHub Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.archive_name }}-7z
+          path: |
+            output/${{ inputs.archive_name }}.7z
+            output/REPORT.txt
+          if-no-files-found: error
+          retention-days: ${{ inputs.retention_days }}
+          compression-level: 0
