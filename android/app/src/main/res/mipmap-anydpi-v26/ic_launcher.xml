@@ -1,12 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- GeneralsX @tweak Android port 03/10/2026 The Zero Hour emblem from the game's own
-     GeneralsZH.ico at 256x256 (the copy in GeneralsMD/Code/Main/Generals.ico stops at 48x48, and
-     the old icon was that one blown up nine times). One PNG per density, the emblem sized so its
-     farthest pixel stays inside the 66dp safe circle: no launcher mask cuts a wing. The
-     monochrome layer is the emblem's shape for Android 13+ themed icons. minSdk 28, so this
-     adaptive icon is the only one any supported Android shows. -->
+<!-- GeneralsX @feature Android launcher-icons-vectors 18/10/2026 Both content layers are
+     VECTORS now (drawable/ic_launcher_foreground and drawable/ic_launcher_monochrome): the
+     five density PNGs traced from GeneralsZH.ico are gone, because a bitmap scaled by the
+     launcher has no detail to give at large sizes, while the shield-and-star paths are
+     computed to sit inside the 66dp safe circle (farthest point 30 of 33 units from centre)
+     so no launcher mask cuts the shield. minSdk 28, so this adaptive icon is the only one
+     any supported Android resolves: nothing reads the deleted mipmups on any device this
+     app installs on. Background stays the radial-navy vector it already was. -->
 <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
     <background android:drawable="@drawable/ic_launcher_background" />
-    <foreground android:drawable="@mipmap/ic_launcher_foreground" />
-    <monochrome android:drawable="@mipmap/ic_launcher_monochrome" />
+    <foreground android:drawable="@drawable/ic_launcher_foreground" />
+    <monochrome android:drawable="@drawable/ic_launcher_monochrome" />
 </adaptive-icon>

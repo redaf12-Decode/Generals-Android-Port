@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- GeneralsX @feature Android launcher-icons-vectors 18/10/2026 The game shortcut's
+     foreground as a vector: a heraldic shield (silver ring over the radial background of
+     ic_launcher_background) carrying the gold star, the same #E8C547 gold as the Setup
+     shortcut's gear, so both launcher icons read as one family. Replaces the five
+     density PNGs traced from GeneralsZH.ico, which were a 256px bitmap scaled by the
+     launcher at every icon size; paths stay crisp at any resolution the launcher picks.
+
+     Geometry is computed, not eyeballed: everything sits inside the adaptive icon's
+     66dp safe circle (farthest point of the shield is 30 units from the 54,54 centre of
+     this 108 viewport, versus the 33-unit limit), the shield ring is a 4-unit band via
+     even-odd (outer minus inner subpath; same technique as ic_gzh_daynight's crescent),
+     and the star is a true 5-point star (outer radius 13, inner 4.97, the classic
+     0.382 ratio) centred on 54,52. No launcher mask can cut the shield's corners. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Shield ring: outer silhouette minus the inner one (even-odd), leaving the
+         navy background visible through the middle. -->
+    <path
+        android:fillColor="#FFEDF1F7"
+        android:fillType="evenOdd"
+        android:pathData="M32,34 L76,34 L76,56 L54,84 L32,56 Z M36,38 L72,38 L72,55 L54,78 L36,55 Z" />
+    <!-- The star, alternating outer/inner vertices at x2 the computed radii. -->
+    <path
+        android:fillColor="#FFE8C547"
+        android:pathData="M54,39 L56.92,47.98 L66.36,47.98 L58.73,53.54 L61.64,62.52 L54,56.97 L46.36,62.52 L49.27,53.54 L41.64,47.98 L51.08,47.98 Z" />
+</vector>
