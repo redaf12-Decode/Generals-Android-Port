@@ -1,0 +1,170 @@
+
+name: Commit Transfer (Cherry-Pick)
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_branch:
+        description: "اختر فرع المصدر"
+        required: true
+        type: choice
+        options:
+          - backup18-10
+          - claude/ui-redesign-dashboard-drawer
+          - main
+
+      target_branch:
+        description: "اختر الفرع المستهدف"
+        required: true
+        type: choice
+        options:
+          - backup18-10
+          - claude/ui-redesign-dashboard-drawer
+          - main
+
+      commit_sha:
+        description: "أدخل رمز Commit الكامل (40 حرفًا)"
+        required: true
+        type: string
+
+      confirm_main:
+        description: "أوافق على النقل المباشر إلى main"
+        required: true
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: commit-transfer-${{ inputs.target_branch }}
+  cancel-in-progress: false
+
+jobs:
+  transfer-commit:
+    name: Transfer one commit
+    runs-on: ubuntu-latest
+
+    env:
+      SOURCE_BRANCH: ${{ inputs.source_branch }}
+      TARGET_BRANCH: ${{ inputs.target_branch }}
+      COMMIT_SHA: ${{ inputs.commit_sha }}
+      CONFIRM_MAIN: ${{ inputs.confirm_main }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Validate inputs
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [[ "$SOURCE_BRANCH" == "$TARGET_BRANCH" ]]; then
+            echo "::error::Source and target branches must be different."
+            exit 1
+          fi
+
+          if [[ ! "$COMMIT_SHA" =~ ^[0-9a-fA-F]{40}$ ]]; then
+            echo "::error::Enter a full 40-character commit SHA."
+            exit 1
+          fi
+
+          if [[ "$TARGET_BRANCH" == "main" && "$CONFIRM_MAIN" != "true" ]]; then
+            echo "::error::You must confirm direct transfer to main."
+            exit 1
+          fi
+
+          echo "Input validation passed."
+
+      - name: Fetch and verify branches
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          git fetch --no-tags origin \
+            "+refs/heads/${SOURCE_BRANCH}:refs/remotes/origin/${SOURCE_BRANCH}" \
+            "+refs/heads/${TARGET_BRANCH}:refs/remotes/origin/${TARGET_BRANCH}"
+
+          if ! git cat-file -e "${COMMIT_SHA}^{commit}" 2>/dev/null; then
+            echo "::error::Commit not found in the fetched repository."
+            exit 1
+          fi
+
+          if ! git merge-base --is-ancestor \
+            "$COMMIT_SHA" "refs/remotes/origin/${SOURCE_BRANCH}"; then
+            echo "::error::The selected commit is not part of the source branch history."
+            exit 1
+          fi
+
+          echo "Commit verified in source branch."
+
+      - name: Prepare temporary working branch
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          TEMP_BRANCH="automation/commit-transfer-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git switch --create "$TEMP_BRANCH" \
+            "refs/remotes/origin/${TARGET_BRANCH}"
+
+          echo "TEMP_BRANCH=$TEMP_BRANCH" >> "$GITHUB_ENV"
+
+      - name: Cherry-pick selected commit
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if git cherry-pick "$COMMIT_SHA"; then
+            echo "Commit applied successfully."
+          else
+            git cherry-pick --abort || true
+            echo "::error::Cherry-pick failed, likely due to conflicts. No changes were pushed."
+            exit 1
+          fi
+
+      - name: Verify resulting commit
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if ! git diff-tree --check HEAD^ HEAD; then
+            echo "::error::Whitespace or patch errors detected."
+            exit 1
+          fi
+
+          echo "New commit:"
+          git log -1 --format='%H%n%s'
+
+      - name: Push to target branch
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          # No force push. If the target branch changed during this run,
+          # the push should fail safely rather than overwrite remote history.
+          git push origin "HEAD:refs/heads/${TARGET_BRANCH}"
+
+          echo "Commit transferred to ${TARGET_BRANCH}."
+
+      - name: Summary
+        if: success()
+        shell: bash
+        run: |
+          {
+            echo "## Commit transfer successful"
+            echo ""
+            echo "- **Source branch:** \`${SOURCE_BRANCH}\`"
+            echo "- **Target branch:** \`${TARGET_BRANCH}\`"
+            echo "- **Original commit:** \`${COMMIT_SHA}\`"
+            echo "- **Transferred commit:** \`$(git rev-parse HEAD)\`"
+            echo ""
+            echo "The selected commit was cherry-picked. Other commits from the source branch were not merged."
+          } >> "$GITHUB_STEP_SUMMARY"
