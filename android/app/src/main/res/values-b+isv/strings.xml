@@ -477,4 +477,10 @@
     <string name="toolbox_tool_edit_layout">Upravljati dugma</string>
     <string name="toolbox_edit_toggle">Vključiti/vykľučiti dugme</string>
     <string name="toolbox_toast_edits_discarded">Změny odvržene.</string>
+    <string name="toolbox_tool_button_size">Veličina dugm</string>
+    <string name="toolbox_tool_save_default">Sačuvati črt kako umolčeny</string>
+    <string name="toolbox_tool_load_default">Naložiti sačuvany črt</string>
+    <string name="toolbox_toast_default_saved">Sačuvano kako umolčeny črt toj igry.</string>
+    <string name="toolbox_toast_no_default">Za tu igru ještě ne jest sačuvan umolčeny črt.</string>
+    <string name="toolbox_toast_default_broken">Sačuvany umolčeny črt ne da se pročitati, zato ne jest priměnjen.</string>
 </resources>

@@ -476,4 +476,10 @@
     <string name="toolbox_tool_edit_layout">ویرایش دکمه‌ها</string>
     <string name="toolbox_edit_toggle">روشن/خاموش کردن دکمه</string>
     <string name="toolbox_toast_edits_discarded">تغییرات کنار گذاشته شد.</string>
+    <string name="toolbox_tool_button_size">اندازه دکمه‌ها</string>
+    <string name="toolbox_tool_save_default">ذخیره چیدمان به‌عنوان پیش‌فرض</string>
+    <string name="toolbox_tool_load_default">بارگذاری چیدمان ذخیره‌شده</string>
+    <string name="toolbox_toast_default_saved">به‌عنوان چیدمان پیش‌فرض این بازی ذخیره شد.</string>
+    <string name="toolbox_toast_no_default">هنوز چیدمان پیش‌فرضی برای این بازی ذخیره نشده است.</string>
+    <string name="toolbox_toast_default_broken">چیدمان پیش‌فرض ذخیره‌شده خوانده نشد، بنابراین اعمال نشد.</string>
 </resources>

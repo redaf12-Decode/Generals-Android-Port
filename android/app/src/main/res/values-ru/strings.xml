@@ -479,4 +479,10 @@
     <string name="toolbox_tool_edit_layout">Редактировать кнопки</string>
     <string name="toolbox_edit_toggle">Вкл/выкл кнопку</string>
     <string name="toolbox_toast_edits_discarded">Изменения отменены.</string>
+    <string name="toolbox_tool_button_size">Размер кнопок</string>
+    <string name="toolbox_tool_save_default">Сохранить раскладку по умолчанию</string>
+    <string name="toolbox_tool_load_default">Загрузить сохранённую раскладку</string>
+    <string name="toolbox_toast_default_saved">Сохранено как раскладка по умолчанию для этой игры.</string>
+    <string name="toolbox_toast_no_default">Для этой игры ещё не сохранена раскладка по умолчанию.</string>
+    <string name="toolbox_toast_default_broken">Сохранённую раскладку не удалось прочитать, поэтому она не применена.</string>
 </resources>

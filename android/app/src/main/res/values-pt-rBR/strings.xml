@@ -477,4 +477,10 @@
     <string name="toolbox_tool_edit_layout">Editar botões</string>
     <string name="toolbox_edit_toggle">Ativar/desativar botão</string>
     <string name="toolbox_toast_edits_discarded">Alterações descartadas.</string>
+    <string name="toolbox_tool_button_size">Tamanho dos botões</string>
+    <string name="toolbox_tool_save_default">Salvar layout como padrão</string>
+    <string name="toolbox_tool_load_default">Carregar layout salvo</string>
+    <string name="toolbox_toast_default_saved">Salvo como layout padrão deste jogo.</string>
+    <string name="toolbox_toast_no_default">Ainda não há um layout padrão salvo para este jogo.</string>
+    <string name="toolbox_toast_default_broken">Não foi possível ler o layout padrão salvo, então ele não foi aplicado.</string>
 </resources>

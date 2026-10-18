@@ -477,4 +477,10 @@
     <string name="toolbox_tool_edit_layout">Редагувати кнопки</string>
     <string name="toolbox_edit_toggle">Увімкнути/вимкнути кнопку</string>
     <string name="toolbox_toast_edits_discarded">Зміни скасовано.</string>
+    <string name="toolbox_tool_button_size">Розмір кнопок</string>
+    <string name="toolbox_tool_save_default">Зберегти розкладку типовою</string>
+    <string name="toolbox_tool_load_default">Завантажити збережену розкладку</string>
+    <string name="toolbox_toast_default_saved">Збережено як типову розкладку для цієї гри.</string>
+    <string name="toolbox_toast_no_default">Для цієї гри ще не збережено типової розкладки.</string>
+    <string name="toolbox_toast_default_broken">Збережену розкладку не вдалося прочитати, тому її не застосовано.</string>
 </resources>

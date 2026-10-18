@@ -477,4 +477,10 @@
     <string name="toolbox_tool_edit_layout">Edytuj przyciski</string>
     <string name="toolbox_edit_toggle">Włącz/wyłącz przycisk</string>
     <string name="toolbox_toast_edits_discarded">Zmiany odrzucone.</string>
+    <string name="toolbox_tool_button_size">Rozmiar przycisków</string>
+    <string name="toolbox_tool_save_default">Zapisz układ jako domyślny</string>
+    <string name="toolbox_tool_load_default">Wczytaj zapisany układ</string>
+    <string name="toolbox_toast_default_saved">Zapisano jako domyślny układ tej gry.</string>
+    <string name="toolbox_toast_no_default">Dla tej gry nie zapisano jeszcze domyślnego układu.</string>
+    <string name="toolbox_toast_default_broken">Nie udało się odczytać zapisanego układu domyślnego, więc go nie zastosowano.</string>
 </resources>

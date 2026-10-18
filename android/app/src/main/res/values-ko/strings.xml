@@ -476,4 +476,10 @@
     <string name="toolbox_tool_edit_layout">버튼 편집</string>
     <string name="toolbox_edit_toggle">버튼 켜기/끄기</string>
     <string name="toolbox_toast_edits_discarded">변경 사항을 버렸습니다.</string>
+    <string name="toolbox_tool_button_size">버튼 크기</string>
+    <string name="toolbox_tool_save_default">기본 레이아웃으로 저장</string>
+    <string name="toolbox_tool_load_default">저장된 레이아웃 불러오기</string>
+    <string name="toolbox_toast_default_saved">이 게임의 기본 레이아웃으로 저장했습니다.</string>
+    <string name="toolbox_toast_no_default">이 게임에 저장된 기본 레이아웃이 아직 없습니다.</string>
+    <string name="toolbox_toast_default_broken">저장된 기본 레이아웃을 읽을 수 없어 적용하지 않았습니다.</string>
 </resources>

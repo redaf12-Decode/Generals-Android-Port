@@ -443,6 +443,12 @@
     <string name="toolbox_tool_restore_buttons">Restore default buttons</string>
     <string name="toolbox_close">Close</string>
     <string name="toolbox_tool_edit_layout">Edit buttons</string>
+    <string name="toolbox_tool_button_size">Button size</string>
+    <string name="toolbox_tool_save_default">Save layout as default</string>
+    <string name="toolbox_tool_load_default">Load saved layout</string>
+    <string name="toolbox_toast_default_saved">Saved as this game\'s default layout.</string>
+    <string name="toolbox_toast_no_default">No default layout has been saved for this game yet.</string>
+    <string name="toolbox_toast_default_broken">The saved default layout could not be read, so it was not applied.</string>
     <string name="toolbox_edit_toggle">Turn button on/off</string>
     <string name="toolbox_toast_edits_discarded">Changes discarded.</string>
     <string name="toolbox_toast_buttons_restored">Touch buttons restored to the default layout. The game\'s own panel changes on the next launch.</string>

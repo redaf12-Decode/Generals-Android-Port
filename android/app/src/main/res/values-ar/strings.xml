@@ -477,4 +477,10 @@
     <string name="toolbox_tool_edit_layout">تحرير الأزرار</string>
     <string name="toolbox_edit_toggle">تشغيل/إيقاف الزر</string>
     <string name="toolbox_toast_edits_discarded">تم تجاهل التغييرات.</string>
+    <string name="toolbox_tool_button_size">حجم الأزرار</string>
+    <string name="toolbox_tool_save_default">حفظ التخطيط كافتراضي</string>
+    <string name="toolbox_tool_load_default">تحميل التخطيط المحفوظ</string>
+    <string name="toolbox_toast_default_saved">تم الحفظ كتخطيط افتراضي لهذه اللعبة.</string>
+    <string name="toolbox_toast_no_default">لم يُحفظ تخطيط افتراضي لهذه اللعبة بعد.</string>
+    <string name="toolbox_toast_default_broken">تعذّرت قراءة التخطيط الافتراضي المحفوظ، لذلك لم يُطبَّق.</string>
 </resources>

@@ -476,4 +476,10 @@
     <string name="toolbox_tool_edit_layout">编辑按钮</string>
     <string name="toolbox_edit_toggle">启用/停用按钮</string>
     <string name="toolbox_toast_edits_discarded">已放弃更改。</string>
+    <string name="toolbox_tool_button_size">按钮大小</string>
+    <string name="toolbox_tool_save_default">保存为默认布局</string>
+    <string name="toolbox_tool_load_default">加载已保存布局</string>
+    <string name="toolbox_toast_default_saved">已保存为本游戏的默认布局。</string>
+    <string name="toolbox_toast_no_default">本游戏尚未保存默认布局。</string>
+    <string name="toolbox_toast_default_broken">无法读取已保存的默认布局,因此未应用。</string>
 </resources>

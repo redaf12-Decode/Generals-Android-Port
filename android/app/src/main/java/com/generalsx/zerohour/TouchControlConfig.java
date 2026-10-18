@@ -311,6 +311,24 @@ final class TouchControlConfig {
      * and global touch settings, so it can be imported on another device.
      */
     void exportTo(Context context, Uri uri) throws Exception {
+        try (OutputStream output = context.getContentResolver().openOutputStream(uri, "wt")) {
+            if (output == null) throw new Exception("Unable to open export file");
+            output.write(toJsonString().getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            output.flush();
+        }
+    }
+
+    /**
+     * GeneralsX @feature Android floating toolbox 17/10/2026 The same document the export writes,
+     * as a string: the toolbox keeps a copy of the current layout as the game's default layout,
+     * and that copy has to be the format the editor already imports so a saved layout and an
+     * exported file are the same thing.
+     */
+    String toJsonString() throws Exception {
+        return buildJson().toString(2);
+    }
+
+    private JSONObject buildJson() throws Exception {
         JSONObject root = new JSONObject();
         root.put("format", "GeneralsZHTouchControls");
         root.put("version", 2);
@@ -338,12 +356,7 @@ final class TouchControlConfig {
             array.put(item);
         }
         root.put("buttons", array);
-
-        try (OutputStream output = context.getContentResolver().openOutputStream(uri, "wt")) {
-            if (output == null) throw new Exception("Unable to open export file");
-            output.write(root.toString(2).getBytes(java.nio.charset.StandardCharsets.UTF_8));
-            output.flush();
-        }
+        return root;
     }
 
     /**
@@ -362,8 +375,16 @@ final class TouchControlConfig {
                 if (json.length() > 1024 * 1024) throw new Exception("Import file is too large");
             }
         }
+        return fromJsonString(json.toString());
+    }
 
-        JSONObject root = new JSONObject(json.toString());
+    /**
+     * Parses the portable layout document. Every field is clamped exactly as load() clamps it, so
+     * a stored layout can never carry a button off the screen or past the model's limits, and a
+     * document without a usable button is rejected rather than half-applied. Throws with a reason.
+     */
+    static TouchControlConfig fromJsonString(String json) throws Exception {
+        JSONObject root = new JSONObject(json);
         JSONArray array = root.optJSONArray("buttons");
         if (array == null) throw new Exception("No buttons mapping found");
         if (array.length() > MAX_BUTTONS) {

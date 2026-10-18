@@ -477,4 +477,10 @@
     <string name="toolbox_tool_edit_layout">Editar botones</string>
     <string name="toolbox_edit_toggle">Activar/desactivar botón</string>
     <string name="toolbox_toast_edits_discarded">Cambios descartados.</string>
+    <string name="toolbox_tool_button_size">Tamaño de los botones</string>
+    <string name="toolbox_tool_save_default">Guardar diseño como predeterminado</string>
+    <string name="toolbox_tool_load_default">Cargar diseño guardado</string>
+    <string name="toolbox_toast_default_saved">Guardado como diseño predeterminado de este juego.</string>
+    <string name="toolbox_toast_no_default">Todavía no hay un diseño predeterminado guardado para este juego.</string>
+    <string name="toolbox_toast_default_broken">No se pudo leer el diseño predeterminado guardado, así que no se aplicó.</string>
 </resources>

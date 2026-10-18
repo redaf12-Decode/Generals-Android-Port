@@ -477,4 +477,10 @@
     <string name="toolbox_tool_edit_layout">Modifier les boutons</string>
     <string name="toolbox_edit_toggle">Activer/désactiver le bouton</string>
     <string name="toolbox_toast_edits_discarded">Modifications abandonnées.</string>
+    <string name="toolbox_tool_button_size">Taille des boutons</string>
+    <string name="toolbox_tool_save_default">Enregistrer comme disposition par défaut</string>
+    <string name="toolbox_tool_load_default">Charger la disposition enregistrée</string>
+    <string name="toolbox_toast_default_saved">Enregistré comme disposition par défaut de ce jeu.</string>
+    <string name="toolbox_toast_no_default">Aucune disposition par défaut n\'a encore été enregistrée pour ce jeu.</string>
+    <string name="toolbox_toast_default_broken">La disposition par défaut enregistrée n\'a pas pu être lue, elle n\'a donc pas été appliquée.</string>
 </resources>

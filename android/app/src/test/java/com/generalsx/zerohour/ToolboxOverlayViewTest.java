@@ -268,11 +268,14 @@ public class ToolboxOverlayViewTest {
     @Test
     public void everyPanelRowIsAToolThatIsImplemented() {
         view = laidOutOverlay();
-        assertEquals("the panel lists four tools", 4, view.toolCount());
+        assertEquals("the panel lists seven tools", 7, view.toolCount());
         assertEquals(activity.getString(R.string.toolbox_tool_edit_layout), view.rowLabel(0));
         assertEquals(activity.getString(R.string.toolbox_tool_touch_layer), view.rowLabel(1));
-        assertEquals(activity.getString(R.string.toolbox_tool_restore_buttons), view.rowLabel(2));
-        assertEquals(activity.getString(R.string.toolbox_close), view.rowLabel(3));
+        assertEquals(activity.getString(R.string.toolbox_tool_button_size), view.rowLabel(2));
+        assertEquals(activity.getString(R.string.toolbox_tool_save_default), view.rowLabel(3));
+        assertEquals(activity.getString(R.string.toolbox_tool_load_default), view.rowLabel(4));
+        assertEquals(activity.getString(R.string.toolbox_tool_restore_buttons), view.rowLabel(5));
+        assertEquals(activity.getString(R.string.toolbox_close), view.rowLabel(6));
     }
 
     @Test
@@ -301,7 +304,7 @@ public class ToolboxOverlayViewTest {
         assertEquals(0, TouchControlConfig.load(ctx).buttons.size());
 
         view = laidOutOverlay();
-        view.pressRow(2);
+        view.pressRow(5);
         assertEquals("the shipped buttons must come back",
             TouchControlConfig.defaults().buttons.size(), TouchControlConfig.load(ctx).buttons.size());
     }
@@ -422,7 +425,7 @@ public class ToolboxOverlayViewTest {
         view.pressRow(4);   // Save
 
         assertFalse("saving must leave the editor", view.isEditing());
-        assertEquals("the panel is back to its play rows", 4, view.toolCount());
+        assertEquals("the panel is back to its play rows", 7, view.toolCount());
         assertEquals("the edited position must be stored", movedTo,
             TouchControlConfig.load(activity).buttons.get(index).x, 0.0001f);
     }
@@ -467,7 +470,100 @@ public class ToolboxOverlayViewTest {
         view.onTouchEvent(event(MotionEvent.ACTION_DOWN, iconCx(), iconCy()));
         view.onTouchEvent(event(MotionEvent.ACTION_UP, iconCx(), iconCy()));
         assertTrue(view.isPanelOpen());
-        view.pressRow(3);
+        view.pressRow(6);
         assertFalse(view.isPanelOpen());
+    }
+
+    // ------------------------------------------------------------- layout management
+
+    @Test
+    public void theSaveRowStoresASnapshotForThisGameOnly() {
+        Context ctx = org.robolectric.RuntimeEnvironment.getApplication();
+        view = laidOutOverlay();
+        view.pressRow(3);   // Save layout as default
+
+        ToolboxConfig zh = ToolboxConfig.load(ctx, SetupActivity.GAME_ZERO_HOUR);
+        assertTrue("nothing was saved", zh.hasDefaultLayout());
+        assertEquals("the snapshot must be the layout in use",
+            TouchControlConfig.load(ctx).buttons.size(), zh.loadDefaultLayout().buttons.size());
+        // ... button by button, not just in count: a snapshot that lost the actions would be worse
+        // than no snapshot at all.
+        for (int i = 0; i < zh.loadDefaultLayout().buttons.size(); i++) {
+            assertEquals(TouchControlConfig.load(ctx).buttons.get(i).keyCode,
+                zh.loadDefaultLayout().buttons.get(i).keyCode);
+            assertEquals(TouchControlConfig.load(ctx).buttons.get(i).x,
+                zh.loadDefaultLayout().buttons.get(i).x, 0.0001f);
+        }
+        assertFalse("the snapshot leaked into the other game",
+            ToolboxConfig.load(ctx, SetupActivity.GAME_GENERALS).hasDefaultLayout());
+    }
+
+    @Test
+    public void theLoadRowPutsTheSavedLayoutBackInPlace() {
+        Context ctx = org.robolectric.RuntimeEnvironment.getApplication();
+        view = laidOutOverlay();
+        view.pressRow(3);   // Save layout as default
+        int saved = TouchControlConfig.load(ctx).buttons.size();
+
+        TouchControlConfig emptied = TouchControlConfig.load(ctx);
+        emptied.buttons.clear();
+        emptied.save(ctx);
+        assertEquals(0, TouchControlConfig.load(ctx).buttons.size());
+
+        view.pressRow(4);   // Load saved layout
+        assertEquals("the saved layout must come back", saved,
+            TouchControlConfig.load(ctx).buttons.size());
+    }
+
+    @Test
+    public void theLoadRowDoesNothingWhenThereIsNothingSaved() {
+        Context ctx = org.robolectric.RuntimeEnvironment.getApplication();
+        TouchControlConfig emptied = TouchControlConfig.load(ctx);
+        emptied.buttons.clear();
+        emptied.save(ctx);
+
+        view = laidOutOverlay();
+        view.pressRow(4);   // Load saved layout, with no snapshot
+
+        assertEquals("a missing default layout must not change anything",
+            0, TouchControlConfig.load(ctx).buttons.size());
+    }
+
+    @Test
+    public void anUnreadableSavedLayoutIsNeverApplied() {
+        Context ctx = org.robolectric.RuntimeEnvironment.getApplication();
+        TouchControlConfig current = TouchControlConfig.load(ctx);
+        current.buttons.clear();
+        current.save(ctx);
+
+        ToolboxConfig stored = ToolboxConfig.load(ctx, SetupActivity.GAME_ZERO_HOUR);
+        stored.defaultLayoutJson = "{ this is not a layout";
+        stored.save(ctx, SetupActivity.GAME_ZERO_HOUR);
+
+        view = laidOutOverlay();
+        view.pressRow(4);
+
+        assertEquals("a layout that does not parse must be ignored, not half-applied",
+            0, TouchControlConfig.load(ctx).buttons.size());
+    }
+
+    @Test
+    public void theButtonSizeRowStepsThroughThePresetsAndWraps() {
+        Context ctx = org.robolectric.RuntimeEnvironment.getApplication();
+        TouchControlConfig layout = TouchControlConfig.load(ctx);
+        layout.buttonScale = 1.0f;
+        layout.save(ctx);
+
+        view = laidOutOverlay();
+        view.pressRow(2);   // Button size
+        assertEquals(1.25f, TouchControlConfig.load(ctx).buttonScale, 0.001f);
+        assertEquals("125%", view.rowValue(2));
+
+        view.pressRow(2);
+        assertEquals(1.5f, TouchControlConfig.load(ctx).buttonScale, 0.001f);
+
+        view.pressRow(2);
+        assertEquals("past the largest preset it starts again",
+            0.75f, TouchControlConfig.load(ctx).buttonScale, 0.001f);
     }
 }

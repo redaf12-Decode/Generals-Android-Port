@@ -477,4 +477,10 @@
     <string name="toolbox_tool_edit_layout">Tasten bearbeiten</string>
     <string name="toolbox_edit_toggle">Taste ein-/ausschalten</string>
     <string name="toolbox_toast_edits_discarded">Änderungen verworfen.</string>
+    <string name="toolbox_tool_button_size">Tastengröße</string>
+    <string name="toolbox_tool_save_default">Layout als Standard speichern</string>
+    <string name="toolbox_tool_load_default">Gespeichertes Layout laden</string>
+    <string name="toolbox_toast_default_saved">Als Standardlayout für dieses Spiel gespeichert.</string>
+    <string name="toolbox_toast_no_default">Für dieses Spiel wurde noch kein Standardlayout gespeichert.</string>
+    <string name="toolbox_toast_default_broken">Das gespeicherte Standardlayout konnte nicht gelesen werden und wurde nicht angewendet.</string>
 </resources>

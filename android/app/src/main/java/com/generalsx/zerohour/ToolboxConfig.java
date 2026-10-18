@@ -168,6 +168,45 @@ final class ToolboxConfig {
             .apply();
     }
 
+    /**
+     * GeneralsX @feature Android floating toolbox 17/10/2026 The layout this game's toolbox
+     * restores: the copy saved from the toolbox itself, in the same JSON the editor exports, or
+     * nothing when the player has not saved one (in which case the built-in defaults are what
+     * "restore" means).
+     */
+    boolean hasDefaultLayout() {
+        return defaultLayoutJson != null && !defaultLayoutJson.isEmpty();
+    }
+
+    /** Stores a snapshot of the layout as this game's default. */
+    void saveDefaultLayout(Context context, String game, TouchControlConfig layout) {
+        try {
+            defaultLayoutJson = layout.toJsonString();
+        } catch (Exception e) {
+            // toJsonString only fails on non-finite numbers, which every setter clamps away.
+            android.util.Log.w("GXToolbox", "could not serialise the layout", e);
+            return;
+        }
+        save(context, game);
+    }
+
+    /**
+     * The saved snapshot, or null when there is none -- or when the stored text cannot be read as
+     * a layout at all (a file written by a future build, a half-written file). A snapshot that
+     * does not validate is never applied; the caller says so instead of silently doing nothing.
+     */
+    TouchControlConfig loadDefaultLayout() {
+        if (!hasDefaultLayout()) {
+            return null;
+        }
+        try {
+            return TouchControlConfig.fromJsonString(defaultLayoutJson);
+        } catch (Exception e) {
+            android.util.Log.w("GXToolbox", "the saved layout does not parse", e);
+            return null;
+        }
+    }
+
     /** Back to the shipped defaults for one game. The other game's settings are untouched. */
     static void reset(Context context, String game) {
         SharedPreferences.Editor editor = prefs(context).edit();

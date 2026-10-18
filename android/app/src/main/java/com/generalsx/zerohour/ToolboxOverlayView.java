@@ -74,11 +74,23 @@ final class ToolboxOverlayView extends View {
     // mid-match without a restart.
     private static final int TOOL_EDIT_LAYOUT = 0;
     private static final int TOOL_TOUCH_LAYER = 1;
-    private static final int TOOL_RESTORE_BUTTONS = 2;
-    private static final int TOOL_CLOSE = 3;
+    private static final int TOOL_BUTTON_SIZE = 2;
+    private static final int TOOL_SAVE_DEFAULT = 3;
+    private static final int TOOL_LOAD_DEFAULT = 4;
+    private static final int TOOL_RESTORE_BUTTONS = 5;
+    private static final int TOOL_CLOSE = 6;
     /** The panel while the match runs. */
     private static final int[] PLAY_TOOLS = {
-        TOOL_EDIT_LAYOUT, TOOL_TOUCH_LAYER, TOOL_RESTORE_BUTTONS, TOOL_CLOSE };
+        TOOL_EDIT_LAYOUT, TOOL_TOUCH_LAYER, TOOL_BUTTON_SIZE,
+        TOOL_SAVE_DEFAULT, TOOL_LOAD_DEFAULT, TOOL_RESTORE_BUTTONS, TOOL_CLOSE };
+
+    /**
+     * The sizes the "Button size" row steps through, as TouchControlConfig.buttonScale. The step
+     * is applied to the live panel at once (HotkeyOverlayView.reload reads this value), which is
+     * the point of having it in the toolbox: a panel that is too small to hit is exactly what you
+     * notice mid-match.
+     */
+    private static final float[] BUTTON_SIZE_PRESETS = { 0.75f, 1.0f, 1.25f, 1.5f };
 
     // GeneralsX @feature Android floating toolbox 17/10/2026 The editor's rows, shown in place of
     // the tools above while the layout is being edited. Same model, same buttons, same keys --
@@ -375,6 +387,19 @@ final class ToolboxOverlayView extends View {
                     rowValues[i] = getContext().getString(
                         TouchControlConfig.load(getContext()).enabled
                             ? R.string.toolbox_state_on : R.string.toolbox_state_off);
+                    break;
+                case TOOL_BUTTON_SIZE:
+                    rowLabels[i] = getContext().getString(R.string.toolbox_tool_button_size);
+                    rowValues[i] = Math.round(
+                        TouchControlConfig.load(getContext()).buttonScale * 100f) + "%";
+                    break;
+                case TOOL_SAVE_DEFAULT:
+                    rowLabels[i] = getContext().getString(R.string.toolbox_tool_save_default);
+                    rowValues[i] = "";
+                    break;
+                case TOOL_LOAD_DEFAULT:
+                    rowLabels[i] = getContext().getString(R.string.toolbox_tool_load_default);
+                    rowValues[i] = "";
                     break;
                 case TOOL_RESTORE_BUTTONS:
                     rowLabels[i] = getContext().getString(R.string.toolbox_tool_restore_buttons);
@@ -750,6 +775,15 @@ final class ToolboxOverlayView extends View {
             case TOOL_TOUCH_LAYER:
                 onToggleTouchLayer();
                 break;
+            case TOOL_BUTTON_SIZE:
+                onCycleButtonSize();
+                break;
+            case TOOL_SAVE_DEFAULT:
+                onSaveDefaultLayout();
+                break;
+            case TOOL_LOAD_DEFAULT:
+                onLoadDefaultLayout();
+                break;
             case TOOL_RESTORE_BUTTONS:
                 onRestoreButtons();
                 break;
@@ -895,6 +929,74 @@ final class ToolboxOverlayView extends View {
         TouchControlConfig config = TouchControlConfig.load(getContext());
         config.enabled = !config.enabled;
         config.save(getContext());
+        prepareForNextLaunch();
+        if (hotkeyOverlay != null) {
+            hotkeyOverlay.reload();
+        }
+        rebuildRows();
+        invalidate();
+        toast(getContext().getString(R.string.touch_saved));
+    }
+
+    /**
+     * Steps the live panel's button size through the presets. The panel is redrawn from the new
+     * size immediately, so the change can be judged while the match runs; nothing else about the
+     * buttons changes.
+     */
+    private void onCycleButtonSize() {
+        TouchControlConfig layout = TouchControlConfig.load(getContext());
+        int nearest = 0;
+        float best = Float.MAX_VALUE;
+        for (int i = 0; i < BUTTON_SIZE_PRESETS.length; i++) {
+            float distance = Math.abs(layout.buttonScale - BUTTON_SIZE_PRESETS[i]);
+            if (distance < best) {
+                best = distance;
+                nearest = i;
+            }
+        }
+        float next = BUTTON_SIZE_PRESETS[(nearest + 1) % BUTTON_SIZE_PRESETS.length];
+        layout.buttonScale = next;
+        layout.save(getContext());
+        if (hotkeyOverlay != null) {
+            hotkeyOverlay.reload();
+        }
+        rebuildRows();
+        invalidate();
+        toast(getContext().getString(R.string.touch_button_size, Math.round(next * 100f)));
+    }
+
+    /**
+     * Stores the layout that is in use now as this game's default layout -- a snapshot of the
+     * same JSON the launcher's editor exports, kept per game in ToolboxConfig, so Zero Hour's
+     * default is never Generals'.
+     */
+    private void onSaveDefaultLayout() {
+        try {
+            config.defaultLayoutJson = TouchControlConfig.load(getContext()).toJsonString();
+        } catch (Exception e) {
+            Log.w(TAG, "could not serialise the current layout", e);
+            return;
+        }
+        config.save(getContext(), game);
+        rebuildRows();
+        invalidate();
+        toast(getContext().getString(R.string.toolbox_toast_default_saved));
+    }
+
+    /**
+     * Applies the saved snapshot to the layout in use. A snapshot that is missing, or that no
+     * longer reads as a layout, is never half-applied: the row says which of the two it is.
+     */
+    private void onLoadDefaultLayout() {
+        // Read the file, not the cached copy: the snapshot is what a previous session saved.
+        ToolboxConfig stored = ToolboxConfig.load(getContext(), game);
+        TouchControlConfig snapshot = stored.loadDefaultLayout();
+        if (snapshot == null) {
+            toast(getContext().getString(stored.hasDefaultLayout()
+                ? R.string.toolbox_toast_default_broken : R.string.toolbox_toast_no_default));
+            return;
+        }
+        snapshot.save(getContext());
         prepareForNextLaunch();
         if (hotkeyOverlay != null) {
             hotkeyOverlay.reload();
