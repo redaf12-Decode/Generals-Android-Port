@@ -1,16 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- GeneralsX @feature Android port launcher-ui-2026 08/09/2026 -->
+<!-- GeneralsX @tweak Android port icon-family 18/10/2026 Outline glyph on the shared 24dp grid
+     (2-unit stroke, round caps/joins, content inside 3..21). Two sheets drawn as outlines; the old
+     version mixed a filled sheet with a loose bracket, which is what made the pair look lopsided. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
     android:height="24dp"
     android:viewportWidth="24"
     android:viewportHeight="24">
     <path
-        android:fillColor="#FFFFFFFF"
-        android:fillType="evenOdd"
-        android:pathData="M8 2 h11 v15.4 h-11 Z M10 4 h7 v11.4 h-7 Z" />
-    <path
-        android:fillColor="#FFFFFFFF"
-        android:fillType="nonZero"
-        android:pathData="M4.6 6 h2 v14 h11 v2 h-13 Z" />
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="2"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M9 9h10.5v10.5H9z M15.5 9V4.5H4.5V15H9" />
 </vector>

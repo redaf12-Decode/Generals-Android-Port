@@ -1,12 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- GeneralsX @ui-redesign Android port dashboard-2026 -->
+<!-- GeneralsX @tweak Android port icon-family 18/10/2026 Outline glyph on the shared 24dp grid
+     (2-unit stroke, round caps/joins, content inside 3..21). The drawer toggle used to be a solid
+     badge with notched corners, which read as a shield rather than as "open the menu"; three bars
+     are the one shape nobody has to interpret. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
     android:height="24dp"
     android:viewportWidth="24"
     android:viewportHeight="24">
     <path
-        android:fillColor="#FFFFFFFF"
-        android:fillType="nonZero"
-        android:pathData="M3 6.4 L5.6 3 H18.4 L21 6.4 V17.6 H18.4 V21 L5.6 21 H3 Z"/>
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="2"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M4 7h16M4 12h16M4 17h16" />
 </vector>

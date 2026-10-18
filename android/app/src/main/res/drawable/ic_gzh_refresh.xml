@@ -1,12 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- GeneralsX @feature Android port launcher-ui-2026 08/09/2026 -->
+<!-- GeneralsX @tweak Android port icon-family 18/10/2026 Outline glyph on the shared 24dp grid
+     (2-unit stroke, round caps/joins, content inside 3..21). A 315-degree arc plus an arrowhead
+     whose base straddles the arc's end and whose tip points along its tangent, so the head sits on
+     the circle instead of beside it. The head is solid for the same reason the info dot is: two
+     strokes meeting at a point on a curve read as a bend, not as an arrow. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
     android:height="24dp"
     android:viewportWidth="24"
     android:viewportHeight="24">
     <path
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="2"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M18.5 12a6.5 6.5 0 1 1-1.9-4.6" />
+    <path
         android:fillColor="#FFFFFFFF"
-        android:fillType="nonZero"
-        android:pathData="M12 4.2 A7.8 7.8 0 1 1 4.2 12 H6.5 A5.5 5.5 0 1 0 12 6.5 Z M10.6 1.2 l5.2 3 l-5.2 3 Z" />
+        android:pathData="M18.86 9.66L14.9 9.1L18.3 5.7z" />
 </vector>

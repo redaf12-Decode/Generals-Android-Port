@@ -1,16 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- GeneralsX @feature Android port launcher-ui-2026 08/09/2026 -->
+<!-- GeneralsX @tweak Android port icon-family 18/10/2026 Outline glyph on the shared 24dp grid
+     (2-unit stroke, round caps/joins, content inside 3..21). Body, neck and foot are one path so
+     the joins stay round and the foot is the same weight as the screen edge. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
     android:height="24dp"
     android:viewportWidth="24"
     android:viewportHeight="24">
     <path
-        android:fillColor="#FFFFFFFF"
-        android:fillType="evenOdd"
-        android:pathData="M2 4 h20 v13.2 h-20 Z M4 6 h16 v9.2 h-16 Z" />
-    <path
-        android:fillColor="#FFFFFFFF"
-        android:fillType="nonZero"
-        android:pathData="M9 19.2 h6 v2.2 h-6 Z" />
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="2"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M3 5.5h18v11H3z M12 16.5v4 M8.5 20.5h7" />
 </vector>

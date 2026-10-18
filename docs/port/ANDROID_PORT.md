@@ -75,7 +75,7 @@ compiled under a shared `SAGE_MOBILE_PLATFORM` guard
 | `GeneralsMD/Code/Main/SDL3Main.cpp` | Android env bootstrap: HOME→internal storage, cwd→external files dir (or its `GameData/`), DXVK cache→app cache dir, stderr→pullable log file with rotation, Options.ini seeding; fullscreen/immersive; `SDL_HINT_ANDROID_BLOCK_ON_PAUSE=0`; OpenAL Linux workarounds excluded on Android (they would mute OpenSL/AAudio) |
 | `GeneralsMD/.../SDL3GameEngine.cpp` | touch gesture state machine + lifecycle render gate, generalized to `SAGE_MOBILE_PLATFORM` |
 | `GeneralsMD/.../SDL3Device/GameClient/TouchInput.{h,cpp}` | what a gesture *means*, resolved against the engine's own rules with no synthesized pointer — see §2a |
-| `android/` | Gradle shell: `GeneralsZHActivity extends SDLActivity`, asset extraction, missing-game-data dialog, placeholder adaptive icon |
+| `android/` | Gradle shell: `GeneralsZHActivity extends SDLActivity`, asset extraction, missing-game-data dialog, adaptive launcher icons (see §1a) |
 | `scripts/build/android/{build,package}-android-zh.sh` | build + verify artifacts (AArch64, `Sdl3WsiDriver` compiled in), stage jniLibs/Java/assets, gradle assemble |
 | `vcpkg.json` | fontconfig excluded on android; ffmpeg enabled for android |
 
@@ -84,6 +84,27 @@ compiled under a shared `SAGE_MOBILE_PLATFORM` guard
 linker namespace to the APK-packaged library. Same for DXVK's Vulkan loader:
 its non-Apple list already tries `libvulkan.so` first — that *is* Android's
 system Vulkan loader.
+
+### 1a. Launcher UI icons (`android/app/src/main/res/drawable/ic_gzh_*.xml`)
+
+All 23 `ic_gzh_*` icons are vectors on one grid, so they read as one family in a row:
+
+- **24 × 24 viewport at 24dp**, `strokeWidth="2"`, `strokeLineCap="round"`,
+  `strokeLineJoin="round"`, content inside 2..22 with its painted box centred on
+  (12,12). A new icon that ignores this is caught by `IconFamilyTest`, which
+  rasterises every `ic_gzh_*` at 1:1 and asserts the painted box, its centre and
+  its ink coverage (5–45%).
+- **Strokes carry `#FFFFFFFF`**, because every call site tints the drawable
+  (`UiKit.icon` → `setTint`, the drawer's `itemIconTint`). A stroke path with no
+  `strokeColor` defaults to *none* — an invisible icon that still passes a
+  "is it a vector" check, which is why the tint path is tested too.
+- **Solid shapes are the documented exceptions**, not drift: the play triangle,
+  the info dot, the refresh arrowhead, the three share nodes and the day/night
+  half-disc. Each one is below the size where a 2-unit stroke leaves a hole
+  (a stroke ring around a 2.5-unit node closes to a dot anyway).
+- Changing a glyph **must not touch the game**: these are launcher resources.
+  The engine has its own icon code (`ToolboxIconRenderer`, canvas-drawn) and is
+  not involved.
 
 ## 2. The device / driver matrix (read this before filing "black screen" bugs)
 
