@@ -203,8 +203,8 @@ vcpkg deps → DXVK d3d8/d3d9 → `libmain.so` → Gradle `assembleDebug`, with 
 same artifact verification (`Sdl3WsiDriver` compiled in, AArch64 ELF) the local
 build script does.
 
-Trigger it from the **Actions** tab → *Build Android* → *Run workflow*, or just
-push to `main`/`claude/**` touching engine or `android/` files. Download the
+Trigger it from the **Actions** tab → *Build Android* → *Run workflow* (the `push:`
+trigger was removed in 08/2026 so ordinary commits don't start unattended builds). Download the
 `GeneralsXZH-android-<run>.apk` artifact from the run summary and `adb install`
 it (or transfer + tap-install on the phone).
 
@@ -245,6 +245,25 @@ export ANDROID_NDK_HOME=~/Android/Sdk/ndk/<version>
 
 The first configure builds vcpkg deps (ffmpeg, curl+openssl, freetype…) for
 `arm64-android` — expect 30–60 minutes cold.
+
+#### Reading a configure log: `x64-linux` is the host, not the target
+
+vcpkg builds **host tools** for the machine doing the compiling, and on Linux they are
+correctly `x64-linux`: `vcpkg-cmake`, `vcpkg-cmake-get-vars`, `vcpkg-cmake-config`,
+`vcpkg-pkgconfig-get-modules`, `vcpkg-tool-meson`, `pkgconf`, `ffmpeg-bin2c`, and
+`protobuf:x64-linux` with the `abseil`/`utf8-range` it needs (`protoc` runs during the
+build of `gamenetworkingsockets`). They are executed, never linked into the engine.
+Every port the engine *does* link — `openssl`, `zlib`, `curl`, `ffmpeg`, `libpng`,
+`bzip2`, `brotli`, `freetype`, `abseil`, `protobuf`, `gamenetworkingsockets`, `glm`,
+`gli`, `openal-soft` — must appear as `:arm64-android`. The configure log states the
+target explicitly (`[android] target: CMAKE_SYSTEM_NAME / CMAKE_ANDROID_ARCH_ABI /
+CMAKE_TOOLCHAIN_FILE / VCPKG_TARGET_TRIPLET`), and `cmake/android-target-check.cmake`
+refuses to configure if those disagree with Android arm64-v8a.
+
+GitHub scopes caches to the branch that created them (plus the default branch). A
+build dispatched from a branch that has never built pays the full cold vcpkg cost and
+takes ~80 minutes instead of ~18; dispatching once on `main` seeds caches every other
+branch can restore.
 
 ## 4. Game data and first run — the in-app Setup flow (no adb, no PC needed)
 

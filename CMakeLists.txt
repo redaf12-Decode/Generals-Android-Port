@@ -33,6 +33,13 @@ endif()
 # Top level project, doesn't really affect anything.
 project(genzh LANGUAGES C CXX)
 
+# GeneralsX @build Android 18/10/2026 Prove the target really is Android arm64 before anything is
+# compiled: prints the toolchain/ABI/triplet in effect and stops a stale build directory (CMake
+# does not switch toolchains in an existing cache) from silently producing a host binary.
+# A no-op on every non-Android configure. See the file for why vcpkg's x64-linux host tools are
+# expected and must not be "fixed".
+include(cmake/android-target-check.cmake)
+
 # GeneralsX @build BenderAI 10/02/2026
 # Linux port: Make CompatLib headers globally accessible so Core libraries (WWLib, WWMath, etc.)
 # can access platform compatibility types when building for non-Windows platforms
