@@ -1,34 +1,26 @@
 
-name: Commit Transfer (Cherry-Pick)
+name: Commit Transfer (Live Branch Selection)
 
 on:
   workflow_dispatch:
     inputs:
       source_branch:
-        description: "اختر فرع المصدر"
+        description: "اسم فرع المصدر — انسخه من قائمة الفروع في سجل التشغيل"
         required: true
-        type: choice
-        options:
-          - backup18-10
-          - claude/ui-redesign-dashboard-drawer
-          - main
+        type: string
 
       target_branch:
-        description: "اختر الفرع المستهدف"
+        description: "اسم الفرع المستهدف — انسخه من قائمة الفروع في سجل التشغيل"
         required: true
-        type: choice
-        options:
-          - backup18-10
-          - claude/ui-redesign-dashboard-drawer
-          - main
+        type: string
 
       commit_sha:
-        description: "أدخل رمز Commit الكامل (40 حرفًا)"
+        description: "رمز Commit الكامل (40 حرفًا)"
         required: true
         type: string
 
       confirm_main:
-        description: "أوافق على النقل المباشر إلى main"
+        description: "تأكيد الدفع المباشر إلى main عند اختياره"
         required: true
         type: boolean
         default: false
@@ -41,8 +33,49 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  list-branches:
+    name: Discover actual repository branches
+    runs-on: ubuntu-latest
+    outputs:
+      branches: ${{ steps.get-branches.outputs.branches }}
+
+    steps:
+      - name: Fetch actual branches from GitHub API
+        id: get-branches
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          branches="$(gh api \
+            --paginate \
+            "repos/${REPOSITORY}/branches?per_page=100" \
+            --jq '.[].name' | sort -u)"
+
+          if [[ -z "$branches" ]]; then
+            echo "::error::No branches were returned by the GitHub API."
+            exit 1
+          fi
+
+          echo "Actual branches currently found in ${REPOSITORY}:"
+          printf '%s\n' "$branches"
+
+          {
+            echo "## Branches currently present in the repository"
+            echo
+            printf '%s\n' "$branches" | sed 's/^/- `/; s/$/`/'
+            echo
+            echo "Copy the exact source and target branch names into the workflow inputs."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          json="$(printf '%s\n' "$branches" | jq -R . | jq -s -c .)"
+          echo "branches=$json" >> "$GITHUB_OUTPUT"
+
   transfer-commit:
-    name: Transfer one commit
+    name: Validate and cherry-pick one commit
+    needs: list-branches
     runs-on: ubuntu-latest
 
     env:
@@ -50,6 +83,7 @@ jobs:
       TARGET_BRANCH: ${{ inputs.target_branch }}
       COMMIT_SHA: ${{ inputs.commit_sha }}
       CONFIRM_MAIN: ${{ inputs.confirm_main }}
+      AVAILABLE_BRANCHES: ${{ needs.list-branches.outputs.branches }}
 
     steps:
       - name: Checkout repository
@@ -58,7 +92,7 @@ jobs:
           fetch-depth: 0
           persist-credentials: true
 
-      - name: Validate inputs
+      - name: Validate selected branches and commit
         shell: bash
         run: |
           set -euo pipefail
@@ -73,14 +107,27 @@ jobs:
             exit 1
           fi
 
-          if [[ "$TARGET_BRANCH" == "main" && "$CONFIRM_MAIN" != "true" ]]; then
-            echo "::error::You must confirm direct transfer to main."
+          if ! printf '%s' "$SOURCE_BRANCH" |
+            jq -e --arg b "$SOURCE_BRANCH" \
+              'index($b) != null' <<< "$AVAILABLE_BRANCHES" >/dev/null; then
+            echo "::error::Source branch is not in the discovered branch list."
             exit 1
           fi
 
-          echo "Input validation passed."
+          if ! jq -e --arg b "$TARGET_BRANCH" \
+            'index($b) != null' <<< "$AVAILABLE_BRANCHES" >/dev/null; then
+            echo "::error::Target branch is not in the discovered branch list."
+            exit 1
+          fi
 
-      - name: Fetch and verify branches
+          if [[ "$TARGET_BRANCH" == "main" && "$CONFIRM_MAIN" != "true" ]]; then
+            echo "::error::Confirm direct transfer to main before continuing."
+            exit 1
+          fi
+
+          echo "Branch and input validation passed."
+
+      - name: Fetch and verify selected commit
         shell: bash
         run: |
           set -euo pipefail
@@ -90,19 +137,19 @@ jobs:
             "+refs/heads/${TARGET_BRANCH}:refs/remotes/origin/${TARGET_BRANCH}"
 
           if ! git cat-file -e "${COMMIT_SHA}^{commit}" 2>/dev/null; then
-            echo "::error::Commit not found in the fetched repository."
+            echo "::error::Commit does not exist in the fetched repository."
             exit 1
           fi
 
           if ! git merge-base --is-ancestor \
             "$COMMIT_SHA" "refs/remotes/origin/${SOURCE_BRANCH}"; then
-            echo "::error::The selected commit is not part of the source branch history."
+            echo "::error::Commit is not part of the selected source branch history."
             exit 1
           fi
 
-          echo "Commit verified in source branch."
+          echo "Commit exists and belongs to the source branch history."
 
-      - name: Prepare temporary working branch
+      - name: Create temporary branch from target
         shell: bash
         run: |
           set -euo pipefail
@@ -110,7 +157,8 @@ jobs:
           TEMP_BRANCH="automation/commit-transfer-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
 
           git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config user.email \
+            "41898282+github-actions[bot]@users.noreply.github.com"
 
           git switch --create "$TEMP_BRANCH" \
             "refs/remotes/origin/${TARGET_BRANCH}"
@@ -122,49 +170,30 @@ jobs:
         run: |
           set -euo pipefail
 
-          if git cherry-pick "$COMMIT_SHA"; then
-            echo "Commit applied successfully."
-          else
+          if ! git cherry-pick "$COMMIT_SHA"; then
             git cherry-pick --abort || true
-            echo "::error::Cherry-pick failed, likely due to conflicts. No changes were pushed."
+            echo "::error::Cherry-pick failed. No changes were pushed."
             exit 1
           fi
 
-      - name: Verify resulting commit
+      - name: Push without force
         shell: bash
         run: |
           set -euo pipefail
 
-          if ! git diff-tree --check HEAD^ HEAD; then
-            echo "::error::Whitespace or patch errors detected."
-            exit 1
-          fi
-
-          echo "New commit:"
-          git log -1 --format='%H%n%s'
-
-      - name: Push to target branch
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          # No force push. If the target branch changed during this run,
-          # the push should fail safely rather than overwrite remote history.
           git push origin "HEAD:refs/heads/${TARGET_BRANCH}"
 
-          echo "Commit transferred to ${TARGET_BRANCH}."
+          echo "Successfully transferred the selected commit."
 
-      - name: Summary
+      - name: Transfer summary
         if: success()
         shell: bash
         run: |
           {
             echo "## Commit transfer successful"
-            echo ""
-            echo "- **Source branch:** \`${SOURCE_BRANCH}\`"
-            echo "- **Target branch:** \`${TARGET_BRANCH}\`"
-            echo "- **Original commit:** \`${COMMIT_SHA}\`"
-            echo "- **Transferred commit:** \`$(git rev-parse HEAD)\`"
-            echo ""
-            echo "The selected commit was cherry-picked. Other commits from the source branch were not merged."
+            echo
+            echo "- Source: \`${SOURCE_BRANCH}\`"
+            echo "- Target: \`${TARGET_BRANCH}\`"
+            echo "- Original commit: \`${COMMIT_SHA}\`"
+            echo "- New commit: \`$(git rev-parse HEAD)\`"
           } >> "$GITHUB_STEP_SUMMARY"
