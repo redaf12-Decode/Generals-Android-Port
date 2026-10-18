@@ -565,6 +565,78 @@ public class SetupShellLayoutTest {
     }
 
     @Test
+    public void theToolboxCardPreviewsTheBarAndItsTransparencyFromTheCard() {
+        ActivityController<SetupActivity> controller = Robolectric.buildActivity(SetupActivity.class);
+        SetupActivity activity = controller.setup().get();
+        try {
+            layOut(activity);
+            NavigationView nav = navigationOf(drawerOf(activity).getChildAt(0));
+            assertRowShowsPage(activity, nav, R.id.nav_interface, R.string.nav_tab_interface);
+
+            View card = viewWithTag(pageHostOrNull(activity), SetupActivity.TOOLBOX_CARD_TAG);
+            assertNotNull("the Interface page has no floating-toolbox card", card);
+            ToolboxIconPreviewView preview = (ToolboxIconPreviewView)
+                viewWithTag(card, ToolboxIconPreviewView.PREVIEW_TAG);
+            assertNotNull("the card shows no preview of the bar it configures", preview);
+
+            // A fresh install previews exactly what it defaults to -- rounded, medium, 85% --
+            // with the alpha derived by the same renderer the game draws with, and dimmed because
+            // the toolbox is off (the game builds no icon until the switch says so).
+            assertEquals(ToolboxConfig.STYLE_ROUNDED, preview.previewedStyle());
+            assertEquals(ToolboxConfig.SIZE_MEDIUM_DP, preview.previewedSideDp(), 0.001f);
+            assertEquals(ToolboxIconRenderer.alphaFor(ToolboxConfig.DEFAULT_OPACITY),
+                preview.previewedAlpha());
+            assertEquals(ToolboxIconPreviewView.DISABLED_PREVIEW_ALPHA, preview.getAlpha(), 0.001f);
+
+            // The switch is the same flag the game reads: turning it on lifts the dimming, and
+            // must not touch the player's chosen transparency (still the default's alpha).
+            // (The header value is deliberately empty while off -- the switch already says off,
+            // and printing a look the game will not show would promise something untrue.)
+            List<MaterialSwitch> switches = new ArrayList<>();
+            collect(card, MaterialSwitch.class, switches);
+            assertFalse("the toolbox card has no switch", switches.isEmpty());
+            switches.get(0).setChecked(true);
+            assertEquals("switching on must lift the preview's dimming",
+                1f, preview.getAlpha(), 0.001f);
+            assertEquals("switching on must not change the chosen transparency",
+                ToolboxIconRenderer.alphaFor(ToolboxConfig.DEFAULT_OPACITY), preview.previewedAlpha());
+
+            // Once on, the header value carries the whole look, transparency included.
+            assertNotNull("the summary does not carry the opacity",
+                textAnywhere(card, "Rounded · Medium · 85%"));
+
+            // The transparency control writes through this card; a card rebuilt from the file
+            // -- the way returning to it does -- must preview the stored look, not the old one.
+            String game = SetupActivity.getSelectedGame(activity);
+            ToolboxConfig config = ToolboxConfig.load(activity, game);
+            config.iconStyle = ToolboxConfig.STYLE_DIAMOND;
+            config.iconSizeDp = ToolboxConfig.sizeForIndex(2);
+            config.iconOpacity = 0.4f;
+            config.save(activity, game);
+
+            assertRowShowsPage(activity, nav, R.id.nav_home, R.string.nav_tab_home);
+            layOut(activity);
+            assertRowShowsPage(activity, nav, R.id.nav_interface, R.string.nav_tab_interface);
+            layOut(activity);
+
+            card = viewWithTag(pageHostOrNull(activity), SetupActivity.TOOLBOX_CARD_TAG);
+            ToolboxIconPreviewView rebuilt = (ToolboxIconPreviewView)
+                viewWithTag(card, ToolboxIconPreviewView.PREVIEW_TAG);
+            assertNotNull("the rebuilt card lost the preview", rebuilt);
+            assertEquals(ToolboxConfig.STYLE_DIAMOND, rebuilt.previewedStyle());
+            assertEquals(ToolboxConfig.sizeForIndex(2), rebuilt.previewedSideDp(), 0.001f);
+            assertEquals("the preview must draw the stored transparency (40%)",
+                ToolboxIconRenderer.alphaFor(0.4f), rebuilt.previewedAlpha());
+            assertEquals("the rebuilt card reads the saved enabled state",
+                1f, rebuilt.getAlpha(), 0.001f);
+            assertNotNull("the rebuilt summary lost the new look",
+                textAnywhere(card, "Diamond · Large · 40%"));
+        } finally {
+            controller.close();
+        }
+    }
+
+    @Test
     public void eachGameKeepsItsOwnFolderWhenTheSelectionChanges() {
         ActivityController<SetupActivity> controller = Robolectric.buildActivity(SetupActivity.class);
         SetupActivity activity = controller.setup().get();

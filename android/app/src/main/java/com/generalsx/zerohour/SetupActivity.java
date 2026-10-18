@@ -1188,6 +1188,22 @@ public class SetupActivity extends Activity {
         final ToolboxConfig config = ToolboxConfig.load(this, game);
         summary.setText(toolboxSummary(config));
 
+        // The bar itself, drawn by the very renderer the game's overlay draws it with, at the
+        // stored style, size and opacity: the preview and the battlefield cannot drift apart,
+        // and the transparency slider below visibly moves the same icon that floats in the
+        // match. Dimmed while the switch is off (the game builds no icon then) -- but still
+        // showing what turning it on would give.
+        final ToolboxIconPreviewView preview = new ToolboxIconPreviewView(this,
+            ThemeHelper.accentColor(this));
+        preview.setConfig(config);
+        preview.setToolboxEnabled(config.enabled);
+        LinearLayout.LayoutParams previewParams = new LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        previewParams.gravity = Gravity.CENTER_HORIZONTAL;
+        previewParams.topMargin = UiKit.dp(this, 8f);
+        previewParams.bottomMargin = UiKit.dp(this, 4f);
+        content.addView(preview, previewParams);
+
         SwitchCompat enable = UiKit.switchRow(content,
             getString(R.string.setup_toolbox_enable_row),
             getString(R.string.setup_toolbox_enable_row_desc));
@@ -1195,6 +1211,7 @@ public class SetupActivity extends Activity {
         enable.setOnCheckedChangeListener((button, checked) -> {
             config.enabled = checked;
             saveToolbox(config, game);
+            preview.setToolboxEnabled(checked);
             summary.setText(toolboxSummary(config));
         });
 
@@ -1206,6 +1223,7 @@ public class SetupActivity extends Activity {
             ToolboxConfig.clampStyle(config.iconStyle), index -> {
                 config.iconStyle = index;
                 saveToolbox(config, game);
+                preview.refresh();
                 summary.setText(toolboxSummary(config));
             });
 
@@ -1217,6 +1235,7 @@ public class SetupActivity extends Activity {
             ToolboxConfig.sizeIndex(config.iconSizeDp), index -> {
                 config.iconSizeDp = ToolboxConfig.sizeForIndex(index);
                 saveToolbox(config, game);
+                preview.refresh();
                 summary.setText(toolboxSummary(config));
             });
 
@@ -1236,9 +1255,14 @@ public class SetupActivity extends Activity {
         opacityLabel.setText(getString(R.string.touch_button_opacity, (int) opacity.getValue()));
         opacity.addOnChangeListener((slider, value, fromUser) -> {
             opacityLabel.setText(getString(R.string.touch_button_opacity, (int) value));
+            // The preview follows the thumb either way, so the card is never showing a stale
+            // transparency; only a change the player made is written to the file and toasted,
+            // and the summary follows the saved value.
+            config.iconOpacity = ToolboxConfig.clampOpacity(value / 100f);
+            preview.refresh();
             if (fromUser) {
-                config.iconOpacity = ToolboxConfig.clampOpacity(value / 100f);
                 saveToolbox(config, game);
+                summary.setText(toolboxSummary(config));
             }
         });
         content.addView(opacity, new LinearLayout.LayoutParams(
@@ -1260,7 +1284,13 @@ public class SetupActivity extends Activity {
      * next to a switch that is visibly off reads as a second, competing state.
      */
     private CharSequence toolboxSummary(ToolboxConfig config) {
-        return config.enabled ? config.iconStyleName(this) + " · " + config.iconSizeName(this) : "";
+        // Opacity is part of the look, so it is part of the value: the header says everything
+        // the preview draws -- style · size · transparency -- so no knob the card offers is
+        // missing from what the card reports.
+        return config.enabled
+            ? config.iconStyleName(this) + " · " + config.iconSizeName(this)
+                + " · " + Math.round(config.iconOpacity * 100f) + "%"
+            : "";
     }
 
     private void saveToolbox(ToolboxConfig config, String game) {

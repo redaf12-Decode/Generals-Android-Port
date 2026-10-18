@@ -49,7 +49,6 @@ import android.app.Activity;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
-import android.graphics.Path;
 import android.graphics.RectF;
 import android.util.Log;
 import android.view.HapticFeedbackConstants;
@@ -123,9 +122,8 @@ final class ToolboxOverlayView extends View {
      */
     private final ToolboxConfig config;
 
-    private final Paint iconFill = new Paint(Paint.ANTI_ALIAS_FLAG);
-    private final Paint iconStroke = new Paint(Paint.ANTI_ALIAS_FLAG);
-    private final Paint glyphPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    /** The icon's look lives in one renderer shared with the launcher's preview card. */
+    private ToolboxIconRenderer iconRenderer;
     private final Paint panelFill = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint panelStroke = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint rowFill = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -137,11 +135,8 @@ final class ToolboxOverlayView extends View {
     private final Paint editHandle = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint editTextPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
-    private final Path iconPath = new Path();
     private final RectF iconRect = new RectF();
     private final RectF panelRect = new RectF();
-    private final RectF glyphBody = new RectF();
-    private final RectF glyphHandle = new RectF();
     private final RectF buttonRect = new RectF();
     private final RectF handleRect = new RectF();
     private final RectF[] rowRects = new RectF[MAX_ROWS];
@@ -192,6 +187,7 @@ final class ToolboxOverlayView extends View {
         this.hotkeyOverlay = hotkeyOverlay;
         this.game = game;
         this.accent = ThemeHelper.accentColor(activity);
+        this.iconRenderer = new ToolboxIconRenderer(activity, accent);
         this.touchSlop = ViewConfiguration.get(activity).getScaledTouchSlop();
         this.rowHeight = dp(ROW_HEIGHT_DP);
         this.panelWidth = dp(PANEL_WIDTH_DP);
@@ -204,12 +200,6 @@ final class ToolboxOverlayView extends View {
         settledCx = iconCx;
         settledCy = iconCy;
 
-        iconFill.setStyle(Paint.Style.FILL);
-        iconStroke.setStyle(Paint.Style.STROKE);
-        iconStroke.setStrokeWidth(dp(1.6f));
-        iconStroke.setColor(accent);
-        glyphPaint.setStyle(Paint.Style.FILL);
-        glyphPaint.setColor(Color.WHITE);
         panelFill.setColor(withAlpha(UiKit.surfaceContainerHighColor(activity), 236));
         panelStroke.setStyle(Paint.Style.STROKE);
         panelStroke.setStrokeWidth(dp(1.4f));
@@ -510,58 +500,13 @@ final class ToolboxOverlayView extends View {
         }
     }
 
-    private void drawIcon(Canvas canvas) {
-        int alpha = Math.round(255f * ToolboxConfig.clampOpacity(config.iconOpacity));
-        iconFill.setColor(withAlpha(UiKit.surfaceContainerHighColor(activity), alpha));
-        iconStroke.setAlpha(alpha);
-        glyphPaint.setAlpha(alpha);
-
-        iconPath.reset();
-        float side = iconRect.width();
-        float cx = iconRect.centerX();
-        float cy = iconRect.centerY();
-        switch (ToolboxConfig.clampStyle(config.iconStyle)) {
-            case ToolboxConfig.STYLE_CIRCLE:
-                iconPath.addOval(iconRect, Path.Direction.CW);
-                break;
-            case ToolboxConfig.STYLE_DIAMOND:
-                iconPath.moveTo(cx, iconRect.top);
-                iconPath.lineTo(iconRect.right, cy);
-                iconPath.lineTo(cx, iconRect.bottom);
-                iconPath.lineTo(iconRect.left, cy);
-                iconPath.close();
-                break;
-            case ToolboxConfig.STYLE_ROUNDED:
-            default:
-                float radius = side * 0.28f;
-                iconPath.addRoundRect(iconRect, radius, radius, Path.Direction.CW);
-                break;
-        }
-        canvas.drawPath(iconPath, iconFill);
-        canvas.drawPath(iconPath, iconStroke);
-        drawGlyph(canvas, cx, cy, side);
-    }
-
     /**
-     * A toolbox: a body with a handle above it. Drawn with the two rectangles and one arc this
-     * view already owns -- no allocation per frame, and no bitmap to ship.
+     * The icon: the shared renderer's geometry and colours, driven straight by this game's
+     * settings -- the launcher's preview draws the same code path, so what Setup showed is
+     * what appears here, opacity included.
      */
-    private void drawGlyph(Canvas canvas, float cx, float cy, float side) {
-        float bodyWidth = side * 0.54f;
-        float bodyHeight = side * 0.30f;
-        float radius = side * 0.06f;
-        glyphBody.set(cx - bodyWidth / 2f, cy - bodyHeight * 0.1f,
-            cx + bodyWidth / 2f, cy - bodyHeight * 0.1f + bodyHeight);
-        canvas.drawRoundRect(glyphBody, radius, radius, glyphPaint);
-
-        float handleWidth = side * 0.30f;
-        float handleHeight = side * 0.16f;
-        glyphHandle.set(cx - handleWidth / 2f, glyphBody.top - handleHeight,
-            cx + handleWidth / 2f, glyphBody.top + handleHeight * 0.4f);
-        glyphPaint.setStyle(Paint.Style.STROKE);
-        glyphPaint.setStrokeWidth(Math.max(1f, side * 0.045f));
-        canvas.drawArc(glyphHandle, 180f, 180f, false, glyphPaint);
-        glyphPaint.setStyle(Paint.Style.FILL);
+    private void drawIcon(Canvas canvas) {
+        iconRenderer.draw(canvas, iconRect, config.iconStyle, config.iconOpacity);
     }
 
     private void drawPanel(Canvas canvas) {

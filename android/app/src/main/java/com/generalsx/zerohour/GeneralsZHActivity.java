@@ -368,6 +368,18 @@ public class GeneralsZHActivity extends SDLActivity {
         setRequestedOrientation(android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
     }
 
+    // GeneralsX @feature Android floating toolbox 18/10/2026 This screen hosts the floating
+    // toolbox, and the toolbox promises the card in Setup drew exactly what will appear over
+    // the battlefield -- language and day/darkmode included. SDLActivity defines no
+    // attachBaseContext of its own, so this is the plain wrap every launcher screen already
+    // uses (LocaleHelper's and ThemeHelper's headers document the order): without it the
+    // panel's labels came out in the system language and its surfaces in the system's night
+    // mode while the player had chosen otherwise in the launcher.
+    @Override
+    protected void attachBaseContext(android.content.Context newBase) {
+        super.attachBaseContext(ThemeHelper.wrap(LocaleHelper.wrap(newBase)));
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         // TheSuperHackers @bugfix Android port 07/07/2026 Belt-and-suspenders
@@ -432,6 +444,14 @@ public class GeneralsZHActivity extends SDLActivity {
             haveCustomPath ? new File(gamePath) : legacyGameDataDir());
 
         super.onCreate(savedInstanceState);
+
+        // GeneralsX @feature Android floating toolbox 18/10/2026 Fold the accent the player
+        // picked in the launcher into this screen's theme BEFORE anything is built above the
+        // surface: HotkeyOverlayView and ToolboxOverlayView read their accent and surface
+        // colours from the Activity theme in their constructors, so without this the floating
+        // bar fell back to the theme's default violet while the launcher showed the chosen one
+        // (ThemeHelper's instruction: apply in onCreate after super, before any view is built).
+        ThemeHelper.applyAccentTheme(this);
 
         // SDLActivity has created its native surface/layout by now. Put the configurable hotkey layer
         // above it; only a configured button rectangle consumes a touch, so battlefield gestures
