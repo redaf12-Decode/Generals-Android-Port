@@ -1,0 +1,380 @@
+name: Build Android Split
+
+permissions:
+  # GeneralsX @feature Android port 09/07/2026 contents:write is needed for the
+  # optional "create a GitHub Release" step below (softprops/action-gh-release
+  # needs to create a tag + release + upload an asset). Safe to declare at the
+  # workflow level: pull_request (not pull_request_target) from a fork always
+  # gets a read-only token from GitHub regardless of this block, and push/
+  # workflow_dispatch on this repo both require write access to trigger anyway.
+  contents: write
+  pull-requests: read
+  # GeneralsX @bugfix Android CI 18/07/2026 needed by the "Delete old
+  # artifacts" cleanup step below (DELETE .../actions/artifacts/{id}) --
+  # without this, that call 403s since an explicit permissions: block (this
+  # one) drops every unlisted scope to none rather than defaulting to read.
+  actions: write
+
+on:
+  # GeneralsX @bugfix Android CI 01/08/2026 dropped the push: trigger that
+  # used to fire a full CI build on every push to main/claude/** touching
+  # these paths. This session's actual dev loop builds and checksum-verifies
+  # locally (scripts/build/android/build-local-sandboxed.sh) before ever
+  # pushing, and pushes to BOTH main and the working branch on every commit
+  # (main is kept fast-forwarded) -- so every commit was silently kicking off
+  # two full ~15min CI builds nobody was looking at, burning real Actions
+  # usage for zero benefit. pull_request/workflow_dispatch (manual runs,
+  # including the "publish a Release" path) are unaffected and still work
+  # exactly as before.
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'GeneralsMD/**'
+      - 'Core/**'
+      - 'Dependencies/**'
+      - 'cmake/**'
+      - 'android/**'
+      - 'scripts/build/android/**'
+      - 'Patches/**'
+      - 'CMakeLists.txt'
+      - 'CMakePresets.json'
+      - 'vcpkg.json'
+      - '.github/workflows/build-android.yml'
+  workflow_dispatch:
+    inputs:
+      preset:
+        type: choice
+        description: "CMake preset for Android"
+        options:
+          - android-vulkan
+        default: android-vulkan
+      version_name:
+        type: string
+        description: "Override versionName (e.g. 1.2.0). Leave blank to use the committed default (android/app/build.gradle)."
+        default: ""
+      version_code:
+        type: string
+        description: "Override versionCode (must be higher than any build already installed on your device). Leave blank to use the committed default."
+        default: ""
+      create_release:
+        type: boolean
+        description: "Also publish a GitHub Release for this build (tag = v<version_name>). Requires version_name above to be set."
+        default: false
+      release_notes:
+        type: string
+        description: "Optional custom text for the top of the release description (auto-generated commit/PR notes are still appended below it)."
+        default: ""
+
+jobs:
+
+  build-60hz:
+    name: Build 60Hz engines (fresh runner)
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      PRESET: ${{ inputs.preset || 'android-vulkan' }}
+      NDK_VERSION: "27.2.12479018"
+      GRADLE_VERSION: "8.9"
+      CMDLINE_TOOLS_VERSION: "13114758"
+      CMDLINE_TOOLS_SHA1: "5fdcc763663eefb86a5b8879697aa6088b041e70"
+      VCPKG_COMMIT: "42e4e33e1505c9f47b58c21e0f557c1571b751ee"
+    steps:
+      # GeneralsX @build Android CI 06/07/2026 Node 24 compatible action majors, matching the other platform workflows.
+      - name: Checkout Code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          submodules: false
+
+      - name: Checkout DXVK fork submodule
+        run: |
+          set -euo pipefail
+          git submodule update --init --depth 1 references/fbraz3-dxvk
+          # DXVK's OWN submodules (SPIRV-Headers, Vulkan-Headers,
+          # libdisplay-info) — meson dies with "Missing SPIRV-Headers" without
+          # them; the superproject init above is not recursive.
+          git -C references/fbraz3-dxvk submodule update --init --depth 1
+          # Pinned commit the superproject's tree points at (reads the gitlink,
+          # not the submodule's own shallow history) — used below as a cache key
+          # component so a re-pin of the submodule busts the DXVK build cache.
+          echo "DXVK_REF=$(git rev-parse HEAD:references/fbraz3-dxvk)" >> "$GITHUB_ENV"
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      # GeneralsX @bugfix Android CI 06/07/2026 ubuntu-24.04 runner images do NOT
+      # ship an Android SDK (run #1 died with "sdkmanager: command not found") —
+      # install cmdline-tools from a pinned, checksummed zip and let its own
+      # sdkmanager pull the NDK, platform and build-tools. Checksum comes from
+      # Google's repository manifest (repository2-3.xml), same discipline as the
+      # Vulkan SDK download in build-macos.yml.
+      # All caches below use explicit restore/save pairs instead of plain
+      # actions/cache: its automatic post-step save only runs when the JOB
+      # succeeded, and this workflow is expected to fail repeatedly while the
+      # engine cross-compile is being brought up — every failed run would
+      # otherwise rebuild ffmpeg/openssl/DXVK from scratch (~45 min). The
+      # matching save steps sit at the end of the job with `if: always()`.
+      - name: Restore Android SDK cache
+        id: cache-android-sdk
+        uses: actions/cache/restore@v5
+        with:
+          path: /opt/android-sdk
+          key: android-sdk-${{ env.CMDLINE_TOOLS_VERSION }}-ndk${{ env.NDK_VERSION }}-p35-bt35
+      - name: Install Android SDK (cmdline-tools + NDK + platform + build-tools)
+        if: steps.cache-android-sdk.outputs.cache-hit != 'true'
+        run: |
+          set -euo pipefail
+          curl -fL --retry 3 -o /tmp/cmdline-tools.zip \
+            "https://dl.google.com/android/repository/commandlinetools-linux-${{ env.CMDLINE_TOOLS_VERSION }}_latest.zip"
+          echo "${{ env.CMDLINE_TOOLS_SHA1 }}  /tmp/cmdline-tools.zip" | sha1sum -c -
+          sudo mkdir -p /opt/android-sdk/cmdline-tools
+          sudo unzip -q /tmp/cmdline-tools.zip -d /opt/android-sdk/cmdline-tools
+          # sdkmanager requires the "<sdk>/cmdline-tools/latest" layout to locate its SDK root
+          sudo mv /opt/android-sdk/cmdline-tools/cmdline-tools /opt/android-sdk/cmdline-tools/latest
+          sudo chown -R "$(id -u):$(id -g)" /opt/android-sdk
+          rm /tmp/cmdline-tools.zip
+          SDKMANAGER=/opt/android-sdk/cmdline-tools/latest/bin/sdkmanager
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" --install "ndk;${{ env.NDK_VERSION }}" "platforms;android-35" "build-tools;35.0.0" "platform-tools"
+      - name: Export Android SDK environment
+        run: |
+          set -euo pipefail
+          echo "ANDROID_HOME=/opt/android-sdk" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=/opt/android-sdk" >> "$GITHUB_ENV"
+          echo "ANDROID_NDK_HOME=/opt/android-sdk/ndk/${{ env.NDK_VERSION }}" >> "$GITHUB_ENV"
+          test -f "/opt/android-sdk/ndk/${{ env.NDK_VERSION }}/build/cmake/android.toolchain.cmake" \
+            || { echo "::error::NDK toolchain file missing after install"; exit 1; }
+
+      # Gradle: this project intentionally doesn't commit a wrapper (binary jar),
+      # so use Gradle's own official action, which downloads + verifies the
+      # requested distribution and puts a `gradle` command on PATH — exactly
+      # what scripts/build/android/package-android-zh.sh looks for.
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: ${{ env.GRADLE_VERSION }}
+
+      - name: Install build tools (meson, ninja, pkg-config, glslang, ccache)
+        run: |
+          # apt's meson, not pip: ubuntu-latest (24.04) marks the system Python
+          # as externally-managed (PEP 668), so a plain `pip install`, even
+          # with --user, refuses to run outside a venv.
+          # glslang-tools: DXVK compiles its GLSL blit/present shaders to
+          # SPIR-V at build time with glslangValidator (host tool).
+          # ccache: the z_generals target alone is ~1.6M LOC and was being
+          # fully recompiled from scratch on every run (only vcpkg/DXVK/SDK
+          # were cached) -- an object-level compiler cache turns a one-file
+          # change back into a near-incremental build instead of a 20-40 min
+          # full rebuild.
+          # Every package below comes from the Ubuntu archive, but the runner
+          # image also carries third-party lists (Chrome, Microsoft) whose
+          # indexes are periodically served corrupt -- a "Hash Sum mismatch"
+          # there makes `apt-get update` exit 100 and, under `bash -e`, kills
+          # the whole release build. Drop the lists we do not need, then retry
+          # once for a genuinely transient mirror hiccup. A real archive
+          # outage still fails loudly on the `install` below.
+          sudo rm -f /etc/apt/sources.list.d/google-chrome.list \
+                     /etc/apt/sources.list.d/microsoft-prod.list
+          sudo apt-get update -qq || sudo apt-get update -qq || true
+          sudo apt-get install -y -qq --no-install-recommends \
+            ninja-build meson pkg-config glslang-tools ccache
+          meson --version
+          ninja --version
+          glslangValidator --version | head -1
+          ccache --version | head -1
+
+      - name: Restore ccache
+        id: cache-ccache
+        uses: actions/cache/restore@v5
+        with:
+          path: ~/.cache/ccache
+          key: ccache-android-${{ env.PRESET }}-${{ github.run_id }}
+          restore-keys: |
+            ccache-android-${{ env.PRESET }}-
+
+      - name: Configure ccache
+        run: |
+          set -euo pipefail
+          ccache --set-config=max_size=3G
+          # Cross-compiles (host clang, target arm64-android via NDK sysroot)
+          # confuse ccache's default mtime-based direct mode across different
+          # checkouts; content hashing keeps hits reliable and is barely
+          # slower once warm.
+          ccache --set-config=compiler_check=content
+          ccache --zero-stats
+          echo "CCACHE_DIR=$HOME/.cache/ccache" >> "$GITHUB_ENV"
+
+      - name: Restore vcpkg cache
+        id: cache-vcpkg
+        uses: actions/cache/restore@v5
+        with:
+          # /opt/vcpkg = the tool + ports tree; ~/.cache/vcpkg = the BINARY
+          # cache of already-built packages (what turns the ~45 min
+          # ffmpeg/openssl/curl cross-build into a ~1 min restore).
+          path: |
+            /opt/vcpkg
+            ~/.cache/vcpkg
+          key: vcpkg-android-${{ runner.os }}-${{ env.VCPKG_COMMIT }}-${{ hashFiles('vcpkg.json', 'vcpkg-lock.json', 'cmake/triplets/arm64-android.cmake') }}
+          restore-keys: |
+            vcpkg-android-${{ runner.os }}-${{ env.VCPKG_COMMIT }}-
+
+      # Gradle's own dependency/build cache is handled by gradle/actions/setup-gradle above.
+
+      - name: Restore DXVK build cache
+        id: cache-dxvk
+        uses: actions/cache/restore@v5
+        with:
+          path: build/${{ env.PRESET }}/_deps/dxvk-build-android
+          # github.repository is part of the key (not just DXVK_REF/patch hashes):
+          # meson's cached _deps/dxvk-build-android bakes the absolute checkout
+          # path (/home/runner/work/<repo>/<repo>/...) into its private build
+          # state via --reconfigure. Run #22 restored a cache built under this
+          # repo's old name (Generals-Mac-iOS-iPad) and meson died with
+          # FileNotFoundError on the now-nonexistent cross-file path -- neither
+          # DXVK_REF nor the hashed files changed across the rename, so the
+          # stale cache kept being "valid" and kept breaking every run.
+          # Tying the key to the repo name means a future rename invalidates
+          # this cache instead of silently corrupting it again.
+          key: dxvk-android-${{ runner.os }}-${{ github.repository }}-${{ env.DXVK_REF }}-${{ hashFiles('Patches/dxvk-android.patch', 'Patches/dxvk-ios.patch', 'cmake/dx8.cmake', 'cmake/meson-arm64-android-cross.ini.in') }}
+
+      - name: Bootstrap vcpkg
+        run: |
+          set -euo pipefail
+          # A cache restored from an older run may hold a checkout at a stale
+          # commit — verify and re-pin instead of trusting the cache blindly.
+          if [ ! -d /opt/vcpkg/.git ]; then
+            git clone https://github.com/microsoft/vcpkg.git /opt/vcpkg
+          fi
+          CURRENT="$(git -C /opt/vcpkg rev-parse HEAD || echo none)"
+          if [ "$CURRENT" != "${{ env.VCPKG_COMMIT }}" ]; then
+            git -C /opt/vcpkg fetch origin ${{ env.VCPKG_COMMIT }}
+            git -C /opt/vcpkg checkout ${{ env.VCPKG_COMMIT }}
+            rm -f /opt/vcpkg/vcpkg  # force tool re-bootstrap matching the tree
+          fi
+          if [ ! -f /opt/vcpkg/vcpkg ]; then
+            /opt/vcpkg/bootstrap-vcpkg.sh -disableMetrics
+          fi
+          echo "VCPKG_ROOT=/opt/vcpkg" >> "$GITHUB_ENV"
+
+      # GeneralsX @bugfix Android CI 07/07/2026 set -o pipefail on every
+      # `cmd | tee` step: without it the step's exit code is tee's (always 0),
+      # and run #2 sailed straight past a fatal configure error into "success"
+      # — exactly the pipeline-masking failure the porting playbook warns
+      # about. The Verify step caught it; now the failing step reports itself.
+      - name: Configure CMake (Android)
+        run: |
+          set -o pipefail
+          mkdir -p logs
+          cmake --preset ${{ env.PRESET }} \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
+            -DANDROID_CI_BUILD_NUMBER=${{ github.run_number }} \
+            2>&1 | tee logs/configure_android.log
+
+      # GeneralsX @bugfix Android CI 15/10/2026 This workflow used to build ONE engine
+      # (`z_generals`), while the launcher offers four (SetupActivity.engineLibraries()):
+      #
+      #   libmain.so       Zero Hour, 30 Hz   z_generals, SAGE_HIGH_FPS_SIM=OFF
+      #   libmain60.so     Zero Hour, 60 Hz   z_generals, SAGE_HIGH_FPS_SIM=ON
+      #   libgenerals.so   Generals, 30 Hz    g_generals, SAGE_HIGH_FPS_SIM=OFF
+      #   libgenerals60.so Generals, 60 Hz    g_generals, SAGE_HIGH_FPS_SIM=ON
+      #
+      # ...so every CI APK shipped libmain.so alone: choosing Generals in the launcher died at
+      # System.loadLibrary("generals") and the 60 Hz cross-play setting silently fell back to
+      # 30 Hz (GeneralsZHActivity.getLibraries() only picks libmain60.so when that file exists).
+      #
+      # The tick rate cannot be a runtime flag -- SAGE_HIGH_FPS_SIM selects WWSyncPerSecond and
+      # the layout of GameLogic, so Core and both game trees must be compiled with the same value
+      # (CMakeLists.txt:99). The real mechanism is therefore the one scripts/build/android/
+      # build-dual-hz.sh uses: configure the SAME build tree twice and let each pass link the
+      # engine it just compiled. The 60 Hz pass has to come FIRST because the target's output name
+      # is the same libmain.so in both passes -- the last pass is what is left on disk, and the
+      # 30 Hz engine is the default the launcher falls back to. Pass 1's result is set aside as
+      # build/libmain60.so and build/libgenerals60.so before the 30 Hz pass overwrites them.
+      - name: Build both 60 Hz engines (pass 1 of 2)
+        run: |
+          set -o pipefail
+          mkdir -p logs
+          # Same configure flags as the step above, plus the tick rate. Reconfiguring in place is
+          # what flips the compile definitions for Core and GeneralsMD alike; the flag change also
+          # invalidates every engine object, so this pass is a full engine build on a cold ccache.
+          cmake --preset ${{ env.PRESET }} \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
+            -DANDROID_CI_BUILD_NUMBER=${{ github.run_number }} \
+            -DSAGE_HIGH_FPS_SIM=ON \
+            2>&1 | tee logs/configure_android_60hz.log
+          # Build both game targets with the same tick-rate definition. Preserve both outputs
+          # before reconfiguring this same build tree to 30 Hz in the next pass.
+          cmake --build build/${{ env.PRESET }} --target z_generals g_generals -- -k 0 2>&1 | tee logs/build_android_60hz.log
+          cp "build/${{ env.PRESET }}/GeneralsMD/Code/Main/libmain.so" build/libmain60.so
+          cp "build/${{ env.PRESET }}/Generals/Code/Main/libgenerals.so" build/libgenerals60.so
+          ls -la build/libmain60.so build/libgenerals60.so
+          ccache --show-stats
+
+      - name: Verify 60Hz engine outputs before handing off
+        run: |
+          set -euo pipefail
+          READELF="$(ls "${ANDROID_NDK_HOME}"/toolchains/llvm/prebuilt/*/bin/llvm-readelf | head -1)"
+          for lib in build/libmain60.so build/libgenerals60.so; do
+            test -s "$lib" || { echo "::error::Missing or empty 60Hz engine: $lib"; exit 1; }
+            "$READELF" -h "$lib" | grep -q AArch64 || { echo "::error::$lib is not AArch64"; exit 1; }
+          done
+          echo "Both 60Hz engine libraries are present and AArch64."
+
+      - name: Upload only the two 60Hz engine libraries
+        uses: actions/upload-artifact@v7
+        with:
+          name: android-60hz-engines-${{ github.run_id }}
+          path: |
+            build/libmain60.so
+            build/libgenerals60.so
+          if-no-files-found: error
+          retention-days: 1
+
+      # Save caches even when the job failed (see the restore steps above for
+      # why plain actions/cache can't do this). Guard each save so a run that
+      # restored an exact-key hit doesn't fail trying to re-save it.
+      - name: Save Android SDK cache
+        if: always() && steps.cache-android-sdk.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v5
+        with:
+          path: /opt/android-sdk
+          key: android-sdk-${{ env.CMDLINE_TOOLS_VERSION }}-ndk${{ env.NDK_VERSION }}-p35-bt35
+
+      - name: Save vcpkg cache
+        if: always() && steps.cache-vcpkg.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v5
+        with:
+          path: |
+            /opt/vcpkg
+            ~/.cache/vcpkg
+          key: vcpkg-android-${{ runner.os }}-${{ env.VCPKG_COMMIT }}-${{ hashFiles('vcpkg.json', 'vcpkg-lock.json', 'cmake/triplets/arm64-android.cmake') }}
+
+      - name: Save DXVK build cache
+        if: always() && steps.cache-dxvk.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v5
+        with:
+          path: build/${{ env.PRESET }}/_deps/dxvk-build-android
+          # github.repository is part of the key (not just DXVK_REF/patch hashes):
+          # meson's cached _deps/dxvk-build-android bakes the absolute checkout
+          # path (/home/runner/work/<repo>/<repo>/...) into its private build
+          # state via --reconfigure. Run #22 restored a cache built under this
+          # repo's old name (Generals-Mac-iOS-iPad) and meson died with
+          # FileNotFoundError on the now-nonexistent cross-file path -- neither
+          # DXVK_REF nor the hashed files changed across the rename, so the
+          # stale cache kept being "valid" and kept breaking every run.
+          # Tying the key to the repo name means a future rename invalidates
+          # this cache instead of silently corrupting it again.
+          key: dxvk-android-${{ runner.os }}-${{ github.repository }}-${{ env.DXVK_REF }}-${{ hashFiles('Patches/dxvk-android.patch', 'Patches/dxvk-ios.patch', 'cmake/dx8.cmake', 'cmake/meson-arm64-android-cross.ini.in') }}
+
+      # Always re-save under this run's unique key (the restore-keys prefix
+      # match above means later runs pick up the freshest available cache);
+      # actions/cache never overwrites an existing exact key, and github.run_id
+      # is unique per run, so this never no-ops into a skipped save.
+      - name: Save ccache
+        if: 
