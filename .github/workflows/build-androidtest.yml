@@ -1,47 +1,73 @@
-name: Build Android - Four Engines (30Hz + 60Hz)
-
-on:
-  workflow_dispatch:
-    inputs:
-      version_name:
-        description: Optional Android versionName override
-        required: false
-        type: string
-        default: ""
-      version_code:
-        description: Optional Android versionCode override
-        required: false
-        type: string
-        default: ""
+name: Build Android (Four Engines)
 
 permissions:
-  contents: read
+  contents: write
+  pull-requests: read
+  actions: write
 
-concurrency:
-  group: android-four-engines-${{ github.ref }}
-  cancel-in-progress: false
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'GeneralsMD/**'
+      - 'Generals/**'
+      - 'Core/**'
+      - 'Dependencies/**'
+      - 'cmake/**'
+      - 'android/**'
+      - 'scripts/build/android/**'
+      - 'Patches/**'
+      - 'CMakeLists.txt'
+      - 'CMakePresets.json'
+      - 'vcpkg.json'
+      - '.github/workflows/build-android-four-engines.yml'
+  workflow_dispatch:
+    inputs:
+      preset:
+        type: choice
+        description: CMake preset for Android
+        options:
+          - android-vulkan
+        default: android-vulkan
+      version_name:
+        type: string
+        description: Override versionName; blank uses android/app/build.gradle
+        default: ""
+      version_code:
+        type: string
+        description: Override versionCode; blank uses android/app/build.gradle
+        default: ""
+      create_release:
+        type: boolean
+        description: Publish a GitHub Release; requires version_name
+        default: false
+      release_notes:
+        type: string
+        description: Optional text above generated release notes
+        default: ""
 
 jobs:
-  build-four-engines:
-    name: Build and package four AArch64 engines
+  build-android:
+    name: four-engines@${{ inputs.preset || 'android-vulkan' }}
     runs-on: ubuntu-latest
     timeout-minutes: 180
     env:
-      PRESET: android-vulkan
+      PRESET: ${{ inputs.preset || 'android-vulkan' }}
       NDK_VERSION: "27.2.12479018"
+      GRADLE_VERSION: "8.9"
       CMDLINE_TOOLS_VERSION: "13114758"
       CMDLINE_TOOLS_SHA1: "5fdcc763663eefb86a5b8879697aa6088b041e70"
       VCPKG_COMMIT: "42e4e33e1505c9f47b58c21e0f557c1571b751ee"
-      GRADLE_VERSION: "8.9"
 
     steps:
-      - name: Checkout source
+      - name: Checkout Code
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
           submodules: false
 
-      - name: Checkout DXVK and nested submodules
+      - name: Checkout DXVK fork and its submodules
         shell: bash
         run: |
           set -euo pipefail
@@ -49,13 +75,21 @@ jobs:
           git -C references/fbraz3-dxvk submodule update --init --depth 1
           echo "DXVK_REF=$(git rev-parse HEAD:references/fbraz3-dxvk)" >> "$GITHUB_ENV"
 
-      - name: Set up Java 17
+      - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: "17"
+          java-version: '17'
 
-      - name: Install Android SDK, NDK and platform
+      - name: Restore Android SDK cache
+        id: cache-android-sdk
+        uses: actions/cache/restore@v5
+        with:
+          path: /opt/android-sdk
+          key: android-sdk-${{ env.CMDLINE_TOOLS_VERSION }}-ndk${{ env.NDK_VERSION }}-p35-bt35
+
+      - name: Install Android SDK, NDK, platform and build-tools
+        if: steps.cache-android-sdk.outputs.cache-hit != 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -70,12 +104,20 @@ jobs:
           SDKMANAGER=/opt/android-sdk/cmdline-tools/latest/bin/sdkmanager
           yes | "$SDKMANAGER" --licenses >/dev/null || true
           "$SDKMANAGER" --install "ndk;${NDK_VERSION}" "platforms;android-35" "build-tools;35.0.0" "platform-tools"
-          {
-            echo "ANDROID_HOME=/opt/android-sdk"
-            echo "ANDROID_SDK_ROOT=/opt/android-sdk"
-            echo "ANDROID_NDK_HOME=/opt/android-sdk/ndk/${NDK_VERSION}"
-          } >> "$GITHUB_ENV"
+
+      - name: Export Android SDK environment
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "ANDROID_HOME=/opt/android-sdk" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=/opt/android-sdk" >> "$GITHUB_ENV"
+          echo "ANDROID_NDK_HOME=/opt/android-sdk/ndk/${NDK_VERSION}" >> "$GITHUB_ENV"
           test -f "/opt/android-sdk/ndk/${NDK_VERSION}/build/cmake/android.toolchain.cmake"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: ${{ env.GRADLE_VERSION }}
 
       - name: Install host build tools
         shell: bash
@@ -83,18 +125,22 @@ jobs:
           set -euo pipefail
           sudo rm -f /etc/apt/sources.list.d/google-chrome.list /etc/apt/sources.list.d/microsoft-prod.list
           sudo apt-get update -qq || sudo apt-get update -qq
-          sudo apt-get install -y --no-install-recommends ninja-build meson pkg-config glslang-tools ccache unzip
-          cmake --version
-          ninja --version
+          sudo apt-get install -y --no-install-recommends ninja-build meson pkg-config glslang-tools ccache
           meson --version
+          ninja --version
           glslangValidator --version | head -1
+          ccache --version | head -1
 
-      - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v4
+      - name: Restore ccache
+        id: cache-ccache
+        uses: actions/cache/restore@v5
         with:
-          gradle-version: ${{ env.GRADLE_VERSION }}
+          path: ~/.cache/ccache
+          key: ccache-android-${{ env.PRESET }}-${{ github.run_id }}
+          restore-keys: |
+            ccache-android-${{ env.PRESET }}-
 
-      - name: Configure compiler cache
+      - name: Configure ccache
         shell: bash
         run: |
           set -euo pipefail
@@ -103,16 +149,33 @@ jobs:
           ccache --zero-stats
           echo "CCACHE_DIR=$HOME/.cache/ccache" >> "$GITHUB_ENV"
 
+      - name: Restore vcpkg cache
+        id: cache-vcpkg
+        uses: actions/cache/restore@v5
+        with:
+          path: |
+            /opt/vcpkg
+            ~/.cache/vcpkg
+          key: vcpkg-android-${{ runner.os }}-${{ env.VCPKG_COMMIT }}-${{ hashFiles('vcpkg.json', 'vcpkg-lock.json', 'cmake/triplets/arm64-android.cmake') }}
+          restore-keys: |
+            vcpkg-android-${{ runner.os }}-${{ env.VCPKG_COMMIT }}-
+
+      - name: Restore DXVK build cache
+        id: cache-dxvk
+        uses: actions/cache/restore@v5
+        with:
+          path: build/${{ env.PRESET }}/_deps/dxvk-build-android
+          key: dxvk-android-${{ runner.os }}-${{ github.repository }}-${{ env.DXVK_REF }}-${{ hashFiles('Patches/dxvk-android.patch', 'Patches/dxvk-ios.patch', 'cmake/dx8.cmake', 'cmake/meson-arm64-android-cross.ini.in') }}
+
       - name: Bootstrap pinned vcpkg
         shell: bash
         run: |
           set -euo pipefail
           if [ ! -d /opt/vcpkg/.git ]; then
-            sudo git clone https://github.com/microsoft/vcpkg.git /opt/vcpkg
-            sudo chown -R "$(id -u):$(id -g)" /opt/vcpkg
+            git clone https://github.com/microsoft/vcpkg.git /opt/vcpkg
           fi
-          current="$(git -C /opt/vcpkg rev-parse HEAD || true)"
-          if [ "$current" != "$VCPKG_COMMIT" ]; then
+          CURRENT="$(git -C /opt/vcpkg rev-parse HEAD || echo none)"
+          if [ "$CURRENT" != "$VCPKG_COMMIT" ]; then
             git -C /opt/vcpkg fetch origin "$VCPKG_COMMIT"
             git -C /opt/vcpkg checkout "$VCPKG_COMMIT"
             rm -f /opt/vcpkg/vcpkg
@@ -122,117 +185,282 @@ jobs:
           fi
           echo "VCPKG_ROOT=/opt/vcpkg" >> "$GITHUB_ENV"
 
-      - name: Configure CMake for 60Hz
+      - name: Configure CMake and build 60Hz then 30Hz
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p logs
+          set -o pipefail
+          mkdir -p logs build/dual-hz-stash
+
+          # PASS 1: 60Hz. Keep the two output libraries outside the build tree
+          # before reconfiguring the same build directory for 30Hz.
           cmake --preset "$PRESET" \
             -DCMAKE_C_COMPILER_LAUNCHER=ccache \
             -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
-            -DANDROID_CI_BUILD_NUMBER="${GITHUB_RUN_NUMBER}" \
-            -DSAGE_HIGH_FPS_SIM=ON 2>&1 | tee logs/configure-60hz.log
+            -DANDROID_CI_BUILD_NUMBER=${{ github.run_number }} \
+            -DSAGE_HIGH_FPS_SIM=ON 2>&1 | tee logs/configure_android_60hz.log
 
-      - name: Build both engines at 60Hz and stash outputs
-        shell: bash
-        run: |
-          set -euo pipefail
-          cmake --build "build/${PRESET}" --target z_generals g_generals dxvk_d3d8_install \
-            main_hook file_redirect_hook gsl_alloc_hook hook_impl -- -k 0 2>&1 | tee logs/build-60hz.log
-          ZH="build/${PRESET}/GeneralsMD/Code/Main/libmain.so"
-          GEN="build/${PRESET}/Generals/Code/Main/libgenerals.so"
-          test -s "$ZH" || { echo "::error::60Hz libmain.so missing: $ZH"; exit 1; }
-          test -s "$GEN" || { echo "::error::60Hz libgenerals.so missing: $GEN"; exit 1; }
-          mkdir -p build/dual-hz-stash
-          cp "$ZH" build/dual-hz-stash/libmain60.so
-          cp "$GEN" build/dual-hz-stash/libgenerals60.so
-          ls -lh build/dual-hz-stash/
+          cmake --build "build/$PRESET" \
+            --target z_generals g_generals dxvk_d3d8_install \
+              main_hook file_redirect_hook gsl_alloc_hook hook_impl \
+            -- -k 0 2>&1 | tee logs/build_android_60hz.log
 
-      - name: Reconfigure CMake for 30Hz
-        shell: bash
-        run: |
-          set -euo pipefail
+          ZH_60="build/$PRESET/GeneralsMD/Code/Main/libmain.so"
+          GEN_60="build/$PRESET/Generals/Code/Main/libgenerals.so"
+          test -s "$ZH_60" || { echo "::error::Missing 60Hz Zero Hour output: $ZH_60"; exit 1; }
+          test -s "$GEN_60" || { echo "::error::Missing 60Hz Generals output: $GEN_60"; exit 1; }
+          cp "$ZH_60" build/dual-hz-stash/libmain60.so
+          cp "$GEN_60" build/dual-hz-stash/libgenerals60.so
+
+          # PASS 2: 30Hz. These normal output paths are what the package script
+          # stages as libmain.so and libgenerals.so.
           cmake --preset "$PRESET" \
             -DCMAKE_C_COMPILER_LAUNCHER=ccache \
             -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
-            -DANDROID_CI_BUILD_NUMBER="${GITHUB_RUN_NUMBER}" \
-            -DSAGE_HIGH_FPS_SIM=OFF 2>&1 | tee logs/configure-30hz.log
+            -DANDROID_CI_BUILD_NUMBER=${{ github.run_number }} \
+            -DSAGE_HIGH_FPS_SIM=OFF 2>&1 | tee logs/configure_android_30hz.log
 
-      - name: Build both engines at 30Hz
+          cmake --build "build/$PRESET" \
+            --target z_generals g_generals dxvk_d3d8_install \
+              main_hook file_redirect_hook gsl_alloc_hook hook_impl \
+            -- -k 0 2>&1 | tee logs/build_android_30hz.log
+          test -s "build/$PRESET/GeneralsMD/Code/Main/libmain.so"
+          test -s "build/$PRESET/Generals/Code/Main/libgenerals.so"
+          ccache --show-stats
+
+      - name: Verify four engine libraries and DXVK
         shell: bash
         run: |
           set -euo pipefail
-          cmake --build "build/${PRESET}" --target z_generals g_generals dxvk_d3d8_install \
-            main_hook file_redirect_hook gsl_alloc_hook hook_impl -- -k 0 2>&1 | tee logs/build-30hz.log
-          test -s "build/${PRESET}/GeneralsMD/Code/Main/libmain.so"
-          test -s "build/${PRESET}/Generals/Code/Main/libgenerals.so"
-          test -s build/dual-hz-stash/libmain60.so
-          test -s build/dual-hz-stash/libgenerals60.so
-
-      - name: Verify all four engine binaries are AArch64
-        shell: bash
-        run: |
-          set -euo pipefail
-          READELF="$(find "$ANDROID_NDK_HOME/toolchains/llvm/prebuilt" -type f -name llvm-readelf -print -quit)"
-          test -x "$READELF"
-          declare -A engines=(
-            ["30Hz Zero Hour"]="build/${PRESET}/GeneralsMD/Code/Main/libmain.so"
-            ["60Hz Zero Hour"]="build/dual-hz-stash/libmain60.so"
-            ["30Hz Generals"]="build/${PRESET}/Generals/Code/Main/libgenerals.so"
-            ["60Hz Generals"]="build/dual-hz-stash/libgenerals60.so"
-          )
-          for label in "${!engines[@]}"; do
-            file="${engines[$label]}"
-            test -s "$file" || { echo "::error::$label missing: $file"; exit 1; }
-            "$READELF" -h "$file" | grep -q AArch64 || { echo "::error::$label is not AArch64"; exit 1; }
-            echo "OK: $label -> $file"
+          READELF="$(ls "$ANDROID_NDK_HOME"/toolchains/llvm/prebuilt/*/bin/llvm-readelf | head -1)"
+          for lib in \
+            "build/$PRESET/GeneralsMD/Code/Main/libmain.so" \
+            "build/$PRESET/Generals/Code/Main/libgenerals.so" \
+            "build/dual-hz-stash/libmain60.so" \
+            "build/dual-hz-stash/libgenerals60.so"; do
+            test -s "$lib" || { echo "::error::Missing engine library: $lib"; exit 1; }
+            ok=0
+            for attempt in 1 2 3 4 5; do
+              if "$READELF" -h "$lib" 2>/dev/null | grep -q AArch64; then ok=1; break; fi
+              sleep 1
+            done
+            [ "$ok" -eq 1 ] || { echo "::error::$lib is not AArch64"; exit 1; }
+            echo "Verified AArch64: $lib"
           done
-          for lib in libdxvk_d3d8.so libdxvk_d3d9.so; do test -s "build/${PRESET}/$lib"; done
-          strings "build/${PRESET}/libdxvk_d3d9.so" | grep -q Sdl3WsiDriver
+          for lib in libdxvk_d3d8.so libdxvk_d3d9.so; do
+            test -s "build/$PRESET/$lib" || { echo "::error::Missing $lib"; exit 1; }
+          done
+          strings "build/$PRESET/libdxvk_d3d9.so" | grep -q Sdl3WsiDriver || {
+            echo "::error::libdxvk_d3d9.so was built without SDL3 WSI"; exit 1; }
+
+      - name: Collect unstripped Zero Hour symbol table
+        shell: bash
+        run: |
+          set -euo pipefail
+          TOOLS="$(dirname "$(ls "$ANDROID_NDK_HOME"/toolchains/llvm/prebuilt/*/bin/llvm-nm | head -1)")"
+          LIB="build/$PRESET/GeneralsMD/Code/Main/libmain.so"
+          mkdir -p symbols
+          OUT="symbols/libmain-run${{ github.run_number }}.symbols.txt"
+          BUILD_ID="$(readelf -n "$LIB" 2>/dev/null | sed -n 's/.*Build ID: \([0-9a-f]*\).*/\1/p' | head -1)"
+          {
+            echo "# libmain.so symbols -- run ${{ github.run_number }}, commit ${{ github.sha }}"
+            echo "# BuildID: ${BUILD_ID:-UNKNOWN}"
+            "$TOOLS/llvm-readelf" --notes --program-headers "$LIB"
+            echo "# --- defined symbols: address size type name ---"
+            "$TOOLS/llvm-nm" --defined-only --numeric-sort --print-size --demangle "$LIB"
+          } > "$OUT"
+          SYMS=$("$TOOLS/llvm-nm" --defined-only "$LIB" 2>/dev/null | wc -l)
+          echo "Symbols captured: $SYMS"
+          [ "$SYMS" -ge 1000 ] || echo "::warning::Low symbol count ($SYMS)"
+          gzip -9 "$OUT"
+
+      - name: Strip debug symbols from game and runtime libraries
+        shell: bash
+        run: |
+          set -euo pipefail
+          STRIP="$(ls "$ANDROID_NDK_HOME"/toolchains/llvm/prebuilt/*/bin/llvm-strip | head -1)"
+          for lib in \
+            "build/$PRESET/GeneralsMD/Code/Main/libmain.so" \
+            "build/$PRESET/Generals/Code/Main/libgenerals.so" \
+            "build/dual-hz-stash/libmain60.so" \
+            "build/dual-hz-stash/libgenerals60.so" \
+            "build/$PRESET/_deps/sdl3-build/libSDL3.so" \
+            "build/$PRESET/_deps/sdl3_image-build/libSDL3_image.so" \
+            "build/$PRESET/_deps/openal_soft-build/libopenal.so" \
+            "build/$PRESET/libgamespy.so" \
+            "build/$PRESET/_deps/adrenotools-build/libadrenotools.so" \
+            "build/$PRESET/_deps/adrenotools-build/src/hook/libgsl_alloc_hook.so" \
+            "build/$PRESET/_deps/adrenotools-build/src/hook/libhook_impl.so" \
+            "build/$PRESET/_deps/adrenotools-build/src/hook/libmain_hook.so" \
+            "build/$PRESET/_deps/adrenotools-build/src/hook/libfile_redirect_hook.so"; do
+            [ -f "$lib" ] && "$STRIP" --strip-unneeded "$lib"
+          done
+
+      - name: Set artifact version
+        id: artifact
+        shell: bash
+        run: |
+          echo "version_code=${{ inputs.version_code || '' }}" >> "$GITHUB_OUTPUT"
+          echo "version_name=${{ inputs.version_name || '' }}" >> "$GITHUB_OUTPUT"
+          echo "apk_name=GeneralsXZH-four-engines-run${{ github.run_number }}.apk" >> "$GITHUB_OUTPUT"
 
       - name: Package APK with all four engines
         env:
           GX_ANDROID_STAGING: ${{ github.workspace }}/android-staging
-          GX_ANDROID_VERSION_CODE: ${{ inputs.version_code }}
-          GX_ANDROID_VERSION_NAME: ${{ inputs.version_name }}
           GX_SECOND_GAME_LIB: ${{ github.workspace }}/build/dual-hz-stash/libmain60.so
           GX_SECOND_BASE_GAME_LIB: ${{ github.workspace }}/build/dual-hz-stash/libgenerals60.so
+          GX_ANDROID_VERSION_CODE: ${{ steps.artifact.outputs.version_code }}
+          GX_ANDROID_VERSION_NAME: ${{ steps.artifact.outputs.version_name }}
         shell: bash
         run: |
           set -euo pipefail
           ./scripts/build/android/package-android-zh.sh
-          mkdir -p dist
-          cp android/app/build/outputs/apk/debug/app-debug.apk dist/GeneralsZH-Android-four-engines.apk
 
-      - name: Verify APK contains all four AArch64 engines
+      - name: Locate APK
+        id: locate
         shell: bash
         run: |
           set -euo pipefail
-          APK=dist/GeneralsZH-Android-four-engines.apk
-          test -s "$APK"
-          TMP="$(mktemp -d)"
-          trap 'rm -rf "$TMP"' EXIT
-          unzip -q "$APK" 'lib/arm64-v8a/*' -d "$TMP"
-          READELF="$(find "$ANDROID_NDK_HOME/toolchains/llvm/prebuilt" -type f -name llvm-readelf -print -quit)"
-          for lib in libmain.so libmain60.so libgenerals.so libgenerals60.so; do
-            file="$TMP/lib/arm64-v8a/$lib"
-            test -s "$file" || { echo "::error::APK missing lib/arm64-v8a/$lib"; exit 1; }
-            "$READELF" -h "$file" | grep -q AArch64 || { echo "::error::$lib in APK is not AArch64"; exit 1; }
-            echo "Packaged and verified: $lib"
-          done
+          APK="android/app/build/outputs/apk/debug/app-debug.apk"
+          test -s "$APK" || { echo "::error::APK not found at $APK"; exit 1; }
+          cp "$APK" "${{ steps.artifact.outputs.apk_name }}"
+          echo "path=${{ steps.artifact.outputs.apk_name }}" >> "$GITHUB_OUTPUT"
 
-      - name: Upload APK
+      - name: Verify APK contains all four engines and runtime dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          READELF="$(ls "$ANDROID_NDK_HOME"/toolchains/llvm/prebuilt/*/bin/llvm-readelf | head -1)"
+          APK="${{ steps.locate.outputs.path }}"
+          WORKDIR="$(mktemp -d)"
+          trap 'rm -rf "$WORKDIR"' EXIT
+          unzip -q "$APK" 'lib/arm64-v8a/*' -d "$WORKDIR"
+          LIBDIR="$WORKDIR/lib/arm64-v8a"
+          for lib in libmain.so libmain60.so libgenerals.so libgenerals60.so; do
+            test -s "$LIBDIR/$lib" || { echo "::error::APK missing $lib"; exit 1; }
+            "$READELF" -h "$LIBDIR/$lib" | grep -q AArch64 || {
+              echo "::error::$lib is not AArch64"; exit 1; }
+          done
+          NEEDED="$("$READELF" -d "$LIBDIR/libmain.so" | grep NEEDED | sed -E 's/.*\[(.*)\]/\1/')"
+          missing=0
+          for lib in $NEEDED; do
+            case "$lib" in
+              libc.so|libm.so|libdl.so|liblog.so|libandroid.so|libGLESv*|libEGL.so|libvulkan.so|libOpenSLES.so|libaaudio.so|libmediandk.so|libcamera2ndk.so|libjnigraphics.so|libnativewindow.so|libsync.so|libz.so) continue ;;
+            esac
+            if [ ! -f "$LIBDIR/$lib" ]; then
+              echo "::error::libmain.so needs '$lib' but it is not packaged"
+              missing=1
+            fi
+          done
+          [ "$missing" -eq 0 ] || { echo "::error::Missing native dependency in APK"; exit 1; }
+          echo "Verified all four engine libraries and libmain.so dependencies."
+
+      - name: Upload APK artifact
         uses: actions/upload-artifact@v7
         with:
-          name: GeneralsZH-Android-four-engines-${{ github.run_number }}
-          path: dist/GeneralsZH-Android-four-engines.apk
-          retention-days: 14
+          name: ${{ steps.artifact.outputs.apk_name }}
+          path: ${{ steps.locate.outputs.path }}
+          retention-days: 7
 
-      - name: Upload diagnostic logs
+      - name: Upload symbol table artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: android-symbols-run${{ github.run_number }}
+          path: symbols/
+          retention-days: 90
+
+      - name: Validate release inputs
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.create_release }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "${{ inputs.version_name }}" ]; then
+            echo "::error::create_release requires version_name to be set."
+            exit 1
+          fi
+
+      - name: Publish GitHub Release
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.create_release }}
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ inputs.version_name }}
+          name: v${{ inputs.version_name }}
+          body: ${{ inputs.release_notes }}
+          files: |
+            ${{ steps.locate.outputs.path }}
+            symbols/libmain-run${{ github.run_number }}.symbols.txt.gz
+          generate_release_notes: true
+          make_latest: true
+
+      - name: Collect build logs
+        if: always()
+        shell: bash
+        run: |
+          mkdir -p logs
+          cp "build/$PRESET/vcpkg-manifest-install.log" logs/ 2>/dev/null || true
+          cp "build/$PRESET/_deps/dxvk-build-android/meson-logs/meson-log.txt" logs/dxvk-meson-log.txt 2>/dev/null || true
+          find /opt/vcpkg/buildtrees -maxdepth 2 -name '*.log' -newer .git -exec cp {} logs/ \; 2>/dev/null || true
+          ls -la logs/ || true
+
+      - name: Upload build logs
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: android-four-engine-build-logs-${{ github.run_number }}
+          name: android-build-logs-${{ github.run_number }}
           path: logs/
-          if-no-files-found: ignore
           retention-days: 7
+          if-no-files-found: ignore
+
+      - name: Delete superseded artifacts across branches
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          declare -A latest_run
+          while IFS=$'\\t' read -r branch run_id; do
+            [ -z "$branch" ] && continue
+            if [ -z "${latest_run[$branch]:-}" ] || [ "$run_id" -gt "${latest_run[$branch]}" ]; then
+              latest_run[$branch]="$run_id"
+            fi
+          done < <(gh api "repos/${{ github.repository }}/actions/artifacts" --paginate \
+            --jq '.artifacts[] | [(.workflow_run.head_branch // ""), .workflow_run.id] | @tsv')
+          gh api "repos/${{ github.repository }}/actions/artifacts" --paginate \
+            --jq '.artifacts[] | [(.workflow_run.head_branch // ""), .workflow_run.id, .id] | @tsv' |
+          while IFS=$'\\t' read -r branch run_id artifact_id; do
+            [ -z "$branch" ] && continue
+            if [ "$run_id" != "${latest_run[$branch]:-}" ]; then
+              gh api -X DELETE "repos/${{ github.repository }}/actions/artifacts/${artifact_id}" || true
+            fi
+          done
+
+      - name: Save Android SDK cache
+        if: always() && steps.cache-android-sdk.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v5
+        with:
+          path: /opt/android-sdk
+          key: android-sdk-${{ env.CMDLINE_TOOLS_VERSION }}-ndk${{ env.NDK_VERSION }}-p35-bt35
+
+      - name: Save vcpkg cache
+        if: always() && steps.cache-vcpkg.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v5
+        with:
+          path: |
+            /opt/vcpkg
+            ~/.cache/vcpkg
+          key: vcpkg-android-${{ runner.os }}-${{ env.VCPKG_COMMIT }}-${{ hashFiles('vcpkg.json', 'vcpkg-lock.json', 'cmake/triplets/arm64-android.cmake') }}
+
+      - name: Save ccache
+        if: always()
+        uses: actions/cache/save@v5
+        with:
+          path: ~/.cache/ccache
+          key: ccache-android-${{ env.PRESET }}-${{ github.run_id }}
+
+      - name: Save DXVK build cache
+        if: always() && steps.cache-dxvk.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v5
+        with:
+          path: build/${{ env.PRESET }}/_deps/dxvk-build-android
+          key: dxvk-android-${{ runner.os }}-${{ github.repository }}-${{ env.DXVK_REF }}-${{ hashFiles('Patches/dxvk-android.patch', 'Patches/dxvk-ios.patch', 'cmake/dx8.cmake', 'cmake/meson-arm64-android-cross.ini.in') }}
