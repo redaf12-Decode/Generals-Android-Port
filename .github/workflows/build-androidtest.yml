@@ -1,0 +1,238 @@
+name: Build Android - Four Engines (30Hz + 60Hz)
+
+on:
+  workflow_dispatch:
+    inputs:
+      version_name:
+        description: Optional Android versionName override
+        required: false
+        type: string
+        default: ""
+      version_code:
+        description: Optional Android versionCode override
+        required: false
+        type: string
+        default: ""
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-four-engines-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build-four-engines:
+    name: Build and package four AArch64 engines
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    env:
+      PRESET: android-vulkan
+      NDK_VERSION: "27.2.12479018"
+      CMDLINE_TOOLS_VERSION: "13114758"
+      CMDLINE_TOOLS_SHA1: "5fdcc763663eefb86a5b8879697aa6088b041e70"
+      VCPKG_COMMIT: "42e4e33e1505c9f47b58c21e0f557c1571b751ee"
+      GRADLE_VERSION: "8.9"
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          submodules: false
+
+      - name: Checkout DXVK and nested submodules
+        shell: bash
+        run: |
+          set -euo pipefail
+          git submodule update --init --depth 1 references/fbraz3-dxvk
+          git -C references/fbraz3-dxvk submodule update --init --depth 1
+          echo "DXVK_REF=$(git rev-parse HEAD:references/fbraz3-dxvk)" >> "$GITHUB_ENV"
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Install Android SDK, NDK and platform
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fL --retry 3 -o /tmp/cmdline-tools.zip \
+            "https://dl.google.com/android/repository/commandlinetools-linux-${CMDLINE_TOOLS_VERSION}_latest.zip"
+          echo "${CMDLINE_TOOLS_SHA1}  /tmp/cmdline-tools.zip" | sha1sum -c -
+          sudo mkdir -p /opt/android-sdk/cmdline-tools
+          sudo unzip -q /tmp/cmdline-tools.zip -d /opt/android-sdk/cmdline-tools
+          sudo mv /opt/android-sdk/cmdline-tools/cmdline-tools /opt/android-sdk/cmdline-tools/latest
+          sudo chown -R "$(id -u):$(id -g)" /opt/android-sdk
+          rm /tmp/cmdline-tools.zip
+          SDKMANAGER=/opt/android-sdk/cmdline-tools/latest/bin/sdkmanager
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" --install "ndk;${NDK_VERSION}" "platforms;android-35" "build-tools;35.0.0" "platform-tools"
+          {
+            echo "ANDROID_HOME=/opt/android-sdk"
+            echo "ANDROID_SDK_ROOT=/opt/android-sdk"
+            echo "ANDROID_NDK_HOME=/opt/android-sdk/ndk/${NDK_VERSION}"
+          } >> "$GITHUB_ENV"
+          test -f "/opt/android-sdk/ndk/${NDK_VERSION}/build/cmake/android.toolchain.cmake"
+
+      - name: Install host build tools
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo rm -f /etc/apt/sources.list.d/google-chrome.list /etc/apt/sources.list.d/microsoft-prod.list
+          sudo apt-get update -qq || sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends ninja-build meson pkg-config glslang-tools ccache unzip
+          cmake --version
+          ninja --version
+          meson --version
+          glslangValidator --version | head -1
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: ${{ env.GRADLE_VERSION }}
+
+      - name: Configure compiler cache
+        shell: bash
+        run: |
+          set -euo pipefail
+          ccache --set-config=max_size=3G
+          ccache --set-config=compiler_check=content
+          ccache --zero-stats
+          echo "CCACHE_DIR=$HOME/.cache/ccache" >> "$GITHUB_ENV"
+
+      - name: Bootstrap pinned vcpkg
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ ! -d /opt/vcpkg/.git ]; then
+            sudo git clone https://github.com/microsoft/vcpkg.git /opt/vcpkg
+            sudo chown -R "$(id -u):$(id -g)" /opt/vcpkg
+          fi
+          current="$(git -C /opt/vcpkg rev-parse HEAD || true)"
+          if [ "$current" != "$VCPKG_COMMIT" ]; then
+            git -C /opt/vcpkg fetch origin "$VCPKG_COMMIT"
+            git -C /opt/vcpkg checkout "$VCPKG_COMMIT"
+            rm -f /opt/vcpkg/vcpkg
+          fi
+          if [ ! -f /opt/vcpkg/vcpkg ]; then
+            /opt/vcpkg/bootstrap-vcpkg.sh -disableMetrics
+          fi
+          echo "VCPKG_ROOT=/opt/vcpkg" >> "$GITHUB_ENV"
+
+      - name: Configure CMake for 60Hz
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p logs
+          cmake --preset "$PRESET" \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
+            -DANDROID_CI_BUILD_NUMBER="${GITHUB_RUN_NUMBER}" \
+            -DSAGE_HIGH_FPS_SIM=ON 2>&1 | tee logs/configure-60hz.log
+
+      - name: Build both engines at 60Hz and stash outputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          cmake --build "build/${PRESET}" --target z_generals g_generals dxvk_d3d8_install \
+            main_hook file_redirect_hook gsl_alloc_hook hook_impl -- -k 0 2>&1 | tee logs/build-60hz.log
+          ZH="build/${PRESET}/GeneralsMD/Code/Main/libmain.so"
+          GEN="build/${PRESET}/Generals/Code/Main/libgenerals.so"
+          test -s "$ZH" || { echo "::error::60Hz libmain.so missing: $ZH"; exit 1; }
+          test -s "$GEN" || { echo "::error::60Hz libgenerals.so missing: $GEN"; exit 1; }
+          mkdir -p build/dual-hz-stash
+          cp "$ZH" build/dual-hz-stash/libmain60.so
+          cp "$GEN" build/dual-hz-stash/libgenerals60.so
+          ls -lh build/dual-hz-stash/
+
+      - name: Reconfigure CMake for 30Hz
+        shell: bash
+        run: |
+          set -euo pipefail
+          cmake --preset "$PRESET" \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
+            -DANDROID_CI_BUILD_NUMBER="${GITHUB_RUN_NUMBER}" \
+            -DSAGE_HIGH_FPS_SIM=OFF 2>&1 | tee logs/configure-30hz.log
+
+      - name: Build both engines at 30Hz
+        shell: bash
+        run: |
+          set -euo pipefail
+          cmake --build "build/${PRESET}" --target z_generals g_generals dxvk_d3d8_install \
+            main_hook file_redirect_hook gsl_alloc_hook hook_impl -- -k 0 2>&1 | tee logs/build-30hz.log
+          test -s "build/${PRESET}/GeneralsMD/Code/Main/libmain.so"
+          test -s "build/${PRESET}/Generals/Code/Main/libgenerals.so"
+          test -s build/dual-hz-stash/libmain60.so
+          test -s build/dual-hz-stash/libgenerals60.so
+
+      - name: Verify all four engine binaries are AArch64
+        shell: bash
+        run: |
+          set -euo pipefail
+          READELF="$(find "$ANDROID_NDK_HOME/toolchains/llvm/prebuilt" -type f -name llvm-readelf -print -quit)"
+          test -x "$READELF"
+          declare -A engines=(
+            ["30Hz Zero Hour"]="build/${PRESET}/GeneralsMD/Code/Main/libmain.so"
+            ["60Hz Zero Hour"]="build/dual-hz-stash/libmain60.so"
+            ["30Hz Generals"]="build/${PRESET}/Generals/Code/Main/libgenerals.so"
+            ["60Hz Generals"]="build/dual-hz-stash/libgenerals60.so"
+          )
+          for label in "${!engines[@]}"; do
+            file="${engines[$label]}"
+            test -s "$file" || { echo "::error::$label missing: $file"; exit 1; }
+            "$READELF" -h "$file" | grep -q AArch64 || { echo "::error::$label is not AArch64"; exit 1; }
+            echo "OK: $label -> $file"
+          done
+          for lib in libdxvk_d3d8.so libdxvk_d3d9.so; do test -s "build/${PRESET}/$lib"; done
+          strings "build/${PRESET}/libdxvk_d3d9.so" | grep -q Sdl3WsiDriver
+
+      - name: Package APK with all four engines
+        env:
+          GX_ANDROID_STAGING: ${{ github.workspace }}/android-staging
+          GX_ANDROID_VERSION_CODE: ${{ inputs.version_code }}
+          GX_ANDROID_VERSION_NAME: ${{ inputs.version_name }}
+          GX_SECOND_GAME_LIB: ${{ github.workspace }}/build/dual-hz-stash/libmain60.so
+          GX_SECOND_BASE_GAME_LIB: ${{ github.workspace }}/build/dual-hz-stash/libgenerals60.so
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./scripts/build/android/package-android-zh.sh
+          mkdir -p dist
+          cp android/app/build/outputs/apk/debug/app-debug.apk dist/GeneralsZH-Android-four-engines.apk
+
+      - name: Verify APK contains all four AArch64 engines
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK=dist/GeneralsZH-Android-four-engines.apk
+          test -s "$APK"
+          TMP="$(mktemp -d)"
+          trap 'rm -rf "$TMP"' EXIT
+          unzip -q "$APK" 'lib/arm64-v8a/*' -d "$TMP"
+          READELF="$(find "$ANDROID_NDK_HOME/toolchains/llvm/prebuilt" -type f -name llvm-readelf -print -quit)"
+          for lib in libmain.so libmain60.so libgenerals.so libgenerals60.so; do
+            file="$TMP/lib/arm64-v8a/$lib"
+            test -s "$file" || { echo "::error::APK missing lib/arm64-v8a/$lib"; exit 1; }
+            "$READELF" -h "$file" | grep -q AArch64 || { echo "::error::$lib in APK is not AArch64"; exit 1; }
+            echo "Packaged and verified: $lib"
+          done
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v7
+        with:
+          name: GeneralsZH-Android-four-engines-${{ github.run_number }}
+          path: dist/GeneralsZH-Android-four-engines.apk
+          retention-days: 14
+
+      - name: Upload diagnostic logs
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: android-four-engine-build-logs-${{ github.run_number }}
+          path: logs/
+          if-no-files-found: ignore
+          retention-days: 7
