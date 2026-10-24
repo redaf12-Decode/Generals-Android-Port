@@ -52,6 +52,15 @@
         android:icon="@drawable/ic_gzh_folder"
         android:title="@string/nav_drawer_game_folder"/>
 
+    <!-- The Mods screen (ModManagerActivity). Second, right after the game folder it belongs
+         to: which mods the next launch loads, in what order, per game. This is the folder page's
+         old "Mod Manager" card as a screen of its own, and the only entry into it. -->
+    <item
+        android:id="@+id/nav_mods"
+        android:checkable="true"
+        android:icon="@drawable/ic_gzh_mods"
+        android:title="@string/nav_drawer_mods"/>
+
     <item
         android:id="@+id/nav_graphics"
         android:checkable="true"

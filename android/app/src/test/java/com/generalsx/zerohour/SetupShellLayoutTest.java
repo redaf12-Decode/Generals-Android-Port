@@ -86,14 +86,16 @@ public class SetupShellLayoutTest {
     private static final int TAB_HOME = 1;
 
     /**
-     * The seven selectable destinations R.menu.drawer defines. GeneralsX @tweak
+     * The eight selectable destinations R.menu.drawer defines. GeneralsX @tweak
      * drawer-dedup 17/10/2026: the drawer no longer repeats the three launcher
      * tools (View Logs, Network diagnostics, Replay check) -- they are grouped
-     * on the Tools page, which the single nav_tools row opens.
+     * on the Tools page, which the single nav_tools row opens. GeneralsX @feature
+     * Android Mod Manager 19/10/2026: nav_mods is the one entry into the modern
+     * Mods screen (ModManagerActivity), beside the game folder it manages.
      */
     private static final int[] DESTINATIONS = {
-        R.id.nav_home, R.id.nav_folder, R.id.nav_graphics, R.id.nav_interface,
-        R.id.nav_tools, R.id.nav_online, R.id.nav_help
+        R.id.nav_home, R.id.nav_folder, R.id.nav_mods, R.id.nav_graphics,
+        R.id.nav_interface, R.id.nav_tools, R.id.nav_online, R.id.nav_help
     };
 
     @Test
@@ -240,6 +242,14 @@ public class SetupShellLayoutTest {
             // check no longer have drawer rows: the Tools page groups them, and the drawer reaches
             // them through nav_tools. The account is still a destination of its own, unchanged.
             assertRowStartsScreen(activity, nav, R.id.nav_online, GeneralsOnlineActivity.class);
+            // GeneralsX @feature Android Mod Manager 19/10/2026 One entry, one screen: the drawer
+            // row must open ModManagerActivity itself (the modern manager), not the Game folder
+            // page the old mod-folder card lived on.
+            assertRowStartsScreen(activity, nav, R.id.nav_mods, ModManagerActivity.class);
+            MenuItem mods = nav.getMenu().findItem(R.id.nav_mods);
+            assertNotNull("drawer menu has no Mod Manager item", mods);
+            assertEquals("the Mod Manager drawer item has the wrong label",
+                activity.getString(R.string.nav_drawer_mods), String.valueOf(mods.getTitle()));
 
             // nav_folder is asserted for presence and label only: on API >= R its handler reads
             // Environment.isExternalStorageManager() first, and Robolectric does not implement that
@@ -446,9 +456,11 @@ public class SetupShellLayoutTest {
             // rendered and how it looks, and the Tools page is an entry of its own now (it had
             // none, so the drawer highlighted "View logs" -- a different screen -- whenever it was
             // opened from the bottom rail).
+            // GeneralsX @feature Android Mod Manager 19/10/2026 The Mods screen sits with the game
+            // folder it manages mods for, before everything about how the game is rendered.
             int[] expected = {
-                R.id.nav_home, R.id.nav_folder, R.id.nav_graphics, R.id.nav_interface,
-                R.id.nav_tools, R.id.nav_online, R.id.nav_help
+                R.id.nav_home, R.id.nav_folder, R.id.nav_mods, R.id.nav_graphics,
+                R.id.nav_interface, R.id.nav_tools, R.id.nav_online, R.id.nav_help
             };
             assertEquals("the drawer has " + menu.size() + " items instead of " + expected.length,
                 expected.length, menu.size());

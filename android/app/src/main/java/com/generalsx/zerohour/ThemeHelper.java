@@ -170,7 +170,7 @@ final class ThemeHelper {
     };
     private static final int[] ACCENT_PREVIEW_DARK = {
         0xFFB9AEEA, 0xFFA8C8FF, 0xFF9CD67D, 0xFF80D5C7, 0xFFFFB86B, 0xFFFFB4AB,
-        0xFFC4C6CA, 0xFFC0C4C7, 0xFFF1C448, 0x66FFFFFF, 0xFFECECF0, 0xFFF5D53F,
+        0xFFC4C6CA, 0xFFC0C4C7, 0xFFF1C448, 0x8CFFFFFF, 0xFFECECF0, 0xFFF5D53F,
     };
 
     static int getSavedAccent(Context ctx) {

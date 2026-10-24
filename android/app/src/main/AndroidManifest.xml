@@ -189,6 +189,17 @@
             android:theme="@style/Theme.GeneralsZHSettings"
             android:configChanges="orientation|screenSize|keyboardHidden" />
 
+        <!-- GeneralsX @feature Android Mod Manager 19/10/2026 The Mods screen (ModManagerActivity):
+             one folder per mod under the selected game's mods/ folder, an on/off switch and an order
+             for each game, import/export, and the file check. Reached from the launcher drawer's
+             "Mod Manager" entry and nowhere else, so it is not exported. Portrait-first like every
+             other non-game screen, on the launcher theme because it builds Material dialogs. -->
+        <activity
+            android:name=".ModManagerActivity"
+            android:exported="false"
+            android:theme="@style/Theme.GeneralsZHSettings"
+            android:configChanges="orientation|screenSize|keyboardHidden" />
+
         <!-- GeneralsX @bugfix Android port 11/07/2026 LogViewerActivity's
              Share button used to hand the log over as raw Intent.EXTRA_TEXT,
              which (a) only works with the handful of apps that accept plain

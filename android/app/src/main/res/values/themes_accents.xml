@@ -13,9 +13,11 @@
          four colorSurfaceContainer* tones,
          android:colorBackground/android:windowBackground, colorSurfaceVariant)
          plus the outline pair and the secondary pair, so a picked accent
-         recolours the WHOLE interface, not just the buttons: pale pastel
-         washes of the hue in daylight, near-black hue washes in darkmode, both
-         from the same overlay through values-night. Text/foreground roles (the
+         recolours the whole interface, not just the buttons: pale pastel
+         washes of the hue in daylight, and the shared NAVY ladder in darkmode
+         (generalsx navy-theme 19/10/2026, so an accent choice can no longer
+         wash the navy theme out of the interface, see
+         values-night/accent_colors.xml). Text/foreground roles (the
          on_surface ladder, status colours) and the danger/error pair stay
          neutral on purpose - they read against every hue, and a red accent
          must not blur the red danger semantics.

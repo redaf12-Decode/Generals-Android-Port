@@ -21,10 +21,10 @@
 // A standalone launcher icon ("GeneralsZH Setup"), separate from the game
 // itself, so configuring the game folder or reading a crash log never
 // depends on the game having launched successfully first — and never
-// requires adb. This is the practical answer to "there's no launcher": a
-// full mod-manager-style launcher (à la GenLauncher) is future scope, but
+// requires adb. This is the practical answer to "there's no launcher":
 // picking where the game lives and seeing why it crashed are needed on
-// every single install, so they live here now.
+// every single install, so they live here. The mod-manager side of that
+// launcher is ModManagerActivity, reached from this screen's drawer.
 
 package com.generalsx.zerohour;
 
@@ -178,15 +178,13 @@ public class SetupActivity extends Activity {
     // will not find on its own.
     static final String PREF_BASE_GENERALS_PATH = "base_generals_path";
 
-    // GeneralsX @feature Android Mod Manager 16/10/2026 Optional highest-priority
-    // BIG folder, ported from the Community-Backup30-9 branch's mod-manager work.
-    // Kept separate from the game folder on purpose: a mod's archives must mount
-    // AFTER every retail and community-patch archive, which
-    // ArchiveFileSystem::loadMods() expresses by mounting this folder with
-    // overwrite=TRUE -- a different rule from every other folder this screen
-    // manages. Read back by Core/Main/SDL3Main.cpp through the mod_path.txt
-    // marker below.
-    static final String PREF_MOD_PATH = "mod_path";
+    // GeneralsX @feature Android Mod Manager 19/10/2026 The old, single "mod folder" setting is
+    // retired: ModManager keeps one folder per mod under <game folder>/mods/ with a switch and an
+    // order for each game. These two names are kept only so clearLegacyModFolder() can remove the
+    // preference and the marker that old screen wrote -- without this, Core/Main/SDL3Main.cpp would
+    // keep mounting a folder no screen shows any more.
+    private static final String LEGACY_PREF_MOD_PATH = "mod_path";
+    private static final String LEGACY_MOD_MARKER_NAME = "mod_path.txt";
 
     // TheSuperHackers @bugfix Android port 07/07/2026 SharedPreferences and
     // getFilesDir() both live under /data/data/<pkg>/ and are wiped the
@@ -241,6 +239,10 @@ public class SetupActivity extends Activity {
         // (UiKit's theme readers, Material widgets, dialogs) then resolves the picked accent.
         ThemeHelper.applyAccentTheme(this);
         setTitle(R.string.setup_window_title);
+        // GeneralsX @feature Android Mod Manager 19/10/2026 See clearLegacyModFolder(): the old
+        // single mod-folder card is gone, so its leftover setting goes with it. Cheap and silent
+        // once there is nothing left to clean up.
+        clearLegacyModFolder();
 
         // GeneralsX @feature Android port launcher-ui-2026 08/09/2026 Which
         // bottom-navigation section to open on. Survives the recreate() the
@@ -336,6 +338,11 @@ public class SetupActivity extends Activity {
         // time this screen comes back to the foreground; onLaunchGame()
         // re-applies the landscape lock itself the next time it's needed.
         setRequestedOrientation(android.content.pm.ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED);
+        // GeneralsX @feature Android Mod Manager 19/10/2026 The child screens the drawer opens
+        // (the Mods screen and Generals Online) leave their own row checked while the page behind
+        // them is still the one the user was on. Re-mark the drawer against currentTab on every
+        // return so the drawer never points at a screen that is not in front.
+        syncDrawerSelection();
         refreshStatus();
         refreshGeneralsOnlineStatus();
         loadDxvkConfigIntoEditor();
@@ -392,6 +399,10 @@ public class SetupActivity extends Activity {
     private static final int[] DRAWER_DESTINATIONS = {
         R.id.nav_home,
         R.id.nav_folder,
+        // GeneralsX @feature Android Mod Manager 19/10/2026 The Mods screen, beside the game
+        // folder it manages mods for. It is a child Activity (ModManagerActivity), not a tab,
+        // exactly like nav_online below.
+        R.id.nav_mods,
         R.id.nav_graphics,
         R.id.nav_interface,
         R.id.nav_tools,
@@ -624,6 +635,14 @@ public class SetupActivity extends Activity {
             showTab(TAB_FOLDER);
             return true;
         }
+        if (id == R.id.nav_mods) {
+            currentDrawerDestination = id;
+            // GeneralsX @feature Android Mod Manager 19/10/2026 The drawer's Mod Manager entry,
+            // opening the modern manager directly. It reads the selected game itself, so switching
+            // games on Home changes which list it shows without a second entry anywhere.
+            startActivity(new Intent(this, ModManagerActivity.class));
+            return true;
+        }
         if (id == R.id.nav_graphics) {
             currentDrawerDestination = id;
             showTab(TAB_GRAPHICS);
@@ -844,9 +863,6 @@ public class SetupActivity extends Activity {
         upscaleStatus = null;
         interfaceScaleSlider = null;
         interfaceScaleLabel = null;
-        modStatus = null;
-        modSelectButton = null;
-        modPatchNote = null;
         java.util.Arrays.fill(diagnosticSwitches, null);
     }
 
@@ -972,148 +988,34 @@ public class SetupActivity extends Activity {
 
         UiKit.supporting(card, getString(R.string.setup_how_it_works_body));
         refreshStatus();
-
-        buildModSection(page);
     }
 
-    // ------------------------------------------------------------ Mods
-
-    // Page-scoped: nulled by clearPageReferences() so a stale view is never written to.
-    private TextView modStatus;
-    private View modSelectButton;
-    private TextView modPatchNote;
+    // ------------------------------------------------------- Legacy mod folder
 
     /**
-     * GeneralsX @feature Android Mod Manager 16/10/2026 A folder of *.big archives the engine
-     * mounts last, with overwrite=TRUE, so the mod wins over the retail archives and (see the note
-     * below) keeps the community data patch out. Ported from the Community-Backup30-9 branch's mod
-     * card. It lives on this page rather than behind an entry of its own because it is the same kind
-     * of setting as the game folder -- a directory the launcher remembers and the engine reads -- and
-     * the drawer already reaches this page as "Game folder".
+     * GeneralsX @feature Android Mod Manager 19/10/2026 Removes what the old, single "mod folder"
+     * card left behind. That card (and its page section) is gone: the drawer's "Mod Manager" entry
+     * opens ModManagerActivity, which keeps one folder per mod under {@code <game folder>/mods/} with
+     * a switch and an order for each game.
+     *
+     * The cleanup is not cosmetic. The old card wrote a {@code mod_path.txt} marker into the app's
+     * files directory and Core/Main/SDL3Main.cpp turns it into GENERALSX_MOD_PATH on every launch,
+     * so a folder chosen there would keep being mounted by the engine with no screen left to show or
+     * clear it. Deleting the marker and the preference makes the engine start unmodded until the
+     * player picks mods in the new manager (which writes its own list, mods_active.txt). The folder
+     * itself is never touched: its contents are importable as a mod from the new screen. Idempotent,
+     * so it runs on every start and costs one file check once the marker is gone.
      */
-    private void buildModSection(LinearLayout page) {
-        LinearLayout card = UiKit.card(page);
-        UiKit.sectionHeader(card, R.drawable.ic_gzh_folder,
-            getString(R.string.setup_card_mod_folder), false);
-        modStatus = UiKit.body(card, null);
-        modStatus.setTextIsSelectable(true);
-        modSelectButton = UiKit.button(card, UiKit.BTN_TONAL, R.drawable.ic_gzh_folder,
-            getString(R.string.setup_button_select_mod_folder), this::onSelectModFolder);
-        if (getModPath(this) != null) {
-            UiKit.button(card, UiKit.BTN_DANGER, R.drawable.ic_gzh_broom,
-                getString(R.string.setup_button_clear_mod_folder), this::onClearModFolder);
-        }
-        UiKit.helpText(card, getString(R.string.setup_mod_folder_help));
-        // GeneralsX @tweak Android mod-manager-patch-interlock 16/10/2026 Where the reference build
-        // put a second switch that parked the community patch (and a third setting that handed it
-        // back), this launcher already has that player override -- "Use the patch with mods too" on
-        // the Generals Online screen, read by the engine through gx_community_patch_with_mods.txt.
-        // A second switch here would be the same setting twice, so the card states the relationship
-        // instead of duplicating it, and only when it is actually in effect.
-        modPatchNote = UiKit.supporting(card, "");
-        refreshModCard();
-    }
-
-    /**
-     * GeneralsX @feature Android Mod Manager 16/10/2026 Same storage-permission gate as the game
-     * folder, but the result is deliberately NOT judged as a game folder: a mod directory is valid
-     * when it is readable and holds at least one *.big directly inside it. The select button is
-     * disabled while the picker is open so a second picker cannot race this one.
-     */
-    private void onSelectModFolder() {
-        if (modSelectButton != null) {
-            modSelectButton.setEnabled(false);
-        }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            if (!Environment.isExternalStorageManager()) {
-                if (modSelectButton != null) {
-                    modSelectButton.setEnabled(true);
-                }
-                Toast.makeText(this, R.string.setup_toast_grant_all_files, Toast.LENGTH_LONG).show();
-                try {
-                    Intent intent = new Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION);
-                    intent.setData(Uri.parse("package:" + getPackageName()));
-                    startActivity(intent);
-                } catch (Exception e) {
-                    startActivity(new Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION));
-                }
-                return;
-            }
-        } else if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE)
-                != PackageManager.PERMISSION_GRANTED) {
-            if (modSelectButton != null) {
-                modSelectButton.setEnabled(true);
-            }
-            ActivityCompat.requestPermissions(this,
-                new String[] { Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE },
-                REQUEST_MOD_STORAGE_PERMISSION);
+    private void clearLegacyModFolder() {
+        SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+        File marker = new File(getFilesDir(), LEGACY_MOD_MARKER_NAME);
+        boolean hadPreference = prefs.contains(LEGACY_PREF_MOD_PATH);
+        if (!hadPreference && !marker.isFile()) {
             return;
         }
-        startActivityForResult(new Intent(this, FolderPickerActivity.class), REQUEST_PICK_MOD);
-    }
-
-    /**
-     * The selected mod folder, or null. Judged on readability: an uninstalled or unmounted card (the
-     * common way this path stops resolving) must read as "no mod" rather than make the game fail to
-     * start, and the engine applies the same test to the marker (SDL3Main.cpp, access(modPath, R_OK)).
-     */
-    static String getModPath(Context ctx) {
-        String path = ctx.getSharedPreferences(PREFS_NAME, MODE_PRIVATE).getString(PREF_MOD_PATH, null);
-        if (path == null || path.trim().isEmpty()) return null;
-        File dir = new File(path);
-        return (dir.isDirectory() && dir.canRead()) ? dir.getAbsolutePath() : null;
-    }
-
-    private int countModBigs(String path) {
-        File[] bigs = new File(path).listFiles(
-            (d, name) -> name.toLowerCase(java.util.Locale.ROOT).endsWith(".big"));
-        return bigs == null ? 0 : bigs.length;
-    }
-
-    /** The mod card's status line plus the one condition worth explaining (see buildModSection). */
-    private void refreshModCard() {
-        String path = getModPath(this);
-        if (modStatus != null) {
-            modStatus.setText(path == null
-                ? getString(R.string.setup_mod_status_not_set)
-                : getString(R.string.setup_mod_status_set, path, countModBigs(path)));
-        }
-        if (modPatchNote == null) {
-            return;
-        }
-        boolean patchParked = path != null
-            && DataPackInstaller.communityPatchFile().isFile()
-            && DataPackInstaller.isEnabled()
-            && !DataPackInstaller.isEnabledWithMods();
-        modPatchNote.setVisibility(patchParked ? View.VISIBLE : View.GONE);
-        if (patchParked) {
-            modPatchNote.setText(R.string.setup_mod_patch_parked);
-        }
-    }
-
-    private void saveModPath(String path) {
-        getSharedPreferences(PREFS_NAME, MODE_PRIVATE).edit().putString(PREF_MOD_PATH, path).apply();
-        // Core/Main/SDL3Main.cpp reads this plain-text marker on the next launch and turns it into
-        // GENERALSX_MOD_PATH, which ArchiveFileSystem::loadMods() mounts with overwrite=true. Native
-        // code cannot read SharedPreferences, hence the file -- the same arrangement as
-        // gamedata_path.txt and generals_base_path.txt.
-        File marker = new File(getFilesDir(), "mod_path.txt");
-        try (java.io.FileWriter w = new java.io.FileWriter(marker, false)) {
-            w.write(path);
-            w.write("\n");
-        } catch (java.io.IOException e) {
-            Toast.makeText(this, getString(R.string.setup_toast_marker_save_failed, e.getMessage()),
-                Toast.LENGTH_LONG).show();
-        }
-    }
-
-    private void onClearModFolder() {
-        getSharedPreferences(PREFS_NAME, MODE_PRIVATE).edit().remove(PREF_MOD_PATH).apply();
-        new File(getFilesDir(), "mod_path.txt").delete();
-        Toast.makeText(this, R.string.setup_toast_mod_cleared, Toast.LENGTH_SHORT).show();
-        // Only this page changes shape (the "clear" button disappears), so rebuilding it is enough
-        // and keeps the user where they are instead of restarting the whole Activity.
-        showTab(TAB_FOLDER);
+        prefs.edit().remove(LEGACY_PREF_MOD_PATH).apply();
+        marker.delete();
+        Log.i(TAG, "clearLegacyModFolder: dropped the old single mod-folder setting");
     }
 
     // ------------------------------------------------------------ Touch controls
@@ -4142,11 +4044,6 @@ public class SetupActivity extends Activity {
     }
 
     private static final int REQUEST_LEGACY_STORAGE_PERMISSION = 1003;
-    // GeneralsX @feature Android Mod Manager 16/10/2026 Mod-folder picker, and its own permission
-    // callback: the pre-API-30 storage request has to be able to resume THIS picker, and sharing one
-    // request code with the game-folder flow would send the user to the wrong picker.
-    private static final int REQUEST_PICK_MOD = 1004;
-    private static final int REQUEST_MOD_STORAGE_PERMISSION = 1005;
 
     private void onSelectGameFolder() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
@@ -4217,17 +4114,7 @@ public class SetupActivity extends Activity {
     @Override
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if (requestCode == REQUEST_MOD_STORAGE_PERMISSION) {
-            boolean granted = grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED;
-            if (granted) {
-                startActivityForResult(new Intent(this, FolderPickerActivity.class), REQUEST_PICK_MOD);
-            } else {
-                if (modSelectButton != null) {
-                    modSelectButton.setEnabled(true);
-                }
-                Toast.makeText(this, R.string.setup_toast_storage_permission_denied, Toast.LENGTH_LONG).show();
-            }
-        } else if (requestCode == REQUEST_LEGACY_STORAGE_PERMISSION) {
+        if (requestCode == REQUEST_LEGACY_STORAGE_PERMISSION) {
             boolean granted = grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED;
             if (granted) {
                 startActivityForResult(new Intent(this, FolderPickerActivity.class), 1001);
@@ -4311,38 +4198,6 @@ public class SetupActivity extends Activity {
                         resolved.getAbsolutePath()), Toast.LENGTH_LONG).show();
                     showTab(TAB_HOME);
                 }
-            }
-        } else if (requestCode == REQUEST_PICK_MOD && resultCode == Activity.RESULT_OK && data != null) {
-            // GeneralsX @feature Android Mod Manager 16/10/2026 A mod folder is judged on readability
-            // and on holding *.big archives directly inside it -- deliberately unlike the game-folder
-            // check above, which is about INIZH.big and the retail layout.
-            String path = data.getStringExtra(FolderPickerActivity.EXTRA_SELECTED_PATH);
-            if (path != null) {
-                File dir = new File(path);
-                if (!dir.isDirectory() || !dir.canRead()) {
-                    Toast.makeText(this, R.string.setup_mod_folder_invalid, Toast.LENGTH_LONG).show();
-                } else if (countModBigs(dir.getAbsolutePath()) == 0) {
-                    Toast.makeText(this, R.string.setup_mod_folder_no_big, Toast.LENGTH_LONG).show();
-                } else {
-                    saveModPath(dir.getAbsolutePath());
-                    int bigs = countModBigs(dir.getAbsolutePath());
-                    // GeneralsX @tweak Android mod-manager-patch-interlock 16/10/2026 Say which of
-                    // the two patch rules the new folder lands under: the engine keeps the patch out
-                    // for a mod unless the player's "Use the patch with mods too" override is on.
-                    boolean withMods = DataPackInstaller.isEnabledWithMods()
-                        && DataPackInstaller.communityPatchFile().isFile();
-                    Toast.makeText(this, getString(
-                            withMods ? R.string.setup_toast_mod_saved_patch_still_on
-                                     : R.string.setup_toast_mod_saved,
-                            dir.getAbsolutePath(), bigs), Toast.LENGTH_LONG).show();
-                    showTab(TAB_FOLDER);
-                }
-            }
-        } else if (requestCode == REQUEST_PICK_MOD && resultCode != Activity.RESULT_OK) {
-            // The picker was closed without a choice (or the app was sent to the permission screen
-            // instead): the select button must become usable again.
-            if (modSelectButton != null) {
-                modSelectButton.setEnabled(true);
             }
         } else if (requestCode == REQUEST_IMPORT_DRIVER && resultCode == Activity.RESULT_OK && data != null) {
             Uri uri = data.getData();
@@ -4536,6 +4391,38 @@ public class SetupActivity extends Activity {
     private boolean pendingLaunchAfterRotation = false;
 
     private void onLaunchGame() {
+        // GeneralsX @feature Android Mod Manager 19/10/2026 Safe start with mods: two starts in a
+        // row with the same mods never reached the main menu -- offer to start without them, or
+        // without the mod switched on last, instead of repeating a launch that cannot work.
+        // ModManager's boot marker (mods_boot_pending) is deleted by the engine at the main menu,
+        // so this counts real failed starts, not launches the player abandoned early.
+        final String modList = ModManager.activeList(this);
+        if (!modList.isEmpty() && ModManager.failedStarts(this, modList) >= 2) {
+            final String last = ModManager.lastEnabled(this);
+            final boolean lastOn = last != null && ("\n" + modList + "\n").contains("/" + last + "\n");
+            android.app.AlertDialog.Builder b = new android.app.AlertDialog.Builder(this)
+                .setTitle(R.string.mods_safe_title)
+                .setMessage(R.string.mods_safe_message)
+                .setPositiveButton(R.string.mods_safe_without, (d, w) -> {
+                    ModManager.switchOff(this, null);
+                    showTab(currentTab);
+                    launchGameNow();
+                })
+                .setNegativeButton(R.string.mods_safe_anyway, (d, w) -> launchGameNow());
+            if (lastOn) {
+                b.setNeutralButton(getString(R.string.mods_safe_without_last, last), (d, w) -> {
+                    ModManager.switchOff(this, last);
+                    showTab(currentTab);
+                    launchGameNow();
+                });
+            }
+            b.show();
+            return;
+        }
+        launchGameNow();
+    }
+
+    private void launchGameNow() {
         // GeneralsX @feature Android port 04/10/2026 The text-language marker is checked against
         // the data of the game about to start, which may not be the one it was last written for.
         applyGameLanguageOverride();

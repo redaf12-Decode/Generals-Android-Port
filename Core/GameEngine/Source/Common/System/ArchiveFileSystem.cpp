@@ -49,9 +49,13 @@
 #include "Common/ArchiveFile.h"
 #include "Common/ArchiveFileSystem.h"
 #include "Common/GlobalData.h"
+#include "Common/GXManagedMods.h"
 #include "Common/LocalFileSystem.h"
 #include "Common/AsciiString.h"
 #include "Common/PerfTimer.h"
+
+#include <string>
+#include <vector>
 
 
 //----------------------------------------------------------------------------
@@ -109,6 +113,27 @@ static AsciiString getBaseFilename(const AsciiString& path)
 	const char* p2 = strrchr(str, '/');
 	const char* sep = (p1 == nullptr) ? p2 : ((p2 == nullptr) ? p1 : ((p1 > p2) ? p1 : p2));
 	return sep ? AsciiString(sep + 1) : path;
+}
+
+// GeneralsX @feature Android Mod Manager 19/10/2026 The .big files of the mods enabled in the
+// launcher's Mods screen (GXManagedMods.h), lowest priority first: the folders in reverse order, and
+// inside a folder the files in reverse name order, so that mounting each over the last (overwrite)
+// leaves the top mod winning, and inside one mod the first name winning -- the same order the retail
+// rule gives '!' archives in the game folder, so a mod moved into mods/ loads exactly the same data.
+static void gxManagedModArchives(std::vector<AsciiString> &out)
+{
+	const std::vector<std::string> &folders = GXManagedMods::folders();
+	for (size_t i = folders.size(); i-- > 0;)
+	{
+		FilenameList files;
+		TheLocalFileSystem->getFileListInDirectory(AsciiString(folders[i].c_str()), AsciiString(""),
+			AsciiString("*.big"), files, TRUE);
+		for (FilenameList::const_reverse_iterator it = files.rbegin(); it != files.rend(); ++it)
+			out.push_back(*it);
+		fprintf(stderr, "[gxbig] mod folder %s: %u archive(s), priority %u of %u\n", folders[i].c_str(),
+			(unsigned)files.size(), (unsigned)(i + 1), (unsigned)folders.size());
+	}
+	fflush(stderr);
 }
 
 
@@ -241,6 +266,16 @@ void ArchiveFileSystem::loadIntoDirectoryTree(ArchiveFile *archiveFile, Bool ove
 
 void ArchiveFileSystem::loadMods()
 {
+	// GeneralsX @feature Android Mod Manager 19/10/2026 The mods the player switched on in the
+	// launcher's Mods screen (ModManager.java writes mods_active.txt, highest priority first). Their
+	// archives are opened up front so the community-patch decision below sees them as well -- a mod
+	// that ships game rules has to keep the patch out exactly like a '!' archive does.
+	std::vector<AsciiString> managedArchives;
+	gxManagedModArchives(managedArchives);
+	std::vector<ArchiveFile *> managedFiles;
+	for (size_t m = 0; m < managedArchives.size(); ++m)
+		managedFiles.push_back(openArchiveFile(managedArchives[m].str()));
+
 #if RTS_ZEROHOUR
 	// GeneralsX @bugfix Android port 13/09/2026 Mount the GeneralsOnline community
 	// data patch, which is why this port could not join a single PC-hosted lobby.
@@ -328,6 +363,23 @@ void ArchiveFileSystem::loadMods()
 			}
 			if (modArchive.isNotEmpty())
 				break;
+		}
+		// GeneralsX @feature Android Mod Manager 19/10/2026 The same rule for the mods turned on in
+		// the launcher's Mods screen: one of their archives with game data keeps the patch out.
+		for (size_t m = 0; m < managedFiles.size() && modArchive.isEmpty(); ++m)
+		{
+			if (managedFiles[m] == nullptr)
+				continue;
+			FilenameList iniFiles;
+			managedFiles[m]->getFileListInDirectory(AsciiString(""), AsciiString(""), AsciiString("*.ini"), iniFiles, TRUE);
+			for (FilenameList::const_iterator f = iniFiles.begin(); f != iniFiles.end(); ++f)
+			{
+				if (f->startsWithNoCase("data\\ini\\") || f->startsWithNoCase("data/ini/"))
+				{
+					modArchive = getBaseFilename(managedArchives[m]);
+					break;
+				}
+			}
 		}
 		if (modArchive.isEmpty() && TheGlobalData->m_modBIG.isNotEmpty())
 			modArchive = TheGlobalData->m_modBIG;
@@ -427,6 +479,23 @@ void ArchiveFileSystem::loadMods()
 			ret ? "" : " [no readable *.big]");
 		fflush(stderr);
 	}
+
+	// GeneralsX @feature Android Mod Manager 19/10/2026 The launcher's managed mods, above
+	// everything else (PLAN-027): the player chose their order explicitly, so the top mod mounts
+	// last. Overwrite=TRUE is what makes them outrank the retail archives, the community patch and
+	// any legacy '!' archive without moving or reordering a single file on disk.
+	for (size_t m = 0; m < managedArchives.size(); ++m)
+	{
+		ArchiveFile *archiveFile = managedFiles[m];
+		fprintf(stderr, "[gxbig] mod %s: %s\n", archiveFile != nullptr ? "loaded" : "FAILED TO OPEN",
+			managedArchives[m].str());
+		if (archiveFile != nullptr)
+		{
+			loadIntoDirectoryTree(archiveFile, TRUE);
+			m_archiveFileMap[managedArchives[m]] = archiveFile;
+		}
+	}
+	fflush(stderr);
 }
 
 Bool ArchiveFileSystem::doesFileExist(const Char *filename, FileInstance instance) const

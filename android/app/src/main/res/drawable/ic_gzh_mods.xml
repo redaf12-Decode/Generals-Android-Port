@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- GeneralsX @feature Android Mod Manager 19/10/2026 The drawer's Mod Manager mark: a stack of
+     layers for the mods' load order, one mod per folder with the upper one winning. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:fillType="nonZero"
+        android:pathData="M11.99 18.54 l-7.37 -5.73 L3 14.07 l8.99 7 8.99 -7 -1.63 -1.27 -7.36 5.74 Z M12 16 l7.36 -5.73 L21 9 l-9 -7 -9 7 1.63 1.27 L12 16 Z" />
+</vector>

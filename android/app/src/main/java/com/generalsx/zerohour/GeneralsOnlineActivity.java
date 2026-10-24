@@ -264,13 +264,18 @@ public class GeneralsOnlineActivity extends Activity {
         dataPackModStatus = UiKit.supporting(card, "");
         final String gamePath = SetupActivity.getSavedGamePath(this, SetupActivity.GAME_ZERO_HOUR);
         new Thread(() -> {
-            // GeneralsX @feature Android Mod Manager 16/10/2026 A mod FOLDER the launcher selected
-            // counts as a mod here too: ArchiveFileSystem::loadMods() keeps the community patch out
-            // for it exactly as it does for a '!'-prefixed data mod inside the game folder, so this
-            // line must not say "no mod" while the player has one selected on the Game folder page.
+            // GeneralsX @feature Android Mod Manager 19/10/2026 Mods switched on in the Mods screen
+            // count as a mod here too: the engine keeps the community patch out for them exactly as
+            // it does for a '!'-prefixed data mod inside the game folder, so this line must not say
+            // "no mod" while the player has mods enabled in ModManagerActivity.
             String mod = DataPackInstaller.findDataMod(gamePath);
             if (mod == null) {
-                mod = SetupActivity.getModPath(getApplicationContext());
+                for (ModManager.Mod installed : ModManager.listMods(getApplicationContext())) {
+                    if (installed.enabled) {
+                        mod = installed.name;
+                        break;
+                    }
+                }
             }
             final String found = mod;
             handler.post(() -> {

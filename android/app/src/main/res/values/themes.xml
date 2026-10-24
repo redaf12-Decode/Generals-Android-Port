@@ -12,8 +12,9 @@
          ground - and is deliberately Theme.Material3.DayNight since the
          in-app Daylight/Darkmode setting (ThemeHelper, Interface tab): the
          palette split lives in res/values/colors.xml (daylight) and
-         res/values-night/colors.xml (darkmode, the original set verbatim),
-         and which half resolves is decided by the effective night mode -
+         res/values-night/colors.xml (darkmode, the navy theme ported
+         19/10/2026), and which half resolves is decided by the effective
+         night mode -
          the system's, or the launcher's own override applied through
          Configuration.uiMode in every launcher Activity's
          attachBaseContext(). The DayNight parent also keeps Material's own
@@ -96,8 +97,8 @@
     <!-- SetupActivity/LogViewerActivity still build a couple of plain
          android.app.AlertDialogs (single-choice language / render-backend
          pickers, "clear logs?"). Give those the same ground and text
-         colours so they don't flash a light-grey Holo box on a near-black
-         screen. -->
+         colours so they don't flash a light-grey Holo box on the navy
+         darkmode screen. -->
     <style name="Theme.GeneralsZH.AlertDialog" parent="android:Theme.Material.Dialog.Alert">
         <item name="android:windowBackground">@drawable/gzh_dialog_background</item>
         <item name="android:colorAccent">@color/gzh_primary</item>

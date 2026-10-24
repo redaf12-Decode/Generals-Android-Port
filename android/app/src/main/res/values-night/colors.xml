@@ -1,82 +1,110 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- GeneralsX @feature Android port daylight-darkmode 16/10/2026 The
-         DARKMODE half of the launcher palette, moved verbatim from
-         res/values/colors.xml (where it had lived since the launcher-ui-2026
-         rework) so the launcher can offer an in-app Daylight/Darkmode choice:
-         daylight is values/, darkmode is values-night/, and which half
-         resolves is decided by the effective night mode - the system's, or
-         the launcher's own override applied through Configuration.uiMode in
-         every launcher Activity's attachBaseContext() (ThemeHelper).
+         DARKMODE half of the launcher palette. daylight is values/colors.xml,
+         darkmode is here, and which half resolves is decided purely by the
+         effective night mode: the system's, or the launcher's own override
+         applied through Configuration.uiMode in every launcher Activity's
+         attachBaseContext() (ThemeHelper).
+
+         GeneralsX @feature Android port navy-theme 19/10/2026 This half is
+         now the NAVY theme from the GeneralsX fork's palette (see
+         mirror/claude-network-diagnostics colors_palettes.xml, "navy and
+         gold"), replacing the near-black Material 3 set: a deep-sea ground
+         (#06111D), a blue-slate surface ladder that steps lighter as cards
+         stack, cool off-white text, and brine-blue hairlines. It is a
+         drop-in replacement for the old values, not a second theme: every
+         name below is the same name the Java and themes.xml already read,
+         so every screen, dialog, drawer, field and card follows it through
+         the normal resource split.
+
+         The accent roles keep their existing identities on purpose. The
+         default violet (the base accent, no overlay) still owns primary/
+         container here; the eleven alternate accents resolve their own
+         primary/secondary roles and, in values-night/accent_colors.xml, use
+         these same navy walls, so changing accent recolours the controls
+         without ever taking the navy out of the interface. Daylight
+         (values/colors.xml) is untouched and keeps its lavender-white set.
 
          GeneralsZHActivity (the game surface itself) never references any of
          these - it stays on its own plain fullscreen theme. -->
 
-    <!-- Ground + surface ladder (M3 surface container roles) -->
-    <color name="gzh_background">#0E0E11</color>
-    <color name="gzh_surface">#131318</color>
-    <color name="gzh_surface_container_low">#16161C</color>
-    <color name="gzh_surface_container">#1A1A21</color>
-    <color name="gzh_surface_container_high">#22222B</color>
-    <color name="gzh_surface_container_highest">#2B2B36</color>
+    <!-- Ground + surface ladder (M3 surface container roles), ported 1:1 from
+         the source navy palette. -->
+    <color name="gzh_background">#06111D</color>
+    <color name="gzh_surface">#0A1726</color>
+    <color name="gzh_surface_container_low">#0C1B2D</color>
+    <color name="gzh_surface_container">#0D1E30</color>
+    <color name="gzh_surface_container_high">#15273C</color>
+    <color name="gzh_surface_container_highest">#1C3249</color>
 
-    <!-- Content on those surfaces -->
-    <color name="gzh_on_surface">#ECEBF2</color>
-    <color name="gzh_on_surface_variant">#A5A2B4</color>
-    <!-- The faintest tier still has to clear WCAG AA (4.5:1) at 12sp against
-         gzh_surface_container, which #7C798C did not (3.9:1). -->
-    <color name="gzh_on_surface_faint">#8F8CA0</color>
-    <color name="gzh_outline">#3A3846</color>
-    <color name="gzh_outline_variant">#26252F</color>
+    <!-- Content on those surfaces: cool white and two blue-grey tiers. The
+         faintest tier still clears WCAG AA (4.5:1) at 12sp against
+         gzh_surface_container, as it did on the near-black ground. -->
+    <color name="gzh_on_surface">#F5F7FB</color>
+    <color name="gzh_on_surface_variant">#B6C9E2</color>
+    <color name="gzh_on_surface_faint">#A4B9D4</color>
+    <color name="gzh_outline">#45647F</color>
+    <color name="gzh_outline_variant">#263E57</color>
 
-    <!-- Primary: the soft lavender accent (headings, active nav item,
-         selected segment, hero action). -->
+    <!-- Primary: the default violet accent. See the header: the navy theme's
+         own gold is the ACCENT_GOLD option, not the default. Kept on its
+         existing tone so the accent picker's first swatch and the base theme
+         still agree. -->
     <color name="gzh_primary">#B9AEEA</color>
     <color name="gzh_on_primary">#231B3F</color>
     <color name="gzh_primary_container">#38305C</color>
     <color name="gzh_on_primary_container">#E4DDFF</color>
     <!-- Kept for the themes.xml colorPrimaryDark slot (pre-API-23 status bar). -->
-    <color name="gzh_primary_dark">#0E0E11</color>
+    <color name="gzh_primary_dark">#06111D</color>
     <color name="gzh_accent">#B9AEEA</color>
 
-    <!-- Secondary: a desaturated companion for tonal chips/containers. -->
-    <color name="gzh_secondary">#C9C4DC</color>
-    <color name="gzh_on_secondary">#302C42</color>
-    <color name="gzh_secondary_container">#393450</color>
-    <color name="gzh_on_secondary_container">#E6E1F6</color>
+    <!-- Secondary: the navy palette's brine blue, the source theme's own
+         companion pair (was a lavender grey). -->
+    <color name="gzh_secondary">#93BDE8</color>
+    <color name="gzh_on_secondary">#10253E</color>
+    <color name="gzh_secondary_container">#173A54</color>
+    <color name="gzh_on_secondary_container">#D2E9FF</color>
 
-    <!-- Tertiary: the muted pastel used for destructive / "clear" actions. -->
-    <color name="gzh_tertiary">#F3C9C6</color>
-    <color name="gzh_on_tertiary">#4A2523</color>
-    <color name="gzh_tertiary_container">#5C3835</color>
-    <color name="gzh_on_tertiary_container">#FFDAD7</color>
+    <!-- Tertiary: the muted warm pastel used for destructive / "clear"
+         actions, as in the source navy palette. -->
+    <color name="gzh_tertiary">#F0B9A1</color>
+    <color name="gzh_on_tertiary">#4B281B</color>
+    <color name="gzh_tertiary_container">#54352C</color>
+    <color name="gzh_on_tertiary_container">#FFDCC7</color>
 
     <color name="gzh_error">#FFB4AB</color>
     <color name="gzh_on_error">#690005</color>
     <color name="gzh_error_container">#93000A</color>
     <color name="gzh_on_error_container">#FFDAD6</color>
 
-    <!-- Disabled state (M3: 38% of on-surface for content, 12% for containers) -->
-    <color name="gzh_on_surface_disabled">#61ECEBF2</color>
-    <color name="gzh_container_disabled">#1FECEBF2</color>
-    <color name="gzh_ripple_light">#1FECEBF2</color>
+    <!-- Disabled state (M3: 38% of on-surface for content, 12% for
+         containers), and the launcher's own ripples. ripple_primary follows
+         the DEFAULT accent (violet), not the source navy's gold, because the
+         base theme's primary is violet; the accent overlays carry their own
+         ripple colours. -->
+    <color name="gzh_on_surface_disabled">#61F5F7FB</color>
+    <color name="gzh_container_disabled">#1FF5F7FB</color>
+    <color name="gzh_ripple_light">#1FF5F7FB</color>
     <color name="gzh_ripple_primary">#33B9AEEA</color>
 
-    <!-- GeneralsX @feature Android port game-folder-integrity-check 07/09/2026
-         Semantic status colours for the game-folder validity line (see
-         refreshStatus() in SetupActivity.java) - retuned for the near-black
-         ground above so they stay legible without shouting. -->
-    <color name="gzh_status_ok">#7FDCA4</color>
-    <color name="gzh_status_warn">#F2C97D</color>
+    <!-- Semantic status colours for the game-folder validity line (see
+         refreshStatus() in SetupActivity.java), retuned for the navy ground
+         as in the source palette: mint, amber, salmon. -->
+    <color name="gzh_status_ok">#8BE6B3</color>
+    <color name="gzh_status_warn">#FFCE5D</color>
     <color name="gzh_status_error">#FFB4AB</color>
 
-    <!-- GeneralsX @feature Android port daylight-darkmode 16/10/2026 The
-         dashboard background wash and its top scrim, kept exactly as the
-         single-palette launcher had them: a near-black gradient with a
-         translucent darkening from the top edge over the seam texture. -->
-    <color name="gzh_dashboard_top">#0E0E11</color>
-    <color name="gzh_dashboard_mid">#101116</color>
-    <color name="gzh_dashboard_bottom">#14131B</color>
+    <!-- The dashboard background wash (bg_dashboard.xml) and the seam texture
+         it layers (bg_dashboard_pattern.xml), carried over from the navy
+         palette's own ladder rather than the near-black one. The scrim is
+         unchanged: a neutral darkening from the top edge, so the app bar
+         stays readable over the texture. The seam is the navy palette's
+         faint text blue, not an accent colour, so it stays harmonious with
+         all twelve accent choices. -->
+    <color name="gzh_dashboard_top">#06111D</color>
+    <color name="gzh_dashboard_mid">#081422</color>
+    <color name="gzh_dashboard_bottom">#0A1726</color>
     <color name="gzh_dashboard_scrim">#A6000000</color>
-    <color name="gzh_dashboard_seam">#B9AEEA</color>
+    <color name="gzh_dashboard_seam">#A4B9D4</color>
 </resources>

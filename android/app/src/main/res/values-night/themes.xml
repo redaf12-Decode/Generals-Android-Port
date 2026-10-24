@@ -8,7 +8,7 @@
          below, so only the resources that genuinely differ per mode are
          overridden. -->
 
-    <!-- Light content on the transparent system bars, over the near-black
-         ground. -->
+    <!-- Light content on the transparent system bars, over the navy ground
+         (gzh_background #06111D): dark status-bar icons would vanish there. -->
     <bool name="gzh_light_system_bars">false</bool>
 </resources>

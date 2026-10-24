@@ -3,8 +3,10 @@
     <!-- GeneralsX @feature Android port daylight-darkmode 16/10/2026 Design
          tokens for the launcher (Setup / GeneralsOnline / Log Viewer /
          Folder Picker). This file is the DAYLIGHT half of a two-palette set:
-         the darkmode palette lives in res/values-night/colors.xml and keeps
-         the near-black Material 3 set the launcher shipped with. Both halves
+         the darkmode palette lives in res/values-night/colors.xml and is the
+         NAVY theme ported from the GeneralsX fork's navy-and-gold palette
+         (generalsx navy-theme 19/10/2026; it replaced the near-black
+         Material 3 set this launcher shipped with). Both halves
          define the same names; which one the widgets read is decided purely
          by the resolved night mode (the system's, or the in-app Daylight /
          Darkmode choice written by ThemeHelper and applied through
@@ -84,8 +86,7 @@
          dashboard's own background wash (bg_dashboard.xml) and the seam
          texture it layers (bg_dashboard_pattern.xml). Named colours rather
          than literals in the drawables so the daylight dashboard is a light
-         page with light cards on it, instead of near-black behind light
-         cards; values-night keeps the original dark wash. The scrim is the
+         page with light cards on it; values-night keeps the navy wash. The scrim is the
          gradient that keeps the app bar readable from the top edge, so in
          daylight it is simply absent (nothing to darken). -->
     <color name="gzh_dashboard_top">#FAF8FC</color>

@@ -181,6 +181,10 @@ public class GeneralsZHActivity extends SDLActivity {
         if (SetupActivity.isSkipIntroEnabled(this)) {
             args.add("-nologo");
         }
+        // GeneralsX @feature Android Mod Manager 19/10/2026 The mods switched on in the Mods
+        // screen, in their order, for the game being started (ModManager, GXManagedMods.h). Written
+        // here so both engines, a replay and every way of starting the game read the same list.
+        ModManager.writeActiveList(this);
         Intent intent = getIntent();
         String replay = intent != null ? intent.getStringExtra(EXTRA_REPLAY) : null;
         if (replay == null || replay.isEmpty()) {
