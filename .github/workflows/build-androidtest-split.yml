@@ -316,15 +316,94 @@ jobs:
           ls -la build/libmain60.so build/libgenerals60.so
           ccache --show-stats
 
+      # GeneralsX @bugfix Android CI 24/10/2026 Run 40084873349 failed this step with
+      # "build/libmain60.so is not AArch64" 26ms after it started, on a build that had just
+      # linked fine -- and the byte-identical workflow file had passed the same step on run
+      # 40072029407 the same day. The library was AArch64; the CHECK was broken:
+      #
+      #   "$READELF" -h "$lib" | grep -q AArch64
+      #
+      # grep -q exits the moment it matches and closes the pipe, llvm-readelf then fails its
+      # next write (EPIPE / SIGPIPE), and under `set -o pipefail` that non-zero status is
+      # reported as the pipeline failing -- so a perfectly good arm64 .so is announced as
+      # "not AArch64", with no stderr to explain it (exactly what the log showed). Reproduced
+      # locally 300/300 runs on a real arm64 libmain60.so: readelf exits 74 (EX_IOERR), grep
+      # exits 0, pipeline exits 74. scripts/build/android/build-android-zh.sh:108-116 already
+      # documents and fixes this trap ("capture first, then grep"); this workflow was uploaded
+      # with the pre-fix form. The retry loops in the 30 Hz job were a band-aid for the same
+      # misunderstanding ("I/O visibility race") and are being replaced with the real fix.
+      #
+      # The check is not being weakened -- it is being made stricter (ELF64, a size floor, and
+      # the 30/60 Hz identity marker) and self-diagnosing: on failure it prints the tool, the
+      # CMake target and the library's actual ELF header, so a genuinely wrong-architecture
+      # binary says what it really is instead of a bare accusation.
       - name: Verify 60Hz engine outputs before handing off
         run: |
           set -euo pipefail
           READELF="$(ls "${ANDROID_NDK_HOME}"/toolchains/llvm/prebuilt/*/bin/llvm-readelf | head -1)"
+          test -x "${READELF}" || { echo "::error::NDK llvm-readelf not found under ${ANDROID_NDK_HOME}"; exit 1; }
+          echo "readelf: ${READELF} ($("${READELF}" --version | head -1))"
+          echo "target:  $(grep -E '^(CMAKE_CXX_COMPILER|CMAKE_TOOLCHAIN_FILE|ANDROID_ABI|ANDROID_PLATFORM|CMAKE_SYSTEM_PROCESSOR|VCPKG_TARGET_TRIPLET):' "build/${{ env.PRESET }}/CMakeCache.txt" | tr '\n' ' ')"
           for lib in build/libmain60.so build/libgenerals60.so; do
             test -s "$lib" || { echo "::error::Missing or empty 60Hz engine: $lib"; exit 1; }
-            "$READELF" -h "$lib" | grep -q AArch64 || { echo "::error::$lib is not AArch64"; exit 1; }
+            SIZE="$(stat -c %s "$lib")"
+            if [ "$SIZE" -lt 5000000 ]; then
+              echo "::error::$lib is only ${SIZE} bytes -- that is not a linked engine"
+              exit 1
+            fi
+            # Capture the header FIRST, then match it. Never pipe llvm-readelf into
+            # `grep -q` (see the comment above): the early close is reported by pipefail
+            # as this check failing. Here-strings match from memory, so nothing can die
+            # mid-write and the readelf exit status is checked on its own.
+            if ! HDR="$("${READELF}" -h "$lib")"; then
+              echo "::error::llvm-readelf -h could not read $lib"
+              exit 1
+            fi
+            grep -E 'Class:|Type:|Machine:' <<< "${HDR}" || true
+            if ! grep -Eq 'Class:[[:space:]]+ELF64' <<< "${HDR}"; then
+              echo "::error::$lib is not a 64-bit ELF -- its header was:"
+              printf '%s\n' "${HDR}"
+              exit 1
+            fi
+            if ! grep -Eq 'Machine:[[:space:]]+AArch64' <<< "${HDR}"; then
+              echo "::error::$lib is not AArch64 -- its header was:"
+              printf '%s\n' "${HDR}"
+              exit 1
+            fi
           done
-          echo "Both 60Hz engine libraries are present and AArch64."
+          # Which pass produced each file. An ELF check alone cannot tell a 60 Hz engine
+          # from a stale 30 Hz copy parked at the same path, and the two tick rates are not
+          # a runtime flag (SAGE_HIGH_FPS_SIM selects WWSyncPerSecond and the layout of
+          # GameLogic), so the identity is in the binary itself. The marker lives in the
+          # Zero Hour tree only: libgenerals60.so must have none of it, or the base game's
+          # slot holds a Zero Hour build. strings is captured to a file first for the same
+          # reason readelf is -- `strings | grep -q` is this step's bug wearing a different
+          # tool.
+          MAIN60_STRINGS="$(mktemp)"
+          strings build/libmain60.so > "${MAIN60_STRINGS}"
+          # The specific diagnosis first: a 30 Hz engine in this slot both lacks
+          # gen_online_60hz AND carries gen_online_30hz, and "pass 1 did not reconfigure"
+          # says what actually went wrong rather than only what is missing.
+          if grep -qF -- 'gen_online_30hz' "${MAIN60_STRINGS}"; then
+            echo "::error::build/libmain60.so is a 30 Hz build -- pass 1 did not reconfigure with -DSAGE_HIGH_FPS_SIM=ON (or a stale 30 Hz file was parked at this path)"
+            rm -f "${MAIN60_STRINGS}"
+            exit 1
+          fi
+          if ! grep -qF -- 'gen_online_60hz' "${MAIN60_STRINGS}"; then
+            echo "::error::build/libmain60.so carries no gen_online_60hz marker -- it is not the 60 Hz pass"
+            rm -f "${MAIN60_STRINGS}"
+            exit 1
+          fi
+          rm -f "${MAIN60_STRINGS}"
+          GENERALS60_STRINGS="$(mktemp)"
+          strings build/libgenerals60.so > "${GENERALS60_STRINGS}"
+          if grep -qF -- 'gen_online_' "${GENERALS60_STRINGS}"; then
+            echo "::error::build/libgenerals60.so carries a Zero Hour GeneralsOnline client id -- the base game's slot holds a Zero Hour build"
+            rm -f "${GENERALS60_STRINGS}"
+            exit 1
+          fi
+          rm -f "${GENERALS60_STRINGS}"
+          echo "Both 60Hz engine libraries are ELF64 AArch64, linked, and carry the right 30/60 Hz identity."
 
       - name: Upload only the two 60Hz engine libraries
         uses: actions/upload-artifact@v7
@@ -335,6 +414,34 @@ jobs:
             build/libgenerals60.so
           if-no-files-found: error
           retention-days: 1
+
+      # GeneralsX @bugfix Android CI 24/10/2026 This is the job that does the native
+      # cross-compile, and it had no diagnostics at all: when it failed, its
+      # logs/configure_android*.log and logs/build_android_60hz.log (and the vcpkg/DXVK
+      # logs that explain a dependency failure) evaporated with the runner. The 30 Hz job
+      # already collects and uploads them; the 60 Hz job now does too, so a failed native
+      # build keeps its evidence instead of leaving only the tail of the Actions log.
+      - name: Collect dependency build logs for diagnosis
+        if: always()
+        run: |
+          mkdir -p logs
+          cp build/${{ env.PRESET }}/vcpkg-manifest-install.log logs/ 2>/dev/null || true
+          if [ -d /opt/vcpkg/buildtrees ]; then
+            find /opt/vcpkg/buildtrees -maxdepth 2 -name "*.log" -newer .git -exec cp {} logs/ \; 2>/dev/null || true
+          fi
+          cp build/${{ env.PRESET }}/_deps/dxvk-build-android/meson-logs/meson-log.txt logs/dxvk-meson-log.txt 2>/dev/null || true
+          ls -la logs/ || true
+
+      # Distinct name from the 30 Hz job's android-build-logs-<run> artifact: both jobs run
+      # in the same workflow run and a name collision makes this upload fail outright.
+      - name: Upload build logs
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: android-build-logs-60hz-run${{ github.run_number }}
+          path: logs/
+          retention-days: 7
+          if-no-files-found: ignore
 
       # Save caches even when the job failed (see the restore steps above for
       # why plain actions/cache can't do this). Guard each save so a run that
@@ -660,32 +767,48 @@ jobs:
           # real path deterministic, so use it directly instead of searching.
           GAME_LIB="build/${{ env.PRESET }}/GeneralsMD/Code/Main/libmain.so"
           if [ ! -f "$GAME_LIB" ]; then echo "::error::libmain.so not found at $GAME_LIB"; exit 1; fi
-          # GeneralsX @bugfix Android port 31/07/2026 - the deterministic
-          # OUTPUT_NAME path above (13/07/2026 fix) stopped `head -1` from
-          # grabbing the wrong file, but the readelf check itself still
-          # failed twice in a row on two otherwise-clean reruns of the exact
-          # same commit (both with warm ccache/vcpkg/DXVK caches, both
-          # failing within ~25ms of this step starting) -- pointing at an
-          # I/O visibility race on the runner rather than a real wrong-arch
-          # binary: the prior step already exited 0, so the linker's writes
-          # should be complete, but the file's content isn't always visible
-          # to a process started microseconds later. Retry a few times with
-          # a short sleep before failing for real; a genuinely wrong-arch
-          # binary will still fail every attempt and correctly error out.
-          READELF_OK=0
-          for attempt in 1 2 3 4 5; do
-            if "$READELF" -h "$GAME_LIB" 2>/dev/null | grep -q AArch64; then
-              READELF_OK=1
-              break
-            fi
-            sleep 1
-          done
-          [ "$READELF_OK" = "1" ] || { echo "::error::libmain.so is not AArch64"; exit 1; }
+          # GeneralsX @bugfix Android CI 24/10/2026 The 31/07/2026 note below read this
+          # step's intermittent failure as an "I/O visibility race on the runner" and added
+          # five retries to live with it. The cause is the check itself: in
+          #   "$READELF" -h "$GAME_LIB" | grep -q AArch64
+          # grep -q closes the pipe on its first match, llvm-readelf then fails its next
+          # write (EPIPE/SIGPIPE), and under pipefail that status is reported as the CHECK
+          # failing. A racy false negative -- which is why the retries never fixed it (they
+          # re-ran the same broken command) and why `2>/dev/null` discarded the only clue.
+          # Reproduced locally 300/300 runs on a real arm64 libmain60.so: readelf exits 74,
+          # grep exits 0, pipeline 74, no stderr -- matching run 40084873349's log exactly.
+          # The fix is the one scripts/build/android/build-android-zh.sh:108-116 already
+          # uses: capture the header, then match it. No retry, no discarded stderr, and a
+          # genuinely wrong-arch file now prints what it really is.
+          if ! GAME_LIB_HDR="$("${READELF}" -h "${GAME_LIB}")"; then
+            echo "::error::llvm-readelf -h could not read ${GAME_LIB}"
+            exit 1
+          fi
+          grep -E 'Class:|Type:|Machine:' <<< "${GAME_LIB_HDR}" || true
+          if ! grep -Eq 'Class:[[:space:]]+ELF64' <<< "${GAME_LIB_HDR}"; then
+            echo "::error::libmain.so is not a 64-bit ELF -- its header was:"
+            printf '%s\n' "${GAME_LIB_HDR}"
+            exit 1
+          fi
+          if ! grep -Eq 'Machine:[[:space:]]+AArch64' <<< "${GAME_LIB_HDR}"; then
+            echo "::error::libmain.so is not AArch64 -- its header was:"
+            printf '%s\n' "${GAME_LIB_HDR}"
+            exit 1
+          fi
           for lib in libdxvk_d3d8.so libdxvk_d3d9.so; do
             [ -f "build/${{ env.PRESET }}/$lib" ] || { echo "::error::$lib missing"; exit 1; }
           done
-          strings "build/${{ env.PRESET }}/libdxvk_d3d9.so" | grep -q Sdl3WsiDriver || {
-            echo "::error::libdxvk_d3d9.so built without the SDL3 WSI (silent fallback)"; exit 1; }
+          # strings is captured first, then matched: `strings | grep -q` is the same
+          # early-close trap as the readelf check above (grep exits on its first match and
+          # closes the pipe; pipefail then reports the writer's failure as this step's).
+          DXVK_D3D9_STRINGS="$(mktemp)"
+          strings "build/${{ env.PRESET }}/libdxvk_d3d9.so" > "${DXVK_D3D9_STRINGS}"
+          if ! grep -q Sdl3WsiDriver "${DXVK_D3D9_STRINGS}"; then
+            rm -f "${DXVK_D3D9_STRINGS}"
+            echo "::error::libdxvk_d3d9.so built without the SDL3 WSI (silent fallback)"
+            exit 1
+          fi
+          rm -f "${DXVK_D3D9_STRINGS}"
           echo "Artifacts verified: AArch64 libmain.so + DXVK with SDL3 WSI"
 
       # GeneralsX @bugfix Android CI 15/10/2026 "a build succeeded" is not evidence that all
@@ -717,17 +840,19 @@ jobs:
               fail=1
               continue
             fi
-            # The same I/O-visibility retry as the "Verify artifacts" step above: a process
-            # started microseconds after the linker's last write has read a file whose content
-            # was not fully visible yet on the runner. A genuinely wrong-arch file fails all five
-            # attempts.
-            OK=0
-            for attempt in 1 2 3 4 5; do
-              if "${READELF}" -h "${lib}" 2>/dev/null | grep -q AArch64; then OK=1; break; fi
-              sleep 1
-            done
-            if [ "${OK}" != "1" ]; then
-              echo "::error::${lib} is not an AArch64 ELF"
+            # Capture the header first, then match it (see "Verify 60Hz engine outputs" in
+            # the 60 Hz job and build-android-zh.sh:108): `llvm-readelf -h | grep -q` lets
+            # grep close the pipe on its first match, readelf's next write then fails, and
+            # pipefail reports that as this check failing. The five retries this replaces
+            # only re-ran the same racy command while discarding readelf's stderr.
+            if ! HDR="$("${READELF}" -h "${lib}")"; then
+              echo "::error::llvm-readelf -h could not read ${lib}"
+              fail=1
+              continue
+            fi
+            if ! grep -Eq 'Machine:[[:space:]]+AArch64' <<< "${HDR}"; then
+              echo "::error::${lib} is not an AArch64 ELF -- its header was:"
+              printf '%s\n' "${HDR}"
               fail=1
             fi
           done

@@ -379,27 +379,51 @@ jobs:
           # grabbing the wrong file, but the readelf check itself still
           # failed twice in a row on two otherwise-clean reruns of the exact
           # same commit (both with warm ccache/vcpkg/DXVK caches, both
-          # failing within ~25ms of this step starting) -- pointing at an
-          # I/O visibility race on the runner rather than a real wrong-arch
-          # binary: the prior step already exited 0, so the linker's writes
-          # should be complete, but the file's content isn't always visible
-          # to a process started microseconds later. Retry a few times with
-          # a short sleep before failing for real; a genuinely wrong-arch
-          # binary will still fail every attempt and correctly error out.
-          READELF_OK=0
-          for attempt in 1 2 3 4 5; do
-            if "$READELF" -h "$GAME_LIB" 2>/dev/null | grep -q AArch64; then
-              READELF_OK=1
-              break
-            fi
-            sleep 1
-          done
-          [ "$READELF_OK" = "1" ] || { echo "::error::libmain.so is not AArch64"; exit 1; }
+          # failing within ~25ms of this step starting -- and a byte-identical check
+          # passes on the very same day on another commit.
+          #
+          # GeneralsX @bugfix Android CI 24/10/2026 That was NOT an "I/O visibility race on
+          # the runner" (the 31/07/2026 theory) and the five retries below never fixed it:
+          # the check itself was broken. In
+          #   "$READELF" -h "$GAME_LIB" | grep -q AArch64
+          # grep -q closes the pipe on its first match, llvm-readelf then fails its next
+          # write (EPIPE/SIGPIPE), and under pipefail that status is reported as the CHECK
+          # failing -- a racy false negative that announces a perfectly good arm64 .so as
+          # "not AArch64". Reproduced locally 300/300 on a real arm64 lib: readelf exits 74,
+          # grep exits 0, pipeline 74, no stderr, which is exactly what CI printed.
+          # Capture the header, then match it -- the form
+          # scripts/build/android/build-android-zh.sh:108-116 has used all along: no retry,
+          # no discarded stderr, and a genuinely wrong-arch file prints its real header.
+          if ! GAME_LIB_HDR="$("${READELF}" -h "${GAME_LIB}")"; then
+            echo "::error::llvm-readelf -h could not read ${GAME_LIB}"
+            exit 1
+          fi
+          grep -E 'Class:|Type:|Machine:' <<< "${GAME_LIB_HDR}" || true
+          if ! grep -Eq 'Class:[[:space:]]+ELF64' <<< "${GAME_LIB_HDR}"; then
+            echo "::error::libmain.so is not a 64-bit ELF -- its header was:"
+            printf '%s\n' "${GAME_LIB_HDR}"
+            exit 1
+          fi
+          if ! grep -Eq 'Machine:[[:space:]]+AArch64' <<< "${GAME_LIB_HDR}"; then
+            echo "::error::libmain.so is not AArch64 -- its header was:"
+            printf '%s\n' "${GAME_LIB_HDR}"
+            exit 1
+          fi
           for lib in libdxvk_d3d8.so libdxvk_d3d9.so; do
             [ -f "build/${{ env.PRESET }}/$lib" ] || { echo "::error::$lib missing"; exit 1; }
           done
-          strings "build/${{ env.PRESET }}/libdxvk_d3d9.so" | grep -q Sdl3WsiDriver || {
-            echo "::error::libdxvk_d3d9.so built without the SDL3 WSI (silent fallback)"; exit 1; }
+          # strings is captured first, then matched: `strings | grep -q` is the same
+          # early-close trap as the readelf check above (grep exits on its first match
+          # and closes the pipe; pipefail then reports the writer's failure as this
+          # step's).
+          DXVK_D3D9_STRINGS="$(mktemp)"
+          strings "build/${{ env.PRESET }}/libdxvk_d3d9.so" > "${DXVK_D3D9_STRINGS}"
+          if ! grep -q Sdl3WsiDriver "${DXVK_D3D9_STRINGS}"; then
+            rm -f "${DXVK_D3D9_STRINGS}"
+            echo "::error::libdxvk_d3d9.so built without the SDL3 WSI (silent fallback)"
+            exit 1
+          fi
+          rm -f "${DXVK_D3D9_STRINGS}"
           echo "Artifacts verified: AArch64 libmain.so + DXVK with SDL3 WSI"
 
       # GeneralsX @bugfix Android CI 15/10/2026 "a build succeeded" is not evidence that all
@@ -430,17 +454,19 @@ jobs:
               fail=1
               continue
             fi
-            # The same I/O-visibility retry as the "Verify artifacts" step above: a process
-            # started microseconds after the linker's last write has read a file whose content
-            # was not fully visible yet on the runner. A genuinely wrong-arch file fails all five
-            # attempts.
-            OK=0
-            for attempt in 1 2 3 4 5; do
-              if "${READELF}" -h "${lib}" 2>/dev/null | grep -q AArch64; then OK=1; break; fi
-              sleep 1
-            done
-            if [ "${OK}" != "1" ]; then
-              echo "::error::${lib} is not an AArch64 ELF"
+            # Capture the header first, then match it (see "Verify artifacts" above and
+            # build-android-zh.sh:108): `llvm-readelf -h | grep -q` lets grep close the pipe
+            # on its first match, readelf's next write then fails, and pipefail reports that
+            # as this check failing. The five retries this replaces only re-ran the same racy
+            # command while discarding readelf's stderr.
+            if ! HDR="$("${READELF}" -h "${lib}")"; then
+              echo "::error::llvm-readelf -h could not read ${lib}"
+              fail=1
+              continue
+            fi
+            if ! grep -Eq 'Machine:[[:space:]]+AArch64' <<< "${HDR}"; then
+              echo "::error::${lib} is not an AArch64 ELF -- its header was:"
+              printf '%s\n' "${HDR}"
               fail=1
             fi
           done
