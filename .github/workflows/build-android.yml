@@ -70,7 +70,10 @@ jobs:
   build-android:
     name: apk@${{ inputs.preset || 'android-vulkan' }}
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    # GeneralsX @build Android CI 04/11/2026 raised from 120: the job now compiles both games
+    # (z_generals + g_generals) twice, once per simulation rate, so a cold-cache run is roughly
+    # four engine builds instead of one.
+    timeout-minutes: 300
     env:
       PRESET: ${{ inputs.preset || 'android-vulkan' }}
       # Pinned exact NDK release (not "latest") so a cross-compile that works
@@ -273,35 +276,83 @@ jobs:
           fi
           echo "VCPKG_ROOT=/opt/vcpkg" >> "$GITHUB_ENV"
 
+      # GeneralsX @build Android CI 04/11/2026 The APK carries FOUR engines: both games --
+      # Zero Hour's z_generals (libmain.so / libmain60.so) and the base game's g_generals
+      # (libgenerals.so / libgenerals60.so) -- each built at both simulation rates (30 Hz
+      # default and 60 Hz cross-play). The tick rate is a compile-time constant
+      # (WWSyncPerSecond is an enum baked into every static_assert, array bound and derived
+      # timing constant, and GameLogic declares m_frameLegacy behind the same macro), so it
+      # cannot be a runtime option: the engine has to be compiled once per rate. Two passes,
+      # exactly as scripts/build/android/build-dual-hz.sh does locally. Pass 1 builds 60 Hz and
+      # stashes the two engines aside; pass 2 builds 30 Hz -- producing libmain.so /
+      # libgenerals.so, the defaults the launcher falls back to -- and the packaging step below
+      # puts all four in the APK (GeneralsZHActivity.getLibraries() loads one of them).
       # GeneralsX @bugfix Android CI 07/07/2026 set -o pipefail on every
       # `cmd | tee` step: without it the step's exit code is tee's (always 0),
       # and run #2 sailed straight past a fatal configure error into "success"
       # — exactly the pipeline-masking failure the porting playbook warns
       # about. The Verify step caught it; now the failing step reports itself.
-      - name: Configure CMake (Android)
+      - name: "Configure CMake (Android, pass 1: 60 Hz)"
         run: |
           set -o pipefail
           mkdir -p logs
           cmake --preset ${{ env.PRESET }} \
+            -DSAGE_HIGH_FPS_SIM=ON \
             -DCMAKE_C_COMPILER_LAUNCHER=ccache \
             -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
             -DANDROID_CI_BUILD_NUMBER=${{ github.run_number }} \
             2>&1 | tee logs/configure_android.log
 
-      - name: Build z_generals (libmain.so) + DXVK d3d8/d3d9
+      - name: Build 60 Hz engines (z_generals + g_generals) + DXVK d3d8/d3d9
         run: |
           set -o pipefail
           mkdir -p logs
           # ninja -k 0: keep going past failures so ONE run surfaces every
-          # cross-compile error in the 1.6M-LOC engine instead of one per
+          # cross-compile error in the two ~1.6M-LOC engines instead of one per
           # round-trip; the exit code still fails the step when anything broke.
           # main_hook/file_redirect_hook/gsl_alloc_hook/hook_impl
           # (cmake/adrenotools.cmake): dlopen()'d by path at runtime, not a
-          # link-time dependency of z_generals, so a targeted build skips them
+          # link-time dependency of the engines, so a targeted build skips them
           # unless named explicitly -- package-android-zh.sh's jniLibs staging
-          # requires all four to already exist.
-          cmake --build build/${{ env.PRESET }} --target z_generals dxvk_d3d8_install \
-            main_hook file_redirect_hook gsl_alloc_hook hook_impl -- -k 0 2>&1 | tee logs/build_android.log
+          # requires all four to already exist. They are rate-independent, so
+          # only this pass builds them.
+          cmake --build build/${{ env.PRESET }} --target z_generals g_generals dxvk_d3d8_install \
+            main_hook file_redirect_hook gsl_alloc_hook hook_impl -- -k 0 2>&1 | tee logs/build_android_60.log
+          ccache --show-stats
+
+      - name: Stash the 60 Hz engines
+        run: |
+          set -euo pipefail
+          ZH60="build/${{ env.PRESET }}/GeneralsMD/Code/Main/libmain.so"
+          GEN60="build/${{ env.PRESET }}/Generals/Code/Main/libgenerals.so"
+          [ -f "$ZH60" ]  || { echo "::error::60 Hz libmain.so not found at $ZH60"; exit 1; }
+          [ -f "$GEN60" ] || { echo "::error::60 Hz libgenerals.so not found at $GEN60"; exit 1; }
+          # Copied out of the build tree so pass 2's rebuild of the same paths does not
+          # overwrite them; package-android-zh.sh picks them up via GX_SECOND_GAME_LIB /
+          # GX_SECOND_BASE_GAME_LIB below.
+          mkdir -p build
+          cp "$ZH60" build/libmain60.so
+          cp "$GEN60" build/libgenerals60.so
+          echo "60 Hz engines set aside:"
+          ls -la build/libmain60.so build/libgenerals60.so
+
+      - name: "Configure CMake (Android, pass 2: 30 Hz)"
+        run: |
+          set -o pipefail
+          cmake --preset ${{ env.PRESET }} \
+            -DSAGE_HIGH_FPS_SIM=OFF \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
+            -DANDROID_CI_BUILD_NUMBER=${{ github.run_number }} \
+            2>&1 | tee logs/configure_android_30.log
+
+      - name: Build 30 Hz engines (z_generals + g_generals)
+        run: |
+          set -o pipefail
+          # Only the two game engines need rebuilding: changing SAGE_HIGH_FPS_SIM flips the
+          # engine-wide compile definitions, but DXVK and the adrenotools hooks are
+          # rate-independent and were built in pass 1.
+          cmake --build build/${{ env.PRESET }} --target z_generals g_generals -- -k 0 2>&1 | tee logs/build_android_30.log
           ccache --show-stats
 
       - name: Verify artifacts
@@ -343,12 +394,22 @@ jobs:
             sleep 1
           done
           [ "$READELF_OK" = "1" ] || { echo "::error::libmain.so is not AArch64"; exit 1; }
+          # GeneralsX @build Android CI 04/11/2026 The base game's engine, built by the same pass.
+          BASE_LIB="build/${{ env.PRESET }}/Generals/Code/Main/libgenerals.so"
+          if [ ! -f "$BASE_LIB" ]; then echo "::error::libgenerals.so not found at $BASE_LIB"; exit 1; fi
           for lib in libdxvk_d3d8.so libdxvk_d3d9.so; do
             [ -f "build/${{ env.PRESET }}/$lib" ] || { echo "::error::$lib missing"; exit 1; }
           done
-          strings "build/${{ env.PRESET }}/libdxvk_d3d9.so" | grep -q Sdl3WsiDriver || {
+          # GeneralsX @bugfix Android CI 04/11/2026 was `strings ... | grep -q Sdl3WsiDriver`,
+          # which has two defects the local sandboxed build already fixed: (1) under pipefail,
+          # grep -q exits on the first match and SIGPIPEs the still-writing `strings`, failing
+          # the pipeline on a perfectly good library; (2) "Sdl3WsiDriver" is a C++ class name,
+          # not a string literal, so it is not retained as raw text in a release binary -- its
+          # runtime log prefix "SDL3 WSI:" is. Capture first, then match.
+          DXVK_STRINGS="$(strings "build/${{ env.PRESET }}/libdxvk_d3d9.so")"
+          grep -q "SDL3 WSI:" <<< "$DXVK_STRINGS" || {
             echo "::error::libdxvk_d3d9.so built without the SDL3 WSI (silent fallback)"; exit 1; }
-          echo "Artifacts verified: AArch64 libmain.so + DXVK with SDL3 WSI"
+          echo "Artifacts verified: AArch64 libmain.so + libgenerals.so + DXVK with SDL3 WSI"
 
       # GeneralsX @feature Android CI 06/09/2026 The strip step below is what
       # keeps the APK at ~42MB instead of ~118MB, but it also destroys the one
@@ -367,29 +428,40 @@ jobs:
         run: |
           set -e
           TOOLS="$(dirname "$(ls "${ANDROID_NDK_HOME}"/toolchains/llvm/prebuilt/*/bin/llvm-nm | head -1)")"
-          LIB="build/${{ env.PRESET }}/GeneralsMD/Code/Main/libmain.so"
           mkdir -p symbols
-          OUT="symbols/libmain-run${{ github.run_number }}.symbols.txt"
-          BUILD_ID="$(readelf -n "$LIB" 2>/dev/null | sed -n 's/.*Build ID: \([0-9a-f]*\).*/\1/p' | head -1)"
-          {
-            echo "# libmain.so symbols -- run ${{ github.run_number }}, commit ${{ github.sha }}"
-            echo "# Match this BuildID against the tombstone's before trusting any address."
-            # llvm-readelf --notes prints the note's header but not the build-id
-            # value itself, so pull it out with GNU readelf, which does.
-            echo "# BuildID: ${BUILD_ID:-UNKNOWN}"
-            "$TOOLS/llvm-readelf" --notes --program-headers "$LIB"
-            echo "# --- defined symbols: address size type name ---"
-            "$TOOLS/llvm-nm" --defined-only --numeric-sort --print-size --demangle "$LIB"
-          } > "$OUT"
-          # A table that came out empty (wrong path, or a library that was
-          # already stripped upstream of here) is worse than no table: it
-          # would ship attached to a Release looking authoritative. Say so.
-          SYMS=$("$TOOLS/llvm-nm" --defined-only "$LIB" 2>/dev/null | wc -l)
-          echo "Symbols captured: ${SYMS}"
-          if [ "${SYMS}" -lt 1000 ]; then
-            echo "::warning::libmain.so yielded only ${SYMS} symbols -- crash logs from this build will not symbolize."
-          fi
-          gzip -9 "$OUT"
+          # GeneralsX @build Android CI 04/11/2026 One table per engine -- all four ship in the APK
+          # and any of them can be the one in a tombstone. "<name>:<path>" pairs; the 60 Hz engines
+          # are the ones pass 1 stashed out of the build tree.
+          ENGINES=(
+            "libmain:build/${{ env.PRESET }}/GeneralsMD/Code/Main/libmain.so"
+            "libmain60:build/libmain60.so"
+            "libgenerals:build/${{ env.PRESET }}/Generals/Code/Main/libgenerals.so"
+            "libgenerals60:build/libgenerals60.so"
+          )
+          for entry in "${ENGINES[@]}"; do
+            NAME="${entry%%:*}"; LIB="${entry#*:}"
+            OUT="symbols/${NAME}-run${{ github.run_number }}.symbols.txt"
+            BUILD_ID="$(readelf -n "$LIB" 2>/dev/null | sed -n 's/.*Build ID: \([0-9a-f]*\).*/\1/p' | head -1)"
+            {
+              echo "# ${NAME}.so symbols -- run ${{ github.run_number }}, commit ${{ github.sha }}"
+              echo "# Match this BuildID against the tombstone's before trusting any address."
+              # llvm-readelf --notes prints the note's header but not the build-id
+              # value itself, so pull it out with GNU readelf, which does.
+              echo "# BuildID: ${BUILD_ID:-UNKNOWN}"
+              "$TOOLS/llvm-readelf" --notes --program-headers "$LIB"
+              echo "# --- defined symbols: address size type name ---"
+              "$TOOLS/llvm-nm" --defined-only --numeric-sort --print-size --demangle "$LIB"
+            } > "$OUT"
+            # A table that came out empty (wrong path, or a library that was
+            # already stripped upstream of here) is worse than no table: it
+            # would ship attached to a Release looking authoritative. Say so.
+            SYMS=$("$TOOLS/llvm-nm" --defined-only "$LIB" 2>/dev/null | wc -l)
+            echo "${NAME}.so symbols captured: ${SYMS}"
+            if [ "${SYMS}" -lt 1000 ]; then
+              echo "::warning::${NAME}.so yielded only ${SYMS} symbols -- crash logs from this build will not symbolize."
+            fi
+            gzip -9 "$OUT"
+          done
           ls -la symbols/
 
       # GeneralsX @bugfix Android CI 06/08/2026 CI never stripped debug
@@ -408,7 +480,15 @@ jobs:
       - name: Strip debug symbols
         run: |
           STRIP="$(ls "${ANDROID_NDK_HOME}"/toolchains/llvm/prebuilt/*/bin/llvm-strip | head -1)"
+          # GeneralsX @build Android CI 04/11/2026 The two stashed 60 Hz engines are included: they
+          # were copied out of the build tree before this step ran, so without them here the APK
+          # would carry two fully-unstripped engines (~282MB each) on top of the two stripped 30 Hz
+          # ones. The local build-dual-hz.sh avoids this by stashing after pass 1's own strip; this
+          # keeps all four engines stripped in one place instead.
           for lib in "build/${{ env.PRESET }}/GeneralsMD/Code/Main/libmain.so" \
+                     "build/${{ env.PRESET }}/Generals/Code/Main/libgenerals.so" \
+                     "build/libmain60.so" \
+                     "build/libgenerals60.so" \
                      "build/${{ env.PRESET }}/_deps/sdl3-build/libSDL3.so" \
                      "build/${{ env.PRESET }}/_deps/sdl3_image-build/libSDL3_image.so" \
                      "build/${{ env.PRESET }}/_deps/openal_soft-build/libopenal.so" \
@@ -446,6 +526,12 @@ jobs:
           GX_ANDROID_STAGING: ${{ github.workspace }}/android-staging
           GX_ANDROID_VERSION_CODE: ${{ steps.artifact.outputs.version_code }}
           GX_ANDROID_VERSION_NAME: ${{ steps.artifact.outputs.version_name }}
+          # GeneralsX @build Android CI 04/11/2026 The 60 Hz engines stashed by pass 1, so
+          # package-android-zh.sh stages all four into jniLibs/: libmain.so + libmain60.so
+          # (Zero Hour) and libgenerals.so + libgenerals60.so (the base game). The 30 Hz pair is
+          # found by the script itself in the build tree.
+          GX_SECOND_GAME_LIB: ${{ github.workspace }}/build/libmain60.so
+          GX_SECOND_BASE_GAME_LIB: ${{ github.workspace }}/build/libgenerals60.so
         run: |
           ./scripts/build/android/package-android-zh.sh
 
@@ -473,6 +559,16 @@ jobs:
           unzip -q "${APK}" 'lib/arm64-v8a/*' -d "${WORKDIR}"
           echo "Packaged libraries:"
           ls "${WORKDIR}/lib/arm64-v8a/"
+          # GeneralsX @build Android CI 04/11/2026 The four engines this workflow exists to produce:
+          # both games at both simulation rates. package-android-zh.sh stages each one only when it
+          # finds it, so a build that silently lost one (e.g. the stash step renamed a path) would
+          # otherwise ship an APK whose Simulation Rate setting or game switch does nothing.
+          for engine in libmain.so libmain60.so libgenerals.so libgenerals60.so; do
+            if [ ! -f "${WORKDIR}/lib/arm64-v8a/${engine}" ]; then
+              echo "::error::${APK} has no lib/arm64-v8a/${engine} -- the APK is missing one of the four engines."
+              exit 1
+            fi
+          done
           NEEDED="$("${READELF}" -d "${WORKDIR}/lib/arm64-v8a/libmain.so" | grep NEEDED | sed -E 's/.*\[(.*)\]/\1/')"
           missing=0
           for lib in ${NEEDED}; do
@@ -550,7 +646,7 @@ jobs:
           body: ${{ inputs.release_notes }}
           files: |
             ${{ steps.locate.outputs.path }}
-            symbols/libmain-run${{ github.run_number }}.symbols.txt.gz
+            symbols/*-run${{ github.run_number }}.symbols.txt.gz
           generate_release_notes: true
           make_latest: true
 
