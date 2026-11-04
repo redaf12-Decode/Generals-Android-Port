@@ -254,7 +254,7 @@ navigation bar -- **Home** (game folder, Launch Game, GeneralsOnline Account, up
 **Graphics** (render backend, upscaling, Vulkan driver options), **Interface**
 (game and launcher language, menu text size, interface size), **Tools** (logs,
 network diagnostics, replay check, diagnostics switches) and **Help** (version,
-how it works, support the project). Everything that used to need `adb` is here:
+how it works). Everything that used to need `adb` is here:
 
 1. **Install the APK and open it.**
 2. On **Home**, tap **Select Game Folder**. First time, Android will ask for the
@@ -345,8 +345,6 @@ a file manager to create them by hand.
 - **Settings** (`update/config.json`): written to `files/update/remote_config.ini`, read by the
   engine through `Common/GXRemoteConfig.h` and by the launcher: the STUN and TURN lists, the PC
   checksum and its revision-tag rule, and the community data package's manifest address.
-- **Support card** (`update/support.json`): the Help page's "Support the project" text, in every
-  language, and its addresses and links; its SHA-256 is in the signed manifest.
 - **Engine**: a newer `libmain.so`/`libmain60.so`, downloaded to the app's private storage and
   loaded by `GeneralsZHActivity.loadLibraries()` instead of the APK's, from the next game start.
 
