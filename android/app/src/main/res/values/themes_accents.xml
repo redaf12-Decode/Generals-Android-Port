@@ -5,11 +5,11 @@
     <style name="ThemeOverlay.GeneralsZH.AccentBlue" parent="">
         <item name="colorPrimary">@color/gzh_accent_blue_primary</item>
         <item name="colorOnPrimary">@color/gzh_accent_blue_on_primary</item>
-        <item name="colorPrimaryContainer">@color/gzh_accent_blue_container</item>
-        <item name="colorOnPrimaryContainer">@color/gzh_accent_blue_on_container</item>
+        <item name="colorPrimaryContainer">@color/gzh_accent_blue_primary_container</item>
+        <item name="colorOnPrimaryContainer">@color/gzh_accent_blue_on_primary_container</item>
         <item name="colorAccent">@color/gzh_accent_blue_primary</item>
-        <item name="android:textColorHighlight">@color/gzh_accent_blue_container</item>
-        <item name="itemRippleColor">@color/gzh_accent_blue_ripple</item>
+        <item name="android:textColorHighlight">@color/gzh_accent_blue_primary_container</item>
+        <item name="itemRippleColor">@color/gzh_accent_blue_ripple_primary</item>
         <item name="colorSecondary">@color/gzh_accent_blue_secondary</item>
         <item name="colorOnSecondary">@color/gzh_accent_blue_on_secondary</item>
         <item name="colorSecondaryContainer">@color/gzh_accent_blue_secondary_container</item>
@@ -21,11 +21,11 @@
     <style name="ThemeOverlay.GeneralsZH.AccentNavyBlue" parent="">
         <item name="colorPrimary">@color/gzh_accent_blue_primary</item>
         <item name="colorOnPrimary">@color/gzh_accent_blue_on_primary</item>
-        <item name="colorPrimaryContainer">@color/gzh_accent_blue_container</item>
-        <item name="colorOnPrimaryContainer">@color/gzh_accent_blue_on_container</item>
+        <item name="colorPrimaryContainer">@color/gzh_accent_blue_primary_container</item>
+        <item name="colorOnPrimaryContainer">@color/gzh_accent_blue_on_primary_container</item>
         <item name="colorAccent">@color/gzh_accent_blue_primary</item>
-        <item name="android:textColorHighlight">@color/gzh_accent_blue_container</item>
-        <item name="itemRippleColor">@color/gzh_accent_blue_ripple</item>
+        <item name="android:textColorHighlight">@color/gzh_accent_blue_primary_container</item>
+        <item name="itemRippleColor">@color/gzh_accent_blue_ripple_primary</item>
         <item name="colorSecondary">@color/gzh_accent_blue_secondary</item>
         <item name="colorOnSecondary">@color/gzh_accent_blue_on_secondary</item>
         <item name="colorSecondaryContainer">@color/gzh_accent_blue_secondary_container</item>
@@ -37,11 +37,11 @@
     <style name="ThemeOverlay.GeneralsZH.AccentDayBlue" parent="">
         <item name="colorPrimary">@color/gzh_day_accent_blue_primary</item>
         <item name="colorOnPrimary">@color/gzh_day_accent_blue_on_primary</item>
-        <item name="colorPrimaryContainer">@color/gzh_day_accent_blue_container</item>
-        <item name="colorOnPrimaryContainer">@color/gzh_day_accent_blue_on_container</item>
+        <item name="colorPrimaryContainer">@color/gzh_day_accent_blue_primary_container</item>
+        <item name="colorOnPrimaryContainer">@color/gzh_day_accent_blue_on_primary_container</item>
         <item name="colorAccent">@color/gzh_day_accent_blue_primary</item>
-        <item name="android:textColorHighlight">@color/gzh_day_accent_blue_container</item>
-        <item name="itemRippleColor">@color/gzh_day_accent_blue_ripple</item>
+        <item name="android:textColorHighlight">@color/gzh_day_accent_blue_primary_container</item>
+        <item name="itemRippleColor">@color/gzh_day_accent_blue_ripple_primary</item>
         <item name="colorSecondary">@color/gzh_day_accent_blue_secondary</item>
         <item name="colorOnSecondary">@color/gzh_day_accent_blue_on_secondary</item>
         <item name="colorSecondaryContainer">@color/gzh_day_accent_blue_secondary_container</item>
@@ -63,11 +63,11 @@
     <style name="ThemeOverlay.GeneralsZH.AccentGreen" parent="">
         <item name="colorPrimary">@color/gzh_accent_green_primary</item>
         <item name="colorOnPrimary">@color/gzh_accent_green_on_primary</item>
-        <item name="colorPrimaryContainer">@color/gzh_accent_green_container</item>
-        <item name="colorOnPrimaryContainer">@color/gzh_accent_green_on_container</item>
+        <item name="colorPrimaryContainer">@color/gzh_accent_green_primary_container</item>
+        <item name="colorOnPrimaryContainer">@color/gzh_accent_green_on_primary_container</item>
         <item name="colorAccent">@color/gzh_accent_green_primary</item>
-        <item name="android:textColorHighlight">@color/gzh_accent_green_container</item>
-        <item name="itemRippleColor">@color/gzh_accent_green_ripple</item>
+        <item name="android:textColorHighlight">@color/gzh_accent_green_primary_container</item>
+        <item name="itemRippleColor">@color/gzh_accent_green_ripple_primary</item>
         <item name="colorSecondary">@color/gzh_accent_green_secondary</item>
         <item name="colorOnSecondary">@color/gzh_accent_green_on_secondary</item>
         <item name="colorSecondaryContainer">@color/gzh_accent_green_secondary_container</item>
@@ -79,11 +79,11 @@
     <style name="ThemeOverlay.GeneralsZH.AccentNavyGreen" parent="">
         <item name="colorPrimary">@color/gzh_accent_green_primary</item>
         <item name="colorOnPrimary">@color/gzh_accent_green_on_primary</item>
-        <item name="colorPrimaryContainer">@color/gzh_accent_green_container</item>
-        <item name="colorOnPrimaryContainer">@color/gzh_accent_green_on_container</item>
+        <item name="colorPrimaryContainer">@color/gzh_accent_green_primary_container</item>
+        <item name="colorOnPrimaryContainer">@color/gzh_accent_green_on_primary_container</item>
         <item name="colorAccent">@color/gzh_accent_green_primary</item>
-        <item name="android:textColorHighlight">@color/gzh_accent_green_container</item>
-        <item name="itemRippleColor">@color/gzh_accent_green_ripple</item>
+        <item name="android:textColorHighlight">@color/gzh_accent_green_primary_container</item>
+        <item name="itemRippleColor">@color/gzh_accent_green_ripple_primary</item>
         <item name="colorSecondary">@color/gzh_accent_green_secondary</item>
         <item name="colorOnSecondary">@color/gzh_accent_green_on_secondary</item>
         <item name="colorSecondaryContainer">@color/gzh_accent_green_secondary_container</item>
@@ -95,11 +95,11 @@
     <style name="ThemeOverlay.GeneralsZH.AccentDayGreen" parent="">
         <item name="colorPrimary">@color/gzh_day_accent_green_primary</item>
         <item name="colorOnPrimary">@color/gzh_day_accent_green_on_primary</item>
-        <item name="colorPrimaryContainer">@color/gzh_day_accent_green_container</item>
-        <item name="colorOnPrimaryContainer">@color/gzh_day_accent_green_on_container</item>
+        <item name="colorPrimaryContainer">@color/gzh_day_accent_green_primary_container</item>
+        <item name="colorOnPrimaryContainer">@color/gzh_day_accent_green_on_primary_container</item>
         <item name="colorAccent">@color/gzh_day_accent_green_primary</item>
-        <item name="android:textColorHighlight">@color/gzh_day_accent_green_container</item>
-        <item name="itemRippleColor">@color/gzh_day_accent_green_ripple</item>
+        <item name="android:textColorHighlight">@color/gzh_day_accent_green_primary_container</item>
+        <item name="itemRippleColor">@color/gzh_day_accent_green_ripple_primary</item>
         <item name="colorSecondary">@color/gzh_day_accent_green_secondary</item>
         <item name="colorOnSecondary">@color/gzh_day_accent_green_on_secondary</item>
         <item name="colorSecondaryContainer">@color/gzh_day_accent_green_secondary_container</item>
@@ -121,11 +121,11 @@
     <style name="ThemeOverlay.GeneralsZH.AccentTeal" parent="">
         <item name="colorPrimary">@color/gzh_accent_teal_primary</item>
         <item name="colorOnPrimary">@color/gzh_accent_teal_on_primary</item>
-        <item name="colorPrimaryContainer">@color/gzh_accent_teal_container</item>
-        <item name="colorOnPrimaryContainer">@color/gzh_accent_teal_on_container</item>
+        <item name="colorPrimaryContainer">@color/gzh_accent_teal_primary_container</item>
+        <item name="colorOnPrimaryContainer">@color/gzh_accent_teal_on_primary_container</item>
         <item name="colorAccent">@color/gzh_accent_teal_primary</item>
-        <item name="android:textColorHighlight">@color/gzh_accent_teal_container</item>
-        <item name="itemRippleColor">@color/gzh_accent_teal_ripple</item>
+        <item name="android:textColorHighlight">@color/gzh_accent_teal_primary_container</item>
+        <item name="itemRippleColor">@color/gzh_accent_teal_ripple_primary</item>
         <item name="colorSecondary">@color/gzh_accent_teal_secondary</item>
         <item name="colorOnSecondary">@color/gzh_accent_teal_on_secondary</item>
         <item name="colorSecondaryContainer">@color/gzh_accent_teal_secondary_container</item>
@@ -137,11 +137,11 @@
     <style name="ThemeOverlay.GeneralsZH.AccentNavyTeal" parent="">
         <item name="colorPrimary">@color/gzh_accent_teal_primary</item>
         <item name="colorOnPrimary">@color/gzh_accent_teal_on_primary</item>
-        <item name="colorPrimaryContainer">@color/gzh_accent_teal_container</item>
-        <item name="colorOnPrimaryContainer">@color/gzh_accent_teal_on_container</item>
+        <item name="colorPrimaryContainer">@color/gzh_accent_teal_primary_container</item>
+        <item name="colorOnPrimaryContainer">@color/gzh_accent_teal_on_primary_container</item>
         <item name="colorAccent">@color/gzh_accent_teal_primary</item>
-        <item name="android:textColorHighlight">@color/gzh_accent_teal_container</item>
-        <item name="itemRippleColor">@color/gzh_accent_teal_ripple</item>
+        <item name="android:textColorHighlight">@color/gzh_accent_teal_primary_container</item>
+        <item name="itemRippleColor">@color/gzh_accent_teal_ripple_primary</item>
         <item name="colorSecondary">@color/gzh_accent_teal_secondary</item>
         <item name="colorOnSecondary">@color/gzh_accent_teal_on_secondary</item>
         <item name="colorSecondaryContainer">@color/gzh_accent_teal_secondary_container</item>
@@ -153,11 +153,11 @@
     <style name="ThemeOverlay.GeneralsZH.AccentDayTeal" parent="">
         <item name="colorPrimary">@color/gzh_day_accent_teal_primary</item>
         <item name="colorOnPrimary">@color/gzh_day_accent_teal_on_primary</item>
-        <item name="colorPrimaryContainer">@color/gzh_day_accent_teal_container</item>
-        <item name="colorOnPrimaryContainer">@color/gzh_day_accent_teal_on_container</item>
+        <item name="colorPrimaryContainer">@color/gzh_day_accent_teal_primary_container</item>
+        <item name="colorOnPrimaryContainer">@color/gzh_day_accent_teal_on_primary_container</item>
         <item name="colorAccent">@color/gzh_day_accent_teal_primary</item>
-        <item name="android:textColorHighlight">@color/gzh_day_accent_teal_container</item>
-        <item name="itemRippleColor">@color/gzh_day_accent_teal_ripple</item>
+        <item name="android:textColorHighlight">@color/gzh_day_accent_teal_primary_container</item>
+        <item name="itemRippleColor">@color/gzh_day_accent_teal_ripple_primary</item>
         <item name="colorSecondary">@color/gzh_day_accent_teal_secondary</item>
         <item name="colorOnSecondary">@color/gzh_day_accent_teal_on_secondary</item>
         <item name="colorSecondaryContainer">@color/gzh_day_accent_teal_secondary_container</item>
@@ -179,11 +179,11 @@
     <style name="ThemeOverlay.GeneralsZH.AccentOrange" parent="">
         <item name="colorPrimary">@color/gzh_accent_orange_primary</item>
         <item name="colorOnPrimary">@color/gzh_accent_orange_on_primary</item>
-        <item name="colorPrimaryContainer">@color/gzh_accent_orange_container</item>
-        <item name="colorOnPrimaryContainer">@color/gzh_accent_orange_on_container</item>
+        <item name="colorPrimaryContainer">@color/gzh_accent_orange_primary_container</item>
+        <item name="colorOnPrimaryContainer">@color/gzh_accent_orange_on_primary_container</item>
         <item name="colorAccent">@color/gzh_accent_orange_primary</item>
-        <item name="android:textColorHighlight">@color/gzh_accent_orange_container</item>
-        <item name="itemRippleColor">@color/gzh_accent_orange_ripple</item>
+        <item name="android:textColorHighlight">@color/gzh_accent_orange_primary_container</item>
+        <item name="itemRippleColor">@color/gzh_accent_orange_ripple_primary</item>
         <item name="colorSecondary">@color/gzh_accent_orange_secondary</item>
         <item name="colorOnSecondary">@color/gzh_accent_orange_on_secondary</item>
         <item name="colorSecondaryContainer">@color/gzh_accent_orange_secondary_container</item>
@@ -195,11 +195,11 @@
     <style name="ThemeOverlay.GeneralsZH.AccentNavyOrange" parent="">
         <item name="colorPrimary">@color/gzh_accent_orange_primary</item>
         <item name="colorOnPrimary">@color/gzh_accent_orange_on_primary</item>
-        <item name="colorPrimaryContainer">@color/gzh_accent_orange_container</item>
-        <item name="colorOnPrimaryContainer">@color/gzh_accent_orange_on_container</item>
+        <item name="colorPrimaryContainer">@color/gzh_accent_orange_primary_container</item>
+        <item name="colorOnPrimaryContainer">@color/gzh_accent_orange_on_primary_container</item>
         <item name="colorAccent">@color/gzh_accent_orange_primary</item>
-        <item name="android:textColorHighlight">@color/gzh_accent_orange_container</item>
-        <item name="itemRippleColor">@color/gzh_accent_orange_ripple</item>
+        <item name="android:textColorHighlight">@color/gzh_accent_orange_primary_container</item>
+        <item name="itemRippleColor">@color/gzh_accent_orange_ripple_primary</item>
         <item name="colorSecondary">@color/gzh_accent_orange_secondary</item>
         <item name="colorOnSecondary">@color/gzh_accent_orange_on_secondary</item>
         <item name="colorSecondaryContainer">@color/gzh_accent_orange_secondary_container</item>
@@ -211,11 +211,11 @@
     <style name="ThemeOverlay.GeneralsZH.AccentDayOrange" parent="">
         <item name="colorPrimary">@color/gzh_day_accent_orange_primary</item>
         <item name="colorOnPrimary">@color/gzh_day_accent_orange_on_primary</item>
-        <item name="colorPrimaryContainer">@color/gzh_day_accent_orange_container</item>
-        <item name="colorOnPrimaryContainer">@color/gzh_day_accent_orange_on_container</item>
+        <item name="colorPrimaryContainer">@color/gzh_day_accent_orange_primary_container</item>
+        <item name="colorOnPrimaryContainer">@color/gzh_day_accent_orange_on_primary_container</item>
         <item name="colorAccent">@color/gzh_day_accent_orange_primary</item>
-        <item name="android:textColorHighlight">@color/gzh_day_accent_orange_container</item>
-        <item name="itemRippleColor">@color/gzh_day_accent_orange_ripple</item>
+        <item name="android:textColorHighlight">@color/gzh_day_accent_orange_primary_container</item>
+        <item name="itemRippleColor">@color/gzh_day_accent_orange_ripple_primary</item>
         <item name="colorSecondary">@color/gzh_day_accent_orange_secondary</item>
         <item name="colorOnSecondary">@color/gzh_day_accent_orange_on_secondary</item>
         <item name="colorSecondaryContainer">@color/gzh_day_accent_orange_secondary_container</item>
@@ -237,11 +237,11 @@
     <style name="ThemeOverlay.GeneralsZH.AccentRed" parent="">
         <item name="colorPrimary">@color/gzh_accent_red_primary</item>
         <item name="colorOnPrimary">@color/gzh_accent_red_on_primary</item>
-        <item name="colorPrimaryContainer">@color/gzh_accent_red_container</item>
-        <item name="colorOnPrimaryContainer">@color/gzh_accent_red_on_container</item>
+        <item name="colorPrimaryContainer">@color/gzh_accent_red_primary_container</item>
+        <item name="colorOnPrimaryContainer">@color/gzh_accent_red_on_primary_container</item>
         <item name="colorAccent">@color/gzh_accent_red_primary</item>
-        <item name="android:textColorHighlight">@color/gzh_accent_red_container</item>
-        <item name="itemRippleColor">@color/gzh_accent_red_ripple</item>
+        <item name="android:textColorHighlight">@color/gzh_accent_red_primary_container</item>
+        <item name="itemRippleColor">@color/gzh_accent_red_ripple_primary</item>
         <item name="colorSecondary">@color/gzh_accent_red_secondary</item>
         <item name="colorOnSecondary">@color/gzh_accent_red_on_secondary</item>
         <item name="colorSecondaryContainer">@color/gzh_accent_red_secondary_container</item>
@@ -253,11 +253,11 @@
     <style name="ThemeOverlay.GeneralsZH.AccentNavyRed" parent="">
         <item name="colorPrimary">@color/gzh_accent_red_primary</item>
         <item name="colorOnPrimary">@color/gzh_accent_red_on_primary</item>
-        <item name="colorPrimaryContainer">@color/gzh_accent_red_container</item>
-        <item name="colorOnPrimaryContainer">@color/gzh_accent_red_on_container</item>
+        <item name="colorPrimaryContainer">@color/gzh_accent_red_primary_container</item>
+        <item name="colorOnPrimaryContainer">@color/gzh_accent_red_on_primary_container</item>
         <item name="colorAccent">@color/gzh_accent_red_primary</item>
-        <item name="android:textColorHighlight">@color/gzh_accent_red_container</item>
-        <item name="itemRippleColor">@color/gzh_accent_red_ripple</item>
+        <item name="android:textColorHighlight">@color/gzh_accent_red_primary_container</item>
+        <item name="itemRippleColor">@color/gzh_accent_red_ripple_primary</item>
         <item name="colorSecondary">@color/gzh_accent_red_secondary</item>
         <item name="colorOnSecondary">@color/gzh_accent_red_on_secondary</item>
         <item name="colorSecondaryContainer">@color/gzh_accent_red_secondary_container</item>
@@ -269,11 +269,11 @@
     <style name="ThemeOverlay.GeneralsZH.AccentDayRed" parent="">
         <item name="colorPrimary">@color/gzh_day_accent_red_primary</item>
         <item name="colorOnPrimary">@color/gzh_day_accent_red_on_primary</item>
-        <item name="colorPrimaryContainer">@color/gzh_day_accent_red_container</item>
-        <item name="colorOnPrimaryContainer">@color/gzh_day_accent_red_on_container</item>
+        <item name="colorPrimaryContainer">@color/gzh_day_accent_red_primary_container</item>
+        <item name="colorOnPrimaryContainer">@color/gzh_day_accent_red_on_primary_container</item>
         <item name="colorAccent">@color/gzh_day_accent_red_primary</item>
-        <item name="android:textColorHighlight">@color/gzh_day_accent_red_container</item>
-        <item name="itemRippleColor">@color/gzh_day_accent_red_ripple</item>
+        <item name="android:textColorHighlight">@color/gzh_day_accent_red_primary_container</item>
+        <item name="itemRippleColor">@color/gzh_day_accent_red_ripple_primary</item>
         <item name="colorSecondary">@color/gzh_day_accent_red_secondary</item>
         <item name="colorOnSecondary">@color/gzh_day_accent_red_on_secondary</item>
         <item name="colorSecondaryContainer">@color/gzh_day_accent_red_secondary_container</item>
@@ -295,11 +295,11 @@
     <style name="ThemeOverlay.GeneralsZH.AccentBlack" parent="">
         <item name="colorPrimary">@color/gzh_accent_black_primary</item>
         <item name="colorOnPrimary">@color/gzh_accent_black_on_primary</item>
-        <item name="colorPrimaryContainer">@color/gzh_accent_black_container</item>
-        <item name="colorOnPrimaryContainer">@color/gzh_accent_black_on_container</item>
+        <item name="colorPrimaryContainer">@color/gzh_accent_black_primary_container</item>
+        <item name="colorOnPrimaryContainer">@color/gzh_accent_black_on_primary_container</item>
         <item name="colorAccent">@color/gzh_accent_black_primary</item>
-        <item name="android:textColorHighlight">@color/gzh_accent_black_container</item>
-        <item name="itemRippleColor">@color/gzh_accent_black_ripple</item>
+        <item name="android:textColorHighlight">@color/gzh_accent_black_primary_container</item>
+        <item name="itemRippleColor">@color/gzh_accent_black_ripple_primary</item>
         <item name="colorSecondary">@color/gzh_accent_black_secondary</item>
         <item name="colorOnSecondary">@color/gzh_accent_black_on_secondary</item>
         <item name="colorSecondaryContainer">@color/gzh_accent_black_secondary_container</item>
@@ -311,11 +311,11 @@
     <style name="ThemeOverlay.GeneralsZH.AccentNavyBlack" parent="">
         <item name="colorPrimary">@color/gzh_accent_black_primary</item>
         <item name="colorOnPrimary">@color/gzh_accent_black_on_primary</item>
-        <item name="colorPrimaryContainer">@color/gzh_accent_black_container</item>
-        <item name="colorOnPrimaryContainer">@color/gzh_accent_black_on_container</item>
+        <item name="colorPrimaryContainer">@color/gzh_accent_black_primary_container</item>
+        <item name="colorOnPrimaryContainer">@color/gzh_accent_black_on_primary_container</item>
         <item name="colorAccent">@color/gzh_accent_black_primary</item>
-        <item name="android:textColorHighlight">@color/gzh_accent_black_container</item>
-        <item name="itemRippleColor">@color/gzh_accent_black_ripple</item>
+        <item name="android:textColorHighlight">@color/gzh_accent_black_primary_container</item>
+        <item name="itemRippleColor">@color/gzh_accent_black_ripple_primary</item>
         <item name="colorSecondary">@color/gzh_accent_black_secondary</item>
         <item name="colorOnSecondary">@color/gzh_accent_black_on_secondary</item>
         <item name="colorSecondaryContainer">@color/gzh_accent_black_secondary_container</item>
@@ -327,11 +327,11 @@
     <style name="ThemeOverlay.GeneralsZH.AccentDayBlack" parent="">
         <item name="colorPrimary">@color/gzh_day_accent_black_primary</item>
         <item name="colorOnPrimary">@color/gzh_day_accent_black_on_primary</item>
-        <item name="colorPrimaryContainer">@color/gzh_day_accent_black_container</item>
-        <item name="colorOnPrimaryContainer">@color/gzh_day_accent_black_on_container</item>
+        <item name="colorPrimaryContainer">@color/gzh_day_accent_black_primary_container</item>
+        <item name="colorOnPrimaryContainer">@color/gzh_day_accent_black_on_primary_container</item>
         <item name="colorAccent">@color/gzh_day_accent_black_primary</item>
-        <item name="android:textColorHighlight">@color/gzh_day_accent_black_container</item>
-        <item name="itemRippleColor">@color/gzh_day_accent_black_ripple</item>
+        <item name="android:textColorHighlight">@color/gzh_day_accent_black_primary_container</item>
+        <item name="itemRippleColor">@color/gzh_day_accent_black_ripple_primary</item>
         <item name="colorSecondary">@color/gzh_day_accent_black_secondary</item>
         <item name="colorOnSecondary">@color/gzh_day_accent_black_on_secondary</item>
         <item name="colorSecondaryContainer">@color/gzh_day_accent_black_secondary_container</item>
@@ -353,11 +353,11 @@
     <style name="ThemeOverlay.GeneralsZH.AccentGray" parent="">
         <item name="colorPrimary">@color/gzh_accent_gray_primary</item>
         <item name="colorOnPrimary">@color/gzh_accent_gray_on_primary</item>
-        <item name="colorPrimaryContainer">@color/gzh_accent_gray_container</item>
-        <item name="colorOnPrimaryContainer">@color/gzh_accent_gray_on_container</item>
+        <item name="colorPrimaryContainer">@color/gzh_accent_gray_primary_container</item>
+        <item name="colorOnPrimaryContainer">@color/gzh_accent_gray_on_primary_container</item>
         <item name="colorAccent">@color/gzh_accent_gray_primary</item>
-        <item name="android:textColorHighlight">@color/gzh_accent_gray_container</item>
-        <item name="itemRippleColor">@color/gzh_accent_gray_ripple</item>
+        <item name="android:textColorHighlight">@color/gzh_accent_gray_primary_container</item>
+        <item name="itemRippleColor">@color/gzh_accent_gray_ripple_primary</item>
         <item name="colorSecondary">@color/gzh_accent_gray_secondary</item>
         <item name="colorOnSecondary">@color/gzh_accent_gray_on_secondary</item>
         <item name="colorSecondaryContainer">@color/gzh_accent_gray_secondary_container</item>
@@ -369,11 +369,11 @@
     <style name="ThemeOverlay.GeneralsZH.AccentNavyGray" parent="">
         <item name="colorPrimary">@color/gzh_accent_gray_primary</item>
         <item name="colorOnPrimary">@color/gzh_accent_gray_on_primary</item>
-        <item name="colorPrimaryContainer">@color/gzh_accent_gray_container</item>
-        <item name="colorOnPrimaryContainer">@color/gzh_accent_gray_on_container</item>
+        <item name="colorPrimaryContainer">@color/gzh_accent_gray_primary_container</item>
+        <item name="colorOnPrimaryContainer">@color/gzh_accent_gray_on_primary_container</item>
         <item name="colorAccent">@color/gzh_accent_gray_primary</item>
-        <item name="android:textColorHighlight">@color/gzh_accent_gray_container</item>
-        <item name="itemRippleColor">@color/gzh_accent_gray_ripple</item>
+        <item name="android:textColorHighlight">@color/gzh_accent_gray_primary_container</item>
+        <item name="itemRippleColor">@color/gzh_accent_gray_ripple_primary</item>
         <item name="colorSecondary">@color/gzh_accent_gray_secondary</item>
         <item name="colorOnSecondary">@color/gzh_accent_gray_on_secondary</item>
         <item name="colorSecondaryContainer">@color/gzh_accent_gray_secondary_container</item>
@@ -385,11 +385,11 @@
     <style name="ThemeOverlay.GeneralsZH.AccentDayGray" parent="">
         <item name="colorPrimary">@color/gzh_day_accent_gray_primary</item>
         <item name="colorOnPrimary">@color/gzh_day_accent_gray_on_primary</item>
-        <item name="colorPrimaryContainer">@color/gzh_day_accent_gray_container</item>
-        <item name="colorOnPrimaryContainer">@color/gzh_day_accent_gray_on_container</item>
+        <item name="colorPrimaryContainer">@color/gzh_day_accent_gray_primary_container</item>
+        <item name="colorOnPrimaryContainer">@color/gzh_day_accent_gray_on_primary_container</item>
         <item name="colorAccent">@color/gzh_day_accent_gray_primary</item>
-        <item name="android:textColorHighlight">@color/gzh_day_accent_gray_container</item>
-        <item name="itemRippleColor">@color/gzh_day_accent_gray_ripple</item>
+        <item name="android:textColorHighlight">@color/gzh_day_accent_gray_primary_container</item>
+        <item name="itemRippleColor">@color/gzh_day_accent_gray_ripple_primary</item>
         <item name="colorSecondary">@color/gzh_day_accent_gray_secondary</item>
         <item name="colorOnSecondary">@color/gzh_day_accent_gray_on_secondary</item>
         <item name="colorSecondaryContainer">@color/gzh_day_accent_gray_secondary_container</item>
@@ -411,11 +411,11 @@
     <style name="ThemeOverlay.GeneralsZH.AccentGold" parent="">
         <item name="colorPrimary">@color/gzh_accent_gold_primary</item>
         <item name="colorOnPrimary">@color/gzh_accent_gold_on_primary</item>
-        <item name="colorPrimaryContainer">@color/gzh_accent_gold_container</item>
-        <item name="colorOnPrimaryContainer">@color/gzh_accent_gold_on_container</item>
+        <item name="colorPrimaryContainer">@color/gzh_accent_gold_primary_container</item>
+        <item name="colorOnPrimaryContainer">@color/gzh_accent_gold_on_primary_container</item>
         <item name="colorAccent">@color/gzh_accent_gold_primary</item>
-        <item name="android:textColorHighlight">@color/gzh_accent_gold_container</item>
-        <item name="itemRippleColor">@color/gzh_accent_gold_ripple</item>
+        <item name="android:textColorHighlight">@color/gzh_accent_gold_primary_container</item>
+        <item name="itemRippleColor">@color/gzh_accent_gold_ripple_primary</item>
         <item name="colorSecondary">@color/gzh_accent_gold_secondary</item>
         <item name="colorOnSecondary">@color/gzh_accent_gold_on_secondary</item>
         <item name="colorSecondaryContainer">@color/gzh_accent_gold_secondary_container</item>
@@ -427,11 +427,11 @@
     <style name="ThemeOverlay.GeneralsZH.AccentNavyGold" parent="">
         <item name="colorPrimary">@color/gzh_accent_gold_primary</item>
         <item name="colorOnPrimary">@color/gzh_accent_gold_on_primary</item>
-        <item name="colorPrimaryContainer">@color/gzh_accent_gold_container</item>
-        <item name="colorOnPrimaryContainer">@color/gzh_accent_gold_on_container</item>
+        <item name="colorPrimaryContainer">@color/gzh_accent_gold_primary_container</item>
+        <item name="colorOnPrimaryContainer">@color/gzh_accent_gold_on_primary_container</item>
         <item name="colorAccent">@color/gzh_accent_gold_primary</item>
-        <item name="android:textColorHighlight">@color/gzh_accent_gold_container</item>
-        <item name="itemRippleColor">@color/gzh_accent_gold_ripple</item>
+        <item name="android:textColorHighlight">@color/gzh_accent_gold_primary_container</item>
+        <item name="itemRippleColor">@color/gzh_accent_gold_ripple_primary</item>
         <item name="colorSecondary">@color/gzh_accent_gold_secondary</item>
         <item name="colorOnSecondary">@color/gzh_accent_gold_on_secondary</item>
         <item name="colorSecondaryContainer">@color/gzh_accent_gold_secondary_container</item>
@@ -443,11 +443,11 @@
     <style name="ThemeOverlay.GeneralsZH.AccentDayGold" parent="">
         <item name="colorPrimary">@color/gzh_day_accent_gold_primary</item>
         <item name="colorOnPrimary">@color/gzh_day_accent_gold_on_primary</item>
-        <item name="colorPrimaryContainer">@color/gzh_day_accent_gold_container</item>
-        <item name="colorOnPrimaryContainer">@color/gzh_day_accent_gold_on_container</item>
+        <item name="colorPrimaryContainer">@color/gzh_day_accent_gold_primary_container</item>
+        <item name="colorOnPrimaryContainer">@color/gzh_day_accent_gold_on_primary_container</item>
         <item name="colorAccent">@color/gzh_day_accent_gold_primary</item>
-        <item name="android:textColorHighlight">@color/gzh_day_accent_gold_container</item>
-        <item name="itemRippleColor">@color/gzh_day_accent_gold_ripple</item>
+        <item name="android:textColorHighlight">@color/gzh_day_accent_gold_primary_container</item>
+        <item name="itemRippleColor">@color/gzh_day_accent_gold_ripple_primary</item>
         <item name="colorSecondary">@color/gzh_day_accent_gold_secondary</item>
         <item name="colorOnSecondary">@color/gzh_day_accent_gold_on_secondary</item>
         <item name="colorSecondaryContainer">@color/gzh_day_accent_gold_secondary_container</item>
@@ -469,11 +469,11 @@
     <style name="ThemeOverlay.GeneralsZH.AccentTransparent" parent="">
         <item name="colorPrimary">@color/gzh_accent_transparent_primary</item>
         <item name="colorOnPrimary">@color/gzh_accent_transparent_on_primary</item>
-        <item name="colorPrimaryContainer">@color/gzh_accent_transparent_container</item>
-        <item name="colorOnPrimaryContainer">@color/gzh_accent_transparent_on_container</item>
+        <item name="colorPrimaryContainer">@color/gzh_accent_transparent_primary_container</item>
+        <item name="colorOnPrimaryContainer">@color/gzh_accent_transparent_on_primary_container</item>
         <item name="colorAccent">@color/gzh_accent_transparent_primary</item>
-        <item name="android:textColorHighlight">@color/gzh_accent_transparent_container</item>
-        <item name="itemRippleColor">@color/gzh_accent_transparent_ripple</item>
+        <item name="android:textColorHighlight">@color/gzh_accent_transparent_primary_container</item>
+        <item name="itemRippleColor">@color/gzh_accent_transparent_ripple_primary</item>
         <item name="colorSecondary">@color/gzh_accent_transparent_secondary</item>
         <item name="colorOnSecondary">@color/gzh_accent_transparent_on_secondary</item>
         <item name="colorSecondaryContainer">@color/gzh_accent_transparent_secondary_container</item>
@@ -485,11 +485,11 @@
     <style name="ThemeOverlay.GeneralsZH.AccentNavyTransparent" parent="">
         <item name="colorPrimary">@color/gzh_accent_transparent_primary</item>
         <item name="colorOnPrimary">@color/gzh_accent_transparent_on_primary</item>
-        <item name="colorPrimaryContainer">@color/gzh_accent_transparent_container</item>
-        <item name="colorOnPrimaryContainer">@color/gzh_accent_transparent_on_container</item>
+        <item name="colorPrimaryContainer">@color/gzh_accent_transparent_primary_container</item>
+        <item name="colorOnPrimaryContainer">@color/gzh_accent_transparent_on_primary_container</item>
         <item name="colorAccent">@color/gzh_accent_transparent_primary</item>
-        <item name="android:textColorHighlight">@color/gzh_accent_transparent_container</item>
-        <item name="itemRippleColor">@color/gzh_accent_transparent_ripple</item>
+        <item name="android:textColorHighlight">@color/gzh_accent_transparent_primary_container</item>
+        <item name="itemRippleColor">@color/gzh_accent_transparent_ripple_primary</item>
         <item name="colorSecondary">@color/gzh_accent_transparent_secondary</item>
         <item name="colorOnSecondary">@color/gzh_accent_transparent_on_secondary</item>
         <item name="colorSecondaryContainer">@color/gzh_accent_transparent_secondary_container</item>
@@ -501,11 +501,11 @@
     <style name="ThemeOverlay.GeneralsZH.AccentDayTransparent" parent="">
         <item name="colorPrimary">@color/gzh_day_accent_transparent_primary</item>
         <item name="colorOnPrimary">@color/gzh_day_accent_transparent_on_primary</item>
-        <item name="colorPrimaryContainer">@color/gzh_day_accent_transparent_container</item>
-        <item name="colorOnPrimaryContainer">@color/gzh_day_accent_transparent_on_container</item>
+        <item name="colorPrimaryContainer">@color/gzh_day_accent_transparent_primary_container</item>
+        <item name="colorOnPrimaryContainer">@color/gzh_day_accent_transparent_on_primary_container</item>
         <item name="colorAccent">@color/gzh_day_accent_transparent_primary</item>
-        <item name="android:textColorHighlight">@color/gzh_day_accent_transparent_container</item>
-        <item name="itemRippleColor">@color/gzh_day_accent_transparent_ripple</item>
+        <item name="android:textColorHighlight">@color/gzh_day_accent_transparent_primary_container</item>
+        <item name="itemRippleColor">@color/gzh_day_accent_transparent_ripple_primary</item>
         <item name="colorSecondary">@color/gzh_day_accent_transparent_secondary</item>
         <item name="colorOnSecondary">@color/gzh_day_accent_transparent_on_secondary</item>
         <item name="colorSecondaryContainer">@color/gzh_day_accent_transparent_secondary_container</item>
@@ -527,11 +527,11 @@
     <style name="ThemeOverlay.GeneralsZH.AccentWhite" parent="">
         <item name="colorPrimary">@color/gzh_accent_white_primary</item>
         <item name="colorOnPrimary">@color/gzh_accent_white_on_primary</item>
-        <item name="colorPrimaryContainer">@color/gzh_accent_white_container</item>
-        <item name="colorOnPrimaryContainer">@color/gzh_accent_white_on_container</item>
+        <item name="colorPrimaryContainer">@color/gzh_accent_white_primary_container</item>
+        <item name="colorOnPrimaryContainer">@color/gzh_accent_white_on_primary_container</item>
         <item name="colorAccent">@color/gzh_accent_white_primary</item>
-        <item name="android:textColorHighlight">@color/gzh_accent_white_container</item>
-        <item name="itemRippleColor">@color/gzh_accent_white_ripple</item>
+        <item name="android:textColorHighlight">@color/gzh_accent_white_primary_container</item>
+        <item name="itemRippleColor">@color/gzh_accent_white_ripple_primary</item>
         <item name="colorSecondary">@color/gzh_accent_white_secondary</item>
         <item name="colorOnSecondary">@color/gzh_accent_white_on_secondary</item>
         <item name="colorSecondaryContainer">@color/gzh_accent_white_secondary_container</item>
@@ -543,11 +543,11 @@
     <style name="ThemeOverlay.GeneralsZH.AccentNavyWhite" parent="">
         <item name="colorPrimary">@color/gzh_accent_white_primary</item>
         <item name="colorOnPrimary">@color/gzh_accent_white_on_primary</item>
-        <item name="colorPrimaryContainer">@color/gzh_accent_white_container</item>
-        <item name="colorOnPrimaryContainer">@color/gzh_accent_white_on_container</item>
+        <item name="colorPrimaryContainer">@color/gzh_accent_white_primary_container</item>
+        <item name="colorOnPrimaryContainer">@color/gzh_accent_white_on_primary_container</item>
         <item name="colorAccent">@color/gzh_accent_white_primary</item>
-        <item name="android:textColorHighlight">@color/gzh_accent_white_container</item>
-        <item name="itemRippleColor">@color/gzh_accent_white_ripple</item>
+        <item name="android:textColorHighlight">@color/gzh_accent_white_primary_container</item>
+        <item name="itemRippleColor">@color/gzh_accent_white_ripple_primary</item>
         <item name="colorSecondary">@color/gzh_accent_white_secondary</item>
         <item name="colorOnSecondary">@color/gzh_accent_white_on_secondary</item>
         <item name="colorSecondaryContainer">@color/gzh_accent_white_secondary_container</item>
@@ -559,11 +559,11 @@
     <style name="ThemeOverlay.GeneralsZH.AccentDayWhite" parent="">
         <item name="colorPrimary">@color/gzh_day_accent_white_primary</item>
         <item name="colorOnPrimary">@color/gzh_day_accent_white_on_primary</item>
-        <item name="colorPrimaryContainer">@color/gzh_day_accent_white_container</item>
-        <item name="colorOnPrimaryContainer">@color/gzh_day_accent_white_on_container</item>
+        <item name="colorPrimaryContainer">@color/gzh_day_accent_white_primary_container</item>
+        <item name="colorOnPrimaryContainer">@color/gzh_day_accent_white_on_primary_container</item>
         <item name="colorAccent">@color/gzh_day_accent_white_primary</item>
-        <item name="android:textColorHighlight">@color/gzh_day_accent_white_container</item>
-        <item name="itemRippleColor">@color/gzh_day_accent_white_ripple</item>
+        <item name="android:textColorHighlight">@color/gzh_day_accent_white_primary_container</item>
+        <item name="itemRippleColor">@color/gzh_day_accent_white_ripple_primary</item>
         <item name="colorSecondary">@color/gzh_day_accent_white_secondary</item>
         <item name="colorOnSecondary">@color/gzh_day_accent_white_on_secondary</item>
         <item name="colorSecondaryContainer">@color/gzh_day_accent_white_secondary_container</item>
@@ -585,11 +585,11 @@
     <style name="ThemeOverlay.GeneralsZH.AccentYellow" parent="">
         <item name="colorPrimary">@color/gzh_accent_yellow_primary</item>
         <item name="colorOnPrimary">@color/gzh_accent_yellow_on_primary</item>
-        <item name="colorPrimaryContainer">@color/gzh_accent_yellow_container</item>
-        <item name="colorOnPrimaryContainer">@color/gzh_accent_yellow_on_container</item>
+        <item name="colorPrimaryContainer">@color/gzh_accent_yellow_primary_container</item>
+        <item name="colorOnPrimaryContainer">@color/gzh_accent_yellow_on_primary_container</item>
         <item name="colorAccent">@color/gzh_accent_yellow_primary</item>
-        <item name="android:textColorHighlight">@color/gzh_accent_yellow_container</item>
-        <item name="itemRippleColor">@color/gzh_accent_yellow_ripple</item>
+        <item name="android:textColorHighlight">@color/gzh_accent_yellow_primary_container</item>
+        <item name="itemRippleColor">@color/gzh_accent_yellow_ripple_primary</item>
         <item name="colorSecondary">@color/gzh_accent_yellow_secondary</item>
         <item name="colorOnSecondary">@color/gzh_accent_yellow_on_secondary</item>
         <item name="colorSecondaryContainer">@color/gzh_accent_yellow_secondary_container</item>
@@ -601,11 +601,11 @@
     <style name="ThemeOverlay.GeneralsZH.AccentNavyYellow" parent="">
         <item name="colorPrimary">@color/gzh_accent_yellow_primary</item>
         <item name="colorOnPrimary">@color/gzh_accent_yellow_on_primary</item>
-        <item name="colorPrimaryContainer">@color/gzh_accent_yellow_container</item>
-        <item name="colorOnPrimaryContainer">@color/gzh_accent_yellow_on_container</item>
+        <item name="colorPrimaryContainer">@color/gzh_accent_yellow_primary_container</item>
+        <item name="colorOnPrimaryContainer">@color/gzh_accent_yellow_on_primary_container</item>
         <item name="colorAccent">@color/gzh_accent_yellow_primary</item>
-        <item name="android:textColorHighlight">@color/gzh_accent_yellow_container</item>
-        <item name="itemRippleColor">@color/gzh_accent_yellow_ripple</item>
+        <item name="android:textColorHighlight">@color/gzh_accent_yellow_primary_container</item>
+        <item name="itemRippleColor">@color/gzh_accent_yellow_ripple_primary</item>
         <item name="colorSecondary">@color/gzh_accent_yellow_secondary</item>
         <item name="colorOnSecondary">@color/gzh_accent_yellow_on_secondary</item>
         <item name="colorSecondaryContainer">@color/gzh_accent_yellow_secondary_container</item>
@@ -617,11 +617,11 @@
     <style name="ThemeOverlay.GeneralsZH.AccentDayYellow" parent="">
         <item name="colorPrimary">@color/gzh_day_accent_yellow_primary</item>
         <item name="colorOnPrimary">@color/gzh_day_accent_yellow_on_primary</item>
-        <item name="colorPrimaryContainer">@color/gzh_day_accent_yellow_container</item>
-        <item name="colorOnPrimaryContainer">@color/gzh_day_accent_yellow_on_container</item>
+        <item name="colorPrimaryContainer">@color/gzh_day_accent_yellow_primary_container</item>
+        <item name="colorOnPrimaryContainer">@color/gzh_day_accent_yellow_on_primary_container</item>
         <item name="colorAccent">@color/gzh_day_accent_yellow_primary</item>
-        <item name="android:textColorHighlight">@color/gzh_day_accent_yellow_container</item>
-        <item name="itemRippleColor">@color/gzh_day_accent_yellow_ripple</item>
+        <item name="android:textColorHighlight">@color/gzh_day_accent_yellow_primary_container</item>
+        <item name="itemRippleColor">@color/gzh_day_accent_yellow_ripple_primary</item>
         <item name="colorSecondary">@color/gzh_day_accent_yellow_secondary</item>
         <item name="colorOnSecondary">@color/gzh_day_accent_yellow_on_secondary</item>
         <item name="colorSecondaryContainer">@color/gzh_day_accent_yellow_secondary_container</item>

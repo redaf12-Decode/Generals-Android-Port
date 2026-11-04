@@ -46,11 +46,11 @@ OUT_THEMES = ("/workspace/project/Generals-Android-Port/android/app/src/main/res
 ACCENT_ITEMS = [
     ("colorPrimary", "primary"),
     ("colorOnPrimary", "on_primary"),
-    ("colorPrimaryContainer", "container"),
-    ("colorOnPrimaryContainer", "on_container"),
+    ("colorPrimaryContainer", "primary_container"),
+    ("colorOnPrimaryContainer", "on_primary_container"),
     ("colorAccent", "primary"),
-    ("android:textColorHighlight", "container"),
-    ("itemRippleColor", "ripple"),
+    ("android:textColorHighlight", "primary_container"),
+    ("itemRippleColor", "ripple_primary"),
     ("colorSecondary", "secondary"),
     ("colorOnSecondary", "on_secondary"),
     ("colorSecondaryContainer", "secondary_container"),
@@ -143,6 +143,50 @@ def tint(hex_color, hue):
     return "#%02X%02X%02X" % (round(nr * 255), round(ng * 255), round(nb * 255))
 
 
+def validate(theme_lines, dark_lines, day_lines):
+    """Fail the run if a generated reference names a resource nothing defines.
+
+    aapt2 is the only thing that otherwise catches this, and it does so at the end of a ~15 minute
+    APK build. The bug it hides is subtle: ThemeHelper composes a colour's name from the BASE
+    colour's role, so the overlay items must use those roles (primary_container), not the
+    reference's own spelling (container). Checking here makes that mismatch a one-second failure.
+    """
+    defined = {"color": set(), "style": set(), "drawable": set()}
+    for line in dark_lines + day_lines:
+        m = re.search(r'<color name="([^"]+)"', line)
+        if m:
+            defined["color"].add(m.group(1))
+    res_dir = os.path.join(os.path.dirname(OUT_THEMES), "..")
+    for root, _, files in os.walk(res_dir):
+        for f in files:
+            if not f.endswith(".xml"):
+                continue
+            text = io.open(os.path.join(root, f), encoding="utf-8").read()
+            for kind, pat in (("color", r'<color name="([^"]+)"'),
+                              ("style", r'<style name="([^"]+)"')):
+                for m in re.finditer(pat, text):
+                    defined[kind].add(m.group(1))
+            if os.path.basename(root).startswith("drawable"):
+                defined["drawable"].add(f[:-4])
+    # Styles the generator emits are referenced before the file lands on disk.
+    for line in theme_lines:
+        m = re.search(r'<style name="([^"]+)"', line)
+        if m:
+            defined["style"].add(m.group(1))
+
+    missing = set()
+    for line in theme_lines:
+        for kind, name in re.findall(r'@(color|style|drawable)/([A-Za-z0-9_.]+)', line):
+            if name not in defined[kind]:
+                missing.add("%s/%s" % (kind, name))
+    if missing:
+        sys.stderr.write("Generated theme references undefined resources:\n")
+        for name in sorted(missing):
+            sys.stderr.write("  %s\n" % name)
+        return 1
+    return 0
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--ref", default="/tmp/ref",
@@ -202,11 +246,6 @@ def main(argv=None):
               "         See that script for what each half carries and why. -->\n")
     tail = "</resources>\n"
 
-    io.open(OUT_DARK, "w", encoding="utf-8").write(
-        header + "\n".join(dark_lines).rstrip() + "\n" + tail)
-    io.open(OUT_DAY, "w", encoding="utf-8").write(
-        header + "\n".join(day_lines).rstrip() + "\n" + tail)
-
     # The activity overlay the accent folds into, per palette per accent. It carries the dialog
     # theme references too: a dialog is a separate theme, so it never inherits the activity's
     # accent -- naming its style here is what makes the dialogs follow the choice.
@@ -263,6 +302,16 @@ def main(argv=None):
             theme_lines.append("    </style>")
             theme_lines.append("")
 
+    # Validate before anything lands on disk: a dangling reference here would otherwise leave
+    # three committed files that only fail at the end of an APK build.
+    failed = validate(theme_lines, dark_lines, day_lines)
+    if failed:
+        return failed
+
+    io.open(OUT_DARK, "w", encoding="utf-8").write(
+        header + "\n".join(dark_lines).rstrip() + "\n" + tail)
+    io.open(OUT_DAY, "w", encoding="utf-8").write(
+        header + "\n".join(day_lines).rstrip() + "\n" + tail)
     io.open(OUT_THEMES, "w", encoding="utf-8").write(
         header + "\n".join(theme_lines).rstrip() + "\n" + tail)
 
