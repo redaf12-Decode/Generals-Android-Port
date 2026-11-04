@@ -82,7 +82,7 @@
     <string name="setup_card_vulkan_driver">Sobstveny Vulkan draiver (za napredne, tolko Adreno GPU)</string>
     <string name="setup_button_import_driver">Importovati draiver (.zip)</string>
     <string name="setup_button_reset_driver">Vrnuti na preporučeny</string>
-    <string name="setup_driver_help">Zagružaje Vulkan draiver (sborku Mesa Turnip) město vgrajenogo v telefon — ista tehnika, kotoru upotrěbjaju Winlator i AetherSX2. Samomu DXVK sejčas trěba tolko Vulkan 1.1, no někotori stari standardni draiveri Qualcomm Adreno javjajut ešče manje (ili iměju druge greški) — ta sborka Turnip vsjo jedno može pozvoliti takim telefonam spustiti igru. Na prigodnom telefonu Adreno to jest naloženo avtomatično — \"Vrnuti na preporučeny\" vraća tu avtomatičnu izbor pošto ste importovali čto drugo.\n\nTo NE pomože Mali, PowerVR ili drugim ne-Adreno GPU — no jim to i ne trěba: većina GPU Mali (Mali-G76, Mali-G57 i podobni) već nativno ispolnjaju trěbovanje DXVK za Vulkan 1.1, zaměna draivera ne trěba. Ta opcija jest samo za Adreno, zato že Turnip podderživaje samo Adreno hardver, a ne zato že drugi GPU ne sut podderžani.\n\n\"Importovati draiver\" pozvoljaje zaměniti avtomatičnu izbor svojim .zip vo formatě adrenotools (naprimer, od K11MCH1/AdrenoToolsDrivers ili The412Banner/Banners-Turnip na GitHub). Dějstvuje pri sledujućem spuštěniju, ne odmah.</string>
+    <string name="setup_driver_help">Zagružaje Vulkan draiver (sborku Mesa Turnip) město vgrajenogo v telefon — ista tehnika, kotoru upotrěbjaju Winlator i AetherSX2. Samomu DXVK sejčas trěba tolko Vulkan 1.1, no někotori stari standardni draiveri Qualcomm Adreno javjajut ešče manje (ili iměju druge greški) — ta sborka Turnip vsjo jedno može pozvoliti takim telefonam spustiti igru. Na prigodnom telefonu Adreno to jest naloženo avtomatično — \"Vrnuti na preporučeny\" vraća tu avtomatičnu izbor pošto ste importovali čto drugo.\n\nTo NE pomože Mali, PowerVR ili drugim ne-Adreno GPU — no jim to i ne trěba: većina GPU Mali (Mali-G76, Mali-G57 i podobni) već nativno ispolnjaju trěbovanje DXVK za Vulkan 1.1, zaměna draivera ne trěba. Ta opcija jest samo za Adreno, zato že Turnip podderživaje samo Adreno hardver, a ne zato že drugi GPU ne sut podderžani.\n\n\"Importovati draiver\" pozvoljaje zaměniti avtomatičnu izbor svojim .zip vo formatě adrenotools (naprimer, od K11MCH1/AdrenoToolsDrivers ili The412Banner/Banners-Turnip na GitHub). Dějstvuje pri sledujućem spuštěniju, ne odmah. Možete iměti kolkokratny draivery: importujte veče než jeden, kliknite na draiver v spisku, da by jego aktivovati, i upotrěbite jego ikonu koša, da by jego iztriti. \"Vrnuti na preporučeny\" vraćaje avtomatičny izbor, ne iztrjajući druge.</string>
     <string name="setup_driver_status_none">Sobstveny draiver ne aktivny — upotrěbjaje sę vgrajeny Vulkan draiver telefona.</string>
     <string name="setup_driver_status_auto">Preporučeny draiver (izbran avtomatično za tu děvicu): %1$s</string>
     <string name="setup_driver_status_manual">Sobstveny draiver (importovan ručno): %1$s</string>
@@ -102,6 +102,16 @@
     <string name="setup_toast_driver_import_min_api">Import ne uspěl: toj draiver potrebuje Android API %1$s, ale uredjenje izvěstuje %2$s</string>
     <string name="setup_toast_driver_import_too_large">Import ne uspěl: .zip jest větši ili glubše vloženy, než by paket draivera iměl byti</string>
     <string name="setup_toast_driver_imported">Draiver importovan: %1$s. Dějstvovati bude pri sledujućem spuštěniju.</string>
+    <string name="setup_driver_list_empty">Nijeden draiver ješče ne importovany. Importujte draiver .zip, da by jego tuto iměti i medžu draiverami prěključati.</string>
+    <string name="setup_driver_active_tag">Aktivny</string>
+    <string name="setup_driver_delete">Iztriti draiver</string>
+    <string name="setup_driver_delete_confirm_title">Iztriti tut draiver?</string>
+    <string name="setup_driver_delete_confirm">%1$s bude uklonjeny iz spiska. Ako jest aktivny, vgrajeny draiver prějmě jego město. Dějstvovati bude pri sledujućem spuštěniju.</string>
+    <string name="setup_toast_driver_activated">Draiver aktivovan: %1$s. Dějstvovati bude pri sledujućem spuštěniju.</string>
+    <string name="setup_toast_driver_activate_failed">Ne možno aktivovati tut draiver. Predhodeći jest ješče aktivny.</string>
+    <string name="setup_toast_driver_deleted">Draiver iztreny: %1$s</string>
+    <string name="setup_toast_driver_delete_failed">Ne možno iztriti tut draiver: %1$s</string>
+    <string name="setup_toast_reset_failed">Ne možno vrnuti standardny draiver. Nynejši jest ješče aktivny.</string>
 
     <!-- SetupActivity: Diagnostics card -->
     <string name="setup_card_diagnostics">Diagnostika</string>

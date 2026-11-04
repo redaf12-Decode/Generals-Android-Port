@@ -82,7 +82,7 @@
     <string name="setup_card_vulkan_driver">Custom Vulkan Driver (advanced, Adreno GPUs only)</string>
     <string name="setup_button_import_driver">Import Driver (.zip)</string>
     <string name="setup_button_reset_driver">Reset to Recommended</string>
-    <string name="setup_driver_help">Loads a Vulkan driver (a Mesa Turnip build) instead of your phone\'s built-in one, the same technique Winlator and AetherSX2 use. DXVK itself now only needs Vulkan 1.1, but some older Qualcomm Adreno stock drivers report even less (or have other bugs) — this Turnip build can let those phones run the game anyway. On a qualifying Adreno phone this is applied automatically — \"Reset to Recommended\" restores that automatic choice after you\'ve imported something else.\n\nThis does NOT help Mali, PowerVR, or other non-Adreno GPUs — but those don\'t need it either: most Mali GPUs (Mali-G76, Mali-G57, and similar) already meet DXVK\'s Vulkan 1.1 requirement natively, no driver swap needed. This option is Adreno-only because Turnip only targets Adreno hardware, not because other GPUs are unsupported.\n\n\"Import Driver\" lets you override the automatic choice with your own adrenotools-format driver .zip (for example from K11MCH1/AdrenoToolsDrivers or The412Banner/Banners-Turnip on GitHub). Takes effect next launch, not live.</string>
+    <string name="setup_driver_help">Loads a Vulkan driver (a Mesa Turnip build) instead of your phone\'s built-in one, the same technique Winlator and AetherSX2 use. DXVK itself now only needs Vulkan 1.1, but some older Qualcomm Adreno stock drivers report even less (or have other bugs) — this Turnip build can let those phones run the game anyway. On a qualifying Adreno phone this is applied automatically — \"Reset to Recommended\" restores that automatic choice after you\'ve imported something else.\n\nThis does NOT help Mali, PowerVR, or other non-Adreno GPUs — but those don\'t need it either: most Mali GPUs (Mali-G76, Mali-G57, and similar) already meet DXVK\'s Vulkan 1.1 requirement natively, no driver swap needed. This option is Adreno-only because Turnip only targets Adreno hardware, not because other GPUs are unsupported.\n\n\"Import Driver\" lets you override the automatic choice with your own adrenotools-format driver .zip (for example from K11MCH1/AdrenoToolsDrivers or The412Banner/Banners-Turnip on GitHub). Takes effect next launch, not live. You can keep several drivers: import more than one, tap a driver in the list to make it active, and use its bin icon to delete it. \"Reset to Recommended\" returns to the automatic choice without removing the others.</string>
     <string name="setup_driver_status_none">No custom driver active — using your phone\'s built-in Vulkan driver.</string>
     <string name="setup_driver_status_auto">Recommended driver (auto-selected for this device): %1$s</string>
     <string name="setup_driver_status_manual">Custom driver (manually imported): %1$s</string>
@@ -102,6 +102,16 @@
     <string name="setup_toast_driver_import_min_api">Import failed: this driver needs Android API %1$s, but this device reports %2$s</string>
     <string name="setup_toast_driver_import_too_large">Import failed: the .zip is larger or more deeply nested than a driver package should be</string>
     <string name="setup_toast_driver_imported">Driver imported: %1$s. Takes effect next launch.</string>
+    <string name="setup_driver_list_empty">No drivers imported yet. Import a driver .zip to keep it here and switch between drivers.</string>
+    <string name="setup_driver_active_tag">Active</string>
+    <string name="setup_driver_delete">Delete driver</string>
+    <string name="setup_driver_delete_confirm_title">Delete this driver?</string>
+    <string name="setup_driver_delete_confirm">%1$s will be removed from the list. If it is the active driver, the built-in driver takes over. Takes effect next launch.</string>
+    <string name="setup_toast_driver_activated">Driver activated: %1$s. Takes effect next launch.</string>
+    <string name="setup_toast_driver_activate_failed">Could not activate this driver. The previous one is still active.</string>
+    <string name="setup_toast_driver_deleted">Driver deleted: %1$s</string>
+    <string name="setup_toast_driver_delete_failed">Could not delete this driver: %1$s</string>
+    <string name="setup_toast_reset_failed">Could not restore the default driver. The current one is still active.</string>
 
     <!-- SetupActivity: DXVK Config card -->
     <string name="setup_card_dxvk_config">DXVK Config (dxvk.conf, advanced)</string>

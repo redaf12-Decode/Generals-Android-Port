@@ -476,6 +476,7 @@ public class SetupActivity extends Activity {
         gameLanguageStatusView = null;
         renderBackendStatusView = null;
         customDriverStatusView = null;
+        customDriverListHolder = null;
         diagnosticsNoFolderHint = null;
         dxvkConfigEdit = null;
         uiScaleSlider = null;
@@ -1549,7 +1550,7 @@ public class SetupActivity extends Activity {
     // three render backends this branch supports, replacing the previous
     // adb-only GENERALSX_RENDER_BACKEND/GENERALSX_GLES_ANGLE env vars with a
     // real in-app choice (most users have no adb at all). Read/written the
-    // same way as CUSTOM_DRIVER_CFG_NAME above: a plain-text marker file in
+    // same way as the custom-driver config below: a plain-text marker file in
     // getFilesDir(), one line, read natively by SDL3Main.cpp's
     // UseVulkanBackend()/UseANGLE() (and duplicated in gles_pipeline.cpp's
     // initContext() -- see its comment for why) before the game's video
@@ -1871,22 +1872,13 @@ public class SetupActivity extends Activity {
     // bundle a driver ourselves -- the user supplies one (e.g. from
     // K11MCH1/AdrenoToolsDrivers or The412Banner/Banners-Turnip on GitHub),
     // matching every other app that uses this technique.
-    private static final String CUSTOM_DRIVER_DIR_NAME = "custom_driver";
-    private static final String CUSTOM_DRIVER_CFG_NAME = "custom_driver.cfg";
-    // GeneralsX @feature Android port 13/07/2026 Marks that custom_driver.cfg
-    // was populated by applyRecommendedDriverIfNeeded() rather than by the
-    // user importing their own .zip -- lets the status text and the
-    // "reset" button distinguish "we picked this for you" from "you chose
-    // this", without changing anything on the native loading side (both
-    // cases are the same custom_driver.cfg/custom_driver/ that
-    // TryLoadCustomVulkanDriver() in SDL3Main.cpp already reads).
-    private static final String CUSTOM_DRIVER_AUTO_MARKER_NAME = "custom_driver.auto";
-    // GeneralsX @feature Android port 04/11/2026 Sidecar holding the imported package's own
-    // meta.json (name, vendor, driverVersion, ...), so the card can show which driver is
-    // installed rather than only the .so's file name. Purely a launcher detail: the native side
-    // reads custom_driver.cfg and custom_driver/ exactly as before, and a missing sidecar (an
-    // older install) just falls back to the file name.
-    private static final String CUSTOM_DRIVER_INFO_NAME = "custom_driver.info";
+    //
+    // GeneralsX @feature Android port 04/11/2026 The single driver became a
+    // library: imported packages are kept in their own folders (DriverLibrary),
+    // the player can keep several and pick the active one, and the one the
+    // engine reads -- custom_driver.cfg plus custom_driver/ -- is a copy of
+    // whichever is active. The native contract is unchanged; see
+    // DriverLibrary's header for the invariants this rests on.
     // Bundled fallback driver (staged by scripts/build/android/fetch-turnip.sh
     // into this asset folder at build time) -- see applyRecommendedDriverIfNeeded().
     private static final String DEFAULT_DRIVER_ASSET_DIR = "default_driver";
@@ -1895,45 +1887,58 @@ public class SetupActivity extends Activity {
     private static final int REQUEST_PICK_BASE_GENERALS = 1003;
 
     private TextView customDriverStatusView;
+    private LinearLayout customDriverListHolder;
+
+    private File driversRoot() {
+        return getFilesDir();
+    }
 
     private void buildCustomDriverSection(LinearLayout root) {
         LinearLayout content = UiKit.card(root);
         UiKit.sectionHeader(content, R.drawable.ic_gzh_chip,
             getString(R.string.setup_card_vulkan_driver), false);
 
-        // A previous run may have died between the two renames of an install; put the previous
-        // driver back before the status line reads what is on disk, or the card would report a
-        // driver that is no longer there.
-        CustomDriverPackage.recoverInterruptedInstall(
-            new File(getFilesDir(), CUSTOM_DRIVER_DIR_NAME));
+        // A previous run may have died between the two renames of an activation or an import;
+        // heal the slot and the library before anything reads what is on disk, or the card
+        // would report a driver that is no longer there.
+        DriverLibrary.cleanupInterrupted(driversRoot());
+        DriverLibrary.reconcile(driversRoot());
+        // An install from before the library existed has its driver only in the active slot;
+        // adopt it so it appears in the list without changing what is active.
+        DriverLibrary.adoptActiveSlot(driversRoot());
         customDriverStatusView = UiKit.supporting(content, customDriverStatusText());
+
+        customDriverListHolder = new LinearLayout(this);
+        customDriverListHolder.setOrientation(LinearLayout.VERTICAL);
+        content.addView(customDriverListHolder, new LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+        renderDriverList();
 
         UiKit.button(content, UiKit.BTN_TONAL, R.drawable.ic_gzh_download,
             getString(R.string.setup_button_import_driver), this::onImportCustomDriver);
-        UiKit.button(content, UiKit.BTN_DANGER, R.drawable.ic_gzh_refresh,
-            getString(R.string.setup_button_reset_driver), this::onClearCustomDriver);
+        UiKit.button(content, UiKit.BTN_OUTLINE, R.drawable.ic_gzh_refresh,
+            getString(R.string.setup_button_reset_driver), this::onResetCustomDriver);
 
         UiKit.helpText(content, getString(R.string.setup_driver_help));
     }
 
     private String customDriverStatusText() {
-        File cfg = new File(getFilesDir(), CUSTOM_DRIVER_CFG_NAME);
-        if (!cfg.isFile()) {
+        String name = DriverLibrary.activeLibraryName(driversRoot());
+        if (name == null) {
             return getString(R.string.setup_driver_status_none);
         }
-        String driverName = readFirstLine(cfg);
-        boolean isAuto = new File(getFilesDir(), CUSTOM_DRIVER_AUTO_MARKER_NAME).isFile();
-        // GeneralsX @feature Android port 04/11/2026 Name the package, not its .so: the
-        // imported meta.json is kept beside the config (CustomDriverPackage), so the card can
-        // say "Mesa Turnip 25.3.0" where the file name says "libvulkan_freedreno.so". Older
-        // installs have no sidecar and fall back to the file name, as before.
-        CustomDriverPackage.Meta info =
-            CustomDriverPackage.readInfo(new File(getFilesDir(), CUSTOM_DRIVER_INFO_NAME));
-        String name = info != null && !info.displayName().isEmpty()
-            ? info.displayName()
-            : (driverName != null ? driverName : getString(R.string.setup_driver_unknown));
+        boolean isAuto = DriverLibrary.isAutoActive(driversRoot());
+        // GeneralsX @feature Android port 04/11/2026 Name the package, not its .so: the imported
+        // meta.json is kept with the driver (DriverLibrary), so the card can say "Mesa Turnip
+        // 25.3.0" where the file name says "libvulkan_freedreno.so". A driver with no readable
+        // meta.json falls back to the file name, as before.
+        CustomDriverPackage.Meta info = CustomDriverPackage.readDirInfo(DriverLibrary.activeDir(driversRoot()));
+        if (info == null) {
+            info = CustomDriverPackage.readInfo(DriverLibrary.activeInfoFile(driversRoot()));
+        }
+        String display = info != null && !info.displayName().isEmpty() ? info.displayName() : name;
         String status = getString(isAuto ? R.string.setup_driver_status_auto
-            : R.string.setup_driver_status_manual, name);
+            : R.string.setup_driver_status_manual, display);
         if (info != null) {
             String detail = info.vendor.isEmpty() ? info.packageVersion : info.vendor;
             if (!info.packageVersion.isEmpty() && !info.vendor.isEmpty()) {
@@ -1946,56 +1951,68 @@ public class SetupActivity extends Activity {
         return status;
     }
 
-    // GeneralsX @feature Android port 13/07/2026 Auto-applies the bundled
+    // GeneralsX @feature Android port 04/11/2026 One tappable row per stored driver: tap to make
+    // it active, the trailing trash icon to delete it. The active one is marked so the list reads
+    // as "these are installed, this one is in use".
+    private void renderDriverList() {
+        if (customDriverListHolder == null) {
+            return;
+        }
+        customDriverListHolder.removeAllViews();
+        java.util.List<DriverLibrary.Entry> entries = DriverLibrary.list(driversRoot());
+        if (entries.isEmpty()) {
+            UiKit.supporting(customDriverListHolder, getString(R.string.setup_driver_list_empty));
+            return;
+        }
+        for (final DriverLibrary.Entry entry : entries) {
+            String detail = entry.detail();
+            if (entry.active) {
+                detail = detail.isEmpty()
+                    ? getString(R.string.setup_driver_active_tag)
+                    : getString(R.string.setup_driver_active_tag) + " \u00b7 " + detail;
+            }
+            UiKit.Row row = UiKit.listRow(customDriverListHolder, R.drawable.ic_gzh_chip,
+                entry.displayName(), detail,
+                entry.active ? null : () -> onActivateDriver(entry));
+            if (!entry.active) {
+                row.root.addView(UiKit.iconButton(this, R.drawable.ic_gzh_trash,
+                    getString(R.string.setup_driver_delete), () -> confirmDeleteDriver(entry)));
+            }
+        }
+    }
+
+    // GeneralsX @feature Android port 04/11/2026 Auto-applies the bundled
     // Turnip driver on Adreno phones whose stock driver reports less than
-    // Vulkan 1.3, without touching anything if the user already imported
-    // their own driver or the phone doesn't need help. Called on every
-    // Setup launch (cheap no-op once satisfied) and again from
-    // onClearCustomDriver() so "reset" actually restores the recommended
+    // Vulkan 1.3, without touching anything if the user already has drivers,
+    // already has one configured, or the phone doesn't need help. Called on
+    // every Setup launch (cheap no-op once satisfied) and again from
+    // onResetCustomDriver() so "reset" actually restores the recommended
     // state instead of just going blank.
     private void applyRecommendedDriverIfNeeded() {
         try {
-            if (new File(getFilesDir(), CUSTOM_DRIVER_CFG_NAME).isFile()) {
+            File root = driversRoot();
+            if (DriverLibrary.activeLibraryName(root) != null) {
                 return;  // already configured (auto or user) -- leave it alone
+            }
+            if (DriverLibrary.count(root) > 0) {
+                return;  // the player has their own drivers -- never auto-override a choice
             }
             if (deviceReportsVulkan13()) {
                 return;  // stock driver already handles what DXVK needs
             }
-            File destDir = new File(getFilesDir(), CUSTOM_DRIVER_DIR_NAME);
-            deleteRecursive(destDir);
-            if (!copyDriverAssetTree(DEFAULT_DRIVER_ASSET_DIR, destDir)) {
+            File staging = new File(getFilesDir(), DriverLibrary.ACTIVE_DIR_NAME + ".staging");
+            deleteRecursive(staging);
+            if (!copyDriverAssetTree(DEFAULT_DRIVER_ASSET_DIR, staging)) {
+                deleteRecursive(staging);
                 return;  // no bundled driver in this build -- nothing to apply
             }
-            File metaFile = new File(destDir, "meta.json");
-            if (!metaFile.isFile()) {
-                deleteRecursive(destDir);
+            CustomDriverPackage.Package pkg = CustomDriverPackage.describe(staging);
+            if (pkg == null) {
+                deleteRecursive(staging);
                 return;
             }
-            String libraryName;
-            CustomDriverPackage.Meta meta = null;
-            try {
-                meta = CustomDriverPackage.parseMeta(readWholeFile(metaFile));
-                libraryName = meta.libraryName;
-            } catch (Exception e) {
-                libraryName = "";
-            }
-            if (libraryName.isEmpty() || !new File(destDir, libraryName).isFile()) {
-                deleteRecursive(destDir);
-                return;
-            }
-            File cfg = new File(getFilesDir(), CUSTOM_DRIVER_CFG_NAME);
-            try (java.io.FileWriter w = new java.io.FileWriter(cfg, false)) {
-                w.write(libraryName);
-                w.write("\n");
-            }
-            if (meta != null) {
-                try {
-                    CustomDriverPackage.writeInfo(new File(getFilesDir(), CUSTOM_DRIVER_INFO_NAME), meta);
-                } catch (Exception e) {
-                    // Only the card's wording depends on this -- the driver itself is in place.
-                }
-            }
-            new File(getFilesDir(), CUSTOM_DRIVER_AUTO_MARKER_NAME).createNewFile();
+            DriverLibrary.resetToDefault(root, pkg);
+            deleteRecursive(staging);
         } catch (Exception e) {
             // Never let driver auto-selection take Setup down with it --
             // worst case the phone's stock driver loads, same as before
@@ -2072,6 +2089,7 @@ public class SetupActivity extends Activity {
         if (customDriverStatusView != null) {
             customDriverStatusView.setText(customDriverStatusText());
         }
+        renderDriverList();
     }
 
     private void onImportCustomDriver() {
@@ -2087,18 +2105,57 @@ public class SetupActivity extends Activity {
         }
     }
 
-    private void onClearCustomDriver() {
-        new File(getFilesDir(), CUSTOM_DRIVER_CFG_NAME).delete();
-        new File(getFilesDir(), CUSTOM_DRIVER_AUTO_MARKER_NAME).delete();
-        new File(getFilesDir(), CUSTOM_DRIVER_INFO_NAME).delete();
-        deleteRecursive(new File(getFilesDir(), CUSTOM_DRIVER_DIR_NAME));
-        applyRecommendedDriverIfNeeded();
+    // GeneralsX @feature Android port 04/11/2026 Reset returns to the built-in / recommended
+    // driver without deleting anything: the imported drivers stay in the library and can be
+    // re-activated. On a qualifying Adreno phone the bundled Turnip build is re-applied; on any
+    // other device the stock driver is used.
+    private void onResetCustomDriver() {
+        File root = driversRoot();
+        File staging = new File(getFilesDir(), DriverLibrary.ACTIVE_DIR_NAME + ".staging");
+        deleteRecursive(staging);
+        CustomDriverPackage.Package pkg = null;
+        if (copyDriverAssetTree(DEFAULT_DRIVER_ASSET_DIR, staging)) {
+            pkg = CustomDriverPackage.describe(staging);
+        }
+        boolean restored = DriverLibrary.resetToDefault(root, pkg);
+        deleteRecursive(staging);
         refreshCustomDriverStatus();
-        boolean autoApplied = new File(getFilesDir(), CUSTOM_DRIVER_AUTO_MARKER_NAME).isFile();
-        Toast.makeText(this, autoApplied
+        if (!restored) {
+            Toast.makeText(this, R.string.setup_toast_reset_failed, Toast.LENGTH_LONG).show();
+            return;
+        }
+        Toast.makeText(this, pkg != null
             ? R.string.setup_toast_reset_auto
             : R.string.setup_toast_reset_stock,
             Toast.LENGTH_SHORT).show();
+    }
+
+    private void onActivateDriver(final DriverLibrary.Entry entry) {
+        if (DriverLibrary.activate(driversRoot(), entry)) {
+            refreshCustomDriverStatus();
+            Toast.makeText(this, getString(R.string.setup_toast_driver_activated, entry.displayName()),
+                Toast.LENGTH_LONG).show();
+        } else {
+            Toast.makeText(this, R.string.setup_toast_driver_activate_failed, Toast.LENGTH_LONG).show();
+        }
+    }
+
+    private void confirmDeleteDriver(final DriverLibrary.Entry entry) {
+        new com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.setup_driver_delete_confirm_title)
+            .setMessage(getString(R.string.setup_driver_delete_confirm, entry.displayName()))
+            .setPositiveButton(R.string.setup_driver_delete, (d, w) -> onDeleteDriver(entry))
+            .setNegativeButton(android.R.string.cancel, null)
+            .show();
+    }
+
+    private void onDeleteDriver(final DriverLibrary.Entry entry) {
+        boolean deleted = DriverLibrary.delete(driversRoot(), entry);
+        refreshCustomDriverStatus();
+        Toast.makeText(this, getString(deleted
+            ? R.string.setup_toast_driver_deleted
+            : R.string.setup_toast_driver_delete_failed, entry.displayName()),
+            Toast.LENGTH_LONG).show();
     }
 
     // customDriverDir passed to adrenotools_open_libvulkan() MUST NOT be on
@@ -2107,16 +2164,17 @@ public class SetupActivity extends Activity {
     // directory SDL_GetAndroidInternalStoragePath() resolves to in native code.
     //
     // GeneralsX @refactor Android port 04/11/2026 The unpack/validate/install
-    // pipeline moved to CustomDriverPackage, which is where the zip-slip guard,
-    // the meta.json parsing and the atomic swap now live -- it has no Android
-    // dependencies, so all of it is exercised by a JVM test rather than only on
-    // a phone. What stays here is the Android-shaped part: reading the picked
-    // Uri, choosing the messages, and refreshing the card.
+    // pipeline lives in CustomDriverPackage (the zip-slip guard, meta.json
+    // parsing and per-folder validation) and the library storage/activation in
+    // DriverLibrary -- neither has Android dependencies, so both are exercised
+    // by a JVM test rather than only on a phone. What stays here is the
+    // Android-shaped part: reading the picked Uri, choosing the messages, and
+    // refreshing the card.
     private void importCustomDriver(Uri uri) {
-        File destDir = new File(getFilesDir(), CUSTOM_DRIVER_DIR_NAME);
-        File tmpDir = new File(getFilesDir(), CUSTOM_DRIVER_DIR_NAME + ".tmp");
+        File root = driversRoot();
+        File tmpDir = new File(getFilesDir(), DriverLibrary.ACTIVE_DIR_NAME + ".tmp");
         // Heals a previous run that died mid-install before touching anything else.
-        CustomDriverPackage.recoverInterruptedInstall(destDir);
+        DriverLibrary.cleanupInterrupted(root);
         deleteRecursive(tmpDir);
         if (!tmpDir.mkdirs()) {
             Toast.makeText(this, R.string.setup_toast_driver_import_no_tmp, Toast.LENGTH_LONG).show();
@@ -2140,16 +2198,14 @@ public class SetupActivity extends Activity {
             return;
         }
 
+        // Nothing above touched the library or the active slot, so a refused package leaves the
+        // driver already in use exactly where it was. Only a fully validated package reaches
+        // importDriver(), which stores it and activates it atomically.
+        DriverLibrary.Entry stored;
         try {
-            // Nothing above touched custom_driver/ or custom_driver.cfg, so the driver already
-            // in use survives every refusal; install() then swaps it in one step and puts the
-            // previous one back if anything fails, rather than leaving the phone with none.
-            CustomDriverPackage.install(pkg,
-                destDir,
-                new File(getFilesDir(), CUSTOM_DRIVER_CFG_NAME),
-                new File(getFilesDir(), CUSTOM_DRIVER_INFO_NAME),
-                new File(getFilesDir(), CUSTOM_DRIVER_AUTO_MARKER_NAME));
+            stored = DriverLibrary.importDriver(root, pkg);
         } catch (CustomDriverPackage.ImportException e) {
+            deleteRecursive(tmpDir);
             Toast.makeText(this, driverImportMessage(e), Toast.LENGTH_LONG).show();
             return;
         } finally {
@@ -2157,7 +2213,7 @@ public class SetupActivity extends Activity {
         }
 
         refreshCustomDriverStatus();
-        Toast.makeText(this, getString(R.string.setup_toast_driver_imported, pkg.meta.displayName()),
+        Toast.makeText(this, getString(R.string.setup_toast_driver_imported, stored.displayName()),
             Toast.LENGTH_LONG).show();
     }
 

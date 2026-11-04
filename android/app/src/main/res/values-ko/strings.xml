@@ -82,7 +82,7 @@
     <string name="setup_card_vulkan_driver">사용자 지정 Vulkan 드라이버 (고급, Adreno GPU 전용)</string>
     <string name="setup_button_import_driver">드라이버 가져오기 (.zip)</string>
     <string name="setup_button_reset_driver">권장 드라이버로 재설정</string>
-    <string name="setup_driver_help">휴대폰에 내장된 드라이버 대신 Vulkan 드라이버(Mesa Turnip 빌드)를 불러옵니다 — Winlator와 AetherSX2가 사용하는 것과 같은 방식입니다. DXVK 자체는 이제 Vulkan 1.1만 있으면 되지만, 일부 오래된 Qualcomm Adreno 기본 드라이버는 그보다도 낮은 버전을 보고하거나(또는 다른 버그가 있어) 문제가 될 수 있습니다 — 이 Turnip 빌드는 그런 휴대폰에서도 게임을 실행할 수 있게 해줍니다. 해당되는 Adreno 휴대폰에서는 자동으로 적용됩니다 — \"권장 드라이버로 재설정\"은 다른 것을 가져온 후 이 자동 선택을 복원합니다.\n\n이 기능은 Mali, PowerVR 등 Adreno가 아닌 GPU에는 도움이 되지 않습니다 — 하지만 그런 GPU에는 애초에 필요하지도 않습니다: 대부분의 Mali GPU(Mali-G76, Mali-G57 등)는 이미 DXVK의 Vulkan 1.1 요구 사항을 기본적으로 충족하므로 드라이버 교체가 필요 없습니다. 이 옵션이 Adreno 전용인 이유는 Turnip이 Adreno 하드웨어만 지원하기 때문이지, 다른 GPU가 지원되지 않아서가 아닙니다.\n\n\"드라이버 가져오기\"를 사용하면 GitHub의 K11MCH1/AdrenoToolsDrivers나 The412Banner/Banners-Turnip 등에서 받은 adrenotools 형식의 자체 드라이버 .zip 파일로 자동 선택을 대체할 수 있습니다. 다음 실행 시 적용되며, 즉시 적용되지는 않습니다.</string>
+    <string name="setup_driver_help">휴대폰에 내장된 드라이버 대신 Vulkan 드라이버(Mesa Turnip 빌드)를 불러옵니다 — Winlator와 AetherSX2가 사용하는 것과 같은 방식입니다. DXVK 자체는 이제 Vulkan 1.1만 있으면 되지만, 일부 오래된 Qualcomm Adreno 기본 드라이버는 그보다도 낮은 버전을 보고하거나(또는 다른 버그가 있어) 문제가 될 수 있습니다 — 이 Turnip 빌드는 그런 휴대폰에서도 게임을 실행할 수 있게 해줍니다. 해당되는 Adreno 휴대폰에서는 자동으로 적용됩니다 — \"권장 드라이버로 재설정\"은 다른 것을 가져온 후 이 자동 선택을 복원합니다.\n\n이 기능은 Mali, PowerVR 등 Adreno가 아닌 GPU에는 도움이 되지 않습니다 — 하지만 그런 GPU에는 애초에 필요하지도 않습니다: 대부분의 Mali GPU(Mali-G76, Mali-G57 등)는 이미 DXVK의 Vulkan 1.1 요구 사항을 기본적으로 충족하므로 드라이버 교체가 필요 없습니다. 이 옵션이 Adreno 전용인 이유는 Turnip이 Adreno 하드웨어만 지원하기 때문이지, 다른 GPU가 지원되지 않아서가 아닙니다.\n\n\"드라이버 가져오기\"를 사용하면 GitHub의 K11MCH1/AdrenoToolsDrivers나 The412Banner/Banners-Turnip 등에서 받은 adrenotools 형식의 자체 드라이버 .zip 파일로 자동 선택을 대체할 수 있습니다. 다음 실행 시 적용되며, 즉시 적용되지는 않습니다. 여러 드라이버를 보관할 수 있습니다. 둘 이상 가져오고, 목록에서 드라이버를 눌러 활성화하고, 휴지통 아이콘으로 삭제하세요. \"권장 드라이버로 재설정\"은 나머지를 삭제하지 않고 자동 선택으로 되돌립니다.</string>
     <string name="setup_driver_status_none">사용 중인 사용자 지정 드라이버가 없습니다 — 휴대폰에 내장된 Vulkan 드라이버를 사용합니다.</string>
     <string name="setup_driver_status_auto">권장 드라이버 (이 기기에 자동으로 선택됨): %1$s</string>
     <string name="setup_driver_status_manual">사용자 지정 드라이버 (수동으로 가져옴): %1$s</string>
@@ -102,6 +102,16 @@
     <string name="setup_toast_driver_import_min_api">가져오기 실패: 이 드라이버는 Android API %1$s이(가) 필요하지만 이 기기는 %2$s을(를) 보고합니다</string>
     <string name="setup_toast_driver_import_too_large">가져오기 실패: .zip이 드라이버 패키지로 보기엔 너무 크거나 깊이 중첩되어 있습니다</string>
     <string name="setup_toast_driver_imported">드라이버를 가져왔습니다: %1$s. 다음 실행 시 적용됩니다.</string>
+    <string name="setup_driver_list_empty">아직 가져온 드라이버가 없습니다. 드라이버 .zip을 가져오면 여기에 보관하고 드라이버 간에 전환할 수 있습니다.</string>
+    <string name="setup_driver_active_tag">사용 중</string>
+    <string name="setup_driver_delete">드라이버 삭제</string>
+    <string name="setup_driver_delete_confirm_title">이 드라이버를 삭제할까요?</string>
+    <string name="setup_driver_delete_confirm">%1$s이(가) 목록에서 제거됩니다. 활성 드라이버인 경우 내장 드라이버가 대신 사용됩니다. 다음 실행 시 적용됩니다.</string>
+    <string name="setup_toast_driver_activated">드라이버 활성화됨: %1$s. 다음 실행 시 적용됩니다.</string>
+    <string name="setup_toast_driver_activate_failed">이 드라이버를 활성화할 수 없습니다. 이전 드라이버가 계속 활성 상태입니다.</string>
+    <string name="setup_toast_driver_deleted">드라이버 삭제됨: %1$s</string>
+    <string name="setup_toast_driver_delete_failed">이 드라이버를 삭제할 수 없습니다: %1$s</string>
+    <string name="setup_toast_reset_failed">기본 드라이버를 복원할 수 없습니다. 현재 드라이버가 계속 활성 상태입니다.</string>
 
     <!-- SetupActivity: Diagnostics card -->
     <string name="setup_card_diagnostics">진단</string>

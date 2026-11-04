@@ -129,9 +129,14 @@ Mali/PowerVR.
 - **AdrenoToolsDrivers** — packaged driver bundles consumed by
   [libadrenotools](https://github.com/bylaws/libadrenotools), which lets an app
   load a replacement Vulkan driver *into its own process* (how Winlator and the
-  Switch emulators do it). The Setup app's Driver Options card uses this to
-  apply the bundled Turnip build automatically on a qualifying Adreno phone,
-  or let you import your own adrenotools-format driver .zip.
+  Switch emulators do it). The Setup app's Custom Vulkan Driver card uses this to
+  apply the bundled Turnip build automatically on a qualifying Adreno phone, or
+  let you import your own adrenotools-format driver .zip. Imported drivers are
+  kept in a small library (`DriverLibrary`): you can hold several, tap one to make
+  it active, delete the ones you no longer want, and reset to the built-in /
+  recommended driver without losing the rest. The engine still reads exactly one
+  slot — `custom_driver.cfg` plus `custom_driver/` — which the launcher keeps as a
+  copy of whichever library entry is active; nothing native changed.
 - **Winlator / MiceWine** — the *other* way to run Zero Hour on Android: the
   unmodified Windows binary under Wine + Box64 + DXVK-as-DLLs. It works today
   but pays the x86→ARM emulation tax and fights input/latency. This repo is the

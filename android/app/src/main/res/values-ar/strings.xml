@@ -82,7 +82,7 @@
     <string name="setup_card_vulkan_driver">برنامج تشغيل Vulkan مخصص (متقدم، لمعالجات Adreno فقط)</string>
     <string name="setup_button_import_driver">استيراد برنامج التشغيل (.zip)</string>
     <string name="setup_button_reset_driver">إعادة التعيين إلى الموصى به</string>
-    <string name="setup_driver_help">يقوم بتحميل برنامج تشغيل Vulkan (نسخة مبنية من Mesa Turnip) بدلاً من برنامج التشغيل المدمج في هاتفك، وهي نفس التقنية التي يستخدمها Winlator و AetherSX2. أصبح DXVK نفسه يحتاج الآن فقط إلى Vulkan 1.1، لكن بعض برامج التشغيل الأصلية القديمة لهواتف Qualcomm Adreno تُبلّغ عن إصدار أقل من ذلك (أو بها أخطاء أخرى) — قد تتيح نسخة Turnip هذه لتلك الهواتف تشغيل اللعبة رغم ذلك. على هاتف Adreno مناسب، يتم تطبيق هذا تلقائيًا — يعيد \"إعادة التعيين إلى الموصى به\" هذا الاختيار التلقائي بعد أن تكون قد استوردت شيئًا آخر.\n\nهذا لا يساعد معالجات Mali أو PowerVR أو أي معالج آخر غير Adreno — لكنها لا تحتاج إلى ذلك أصلاً: معظم معالجات Mali (مثل Mali-G76 وMali-G57 وما شابهها) تلبي بالفعل متطلب Vulkan 1.1 الخاص بـ DXVK بشكل أصلي، دون الحاجة لاستبدال برنامج التشغيل. هذا الخيار مقتصر على Adreno لأن Turnip يستهدف فقط عتاد Adreno، وليس لأن المعالجات الأخرى غير مدعومة.\n\nيتيح لك \"استيراد برنامج التشغيل\" استبدال الاختيار التلقائي بملف .zip خاص بك بتنسيق adrenotools (على سبيل المثال من K11MCH1/AdrenoToolsDrivers أو The412Banner/Banners-Turnip على GitHub). يسري المفعول عند التشغيل القادم، وليس فورًا.</string>
+    <string name="setup_driver_help">يقوم بتحميل برنامج تشغيل Vulkan (نسخة مبنية من Mesa Turnip) بدلاً من برنامج التشغيل المدمج في هاتفك، وهي نفس التقنية التي يستخدمها Winlator و AetherSX2. أصبح DXVK نفسه يحتاج الآن فقط إلى Vulkan 1.1، لكن بعض برامج التشغيل الأصلية القديمة لهواتف Qualcomm Adreno تُبلّغ عن إصدار أقل من ذلك (أو بها أخطاء أخرى) — قد تتيح نسخة Turnip هذه لتلك الهواتف تشغيل اللعبة رغم ذلك. على هاتف Adreno مناسب، يتم تطبيق هذا تلقائيًا — يعيد \"إعادة التعيين إلى الموصى به\" هذا الاختيار التلقائي بعد أن تكون قد استوردت شيئًا آخر.\n\nهذا لا يساعد معالجات Mali أو PowerVR أو أي معالج آخر غير Adreno — لكنها لا تحتاج إلى ذلك أصلاً: معظم معالجات Mali (مثل Mali-G76 وMali-G57 وما شابهها) تلبي بالفعل متطلب Vulkan 1.1 الخاص بـ DXVK بشكل أصلي، دون الحاجة لاستبدال برنامج التشغيل. هذا الخيار مقتصر على Adreno لأن Turnip يستهدف فقط عتاد Adreno، وليس لأن المعالجات الأخرى غير مدعومة.\n\nيتيح لك \"استيراد برنامج التشغيل\" استبدال الاختيار التلقائي بملف .zip خاص بك بتنسيق adrenotools (على سبيل المثال من K11MCH1/AdrenoToolsDrivers أو The412Banner/Banners-Turnip على GitHub). يسري المفعول عند التشغيل القادم، وليس فورًا. يمكنك الاحتفاظ بعدة برامج تشغيل: استورد أكثر من واحد، وانقر على برنامج تشغيل في القائمة لتنشيطه، واستخدم أيقونة سلة المهملات لحذفه. تعيد \"إعادة التعيين إلى الموصى به\" الاختيار التلقائي دون حذف البقية.</string>
     <string name="setup_driver_status_none">لا يوجد برنامج تشغيل مخصص نشط — يتم استخدام برنامج تشغيل Vulkan المدمج في الهاتف.</string>
     <string name="setup_driver_status_auto">برنامج التشغيل الموصى به (اختير تلقائيًا لهذا الجهاز): %1$s</string>
     <string name="setup_driver_status_manual">برنامج تشغيل مخصص (مستورد يدويًا): %1$s</string>
@@ -102,6 +102,16 @@
     <string name="setup_toast_driver_import_min_api">فشل الاستيراد: يحتاج هذا البرنامج إلى Android API رقم %1$s، لكن الجهاز يعلن %2$s</string>
     <string name="setup_toast_driver_import_too_large">فشل الاستيراد: ملف .zip أكبر أو أكثر تعشيقًا مما ينبغي لحزمة برنامج تشغيل</string>
     <string name="setup_toast_driver_imported">تم استيراد برنامج التشغيل: %1$s. سيسري المفعول عند التشغيل القادم.</string>
+    <string name="setup_driver_list_empty">لم يتم استيراد أي برنامج تشغيل بعد. استورد ملف .zip لبرنامج تشغيل للاحتفاظ به هنا والتبديل بين برامج التشغيل.</string>
+    <string name="setup_driver_active_tag">نشط</string>
+    <string name="setup_driver_delete">حذف برنامج التشغيل</string>
+    <string name="setup_driver_delete_confirm_title">حذف برنامج التشغيل هذا؟</string>
+    <string name="setup_driver_delete_confirm">ستتم إزالة %1$s من القائمة. إذا كان برنامج التشغيل النشط، فسيحل برنامج التشغيل المدمج محله. سيسري المفعول عند التشغيل القادم.</string>
+    <string name="setup_toast_driver_activated">تم تنشيط برنامج التشغيل: %1$s. سيسري المفعول عند التشغيل القادم.</string>
+    <string name="setup_toast_driver_activate_failed">تعذّر تنشيط برنامج التشغيل هذا. لا يزال البرنامج السابق نشطًا.</string>
+    <string name="setup_toast_driver_deleted">تم حذف برنامج التشغيل: %1$s</string>
+    <string name="setup_toast_driver_delete_failed">تعذّر حذف برنامج التشغيل هذا: %1$s</string>
+    <string name="setup_toast_reset_failed">تعذّر استعادة برنامج التشغيل الافتراضي. لا يزال البرنامج الحالي نشطًا.</string>
 
     <!-- SetupActivity: Diagnostics card -->
     <string name="setup_card_diagnostics">التشخيص</string>

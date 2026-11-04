@@ -82,7 +82,7 @@
     <string name="setup_card_vulkan_driver">درایور Vulkan سفارشی (پیشرفته، فقط پردازنده‌های گرافیکی Adreno)</string>
     <string name="setup_button_import_driver">وارد کردن درایور (.zip)</string>
     <string name="setup_button_reset_driver">بازنشانی به حالت پیشنهادی</string>
-    <string name="setup_driver_help">به‌جای درایور پیش‌فرض گوشی شما، یک درایور Vulkan (نسخه‌ای ساخته‌شده از Mesa Turnip) بارگذاری می‌کند؛ همان روشی که Winlator و AetherSX2 استفاده می‌کنند. خود DXVK اکنون فقط به Vulkan 1.1 نیاز دارد، اما برخی درایورهای پیش‌فرض قدیمی‌تر Qualcomm Adreno نسخه‌ای پایین‌تر از آن را گزارش می‌دهند (یا مشکلات دیگری دارند) — این نسخه Turnip می‌تواند با این حال به این گوشی‌ها اجازه اجرای بازی را بدهد. در گوشی Adreno مناسب، این کار به‌طور خودکار انجام می‌شود — «بازنشانی به حالت پیشنهادی» پس از وارد کردن درایور دیگری، این انتخاب خودکار را بازمی‌گرداند.\n\nاین گزینه به Mali، PowerVR یا سایر پردازنده‌های گرافیکی غیر از Adreno کمکی نمی‌کند — اما آن‌ها اصلاً به این نیازی ندارند: بیشتر پردازنده‌های گرافیکی Mali (مانند Mali-G76 و Mali-G57 و مشابه آن‌ها) از قبل به‌صورت بومی نیاز Vulkan 1.1 مربوط به DXVK را برآورده می‌کنند و نیازی به تعویض درایور نیست. این گزینه فقط مخصوص Adreno است زیرا Turnip تنها سخت‌افزار Adreno را هدف قرار می‌دهد، نه اینکه سایر پردازنده‌های گرافیکی پشتیبانی نشوند.\n\n«وارد کردن درایور» به شما اجازه می‌دهد انتخاب خودکار را با فایل .zip درایور خودتان با قالب adrenotools جایگزین کنید (مثلاً از K11MCH1/AdrenoToolsDrivers یا The412Banner/Banners-Turnip در GitHub). این تغییر در اجرای بعدی اعمال می‌شود، نه بلافاصله.</string>
+    <string name="setup_driver_help">به‌جای درایور پیش‌فرض گوشی شما، یک درایور Vulkan (نسخه‌ای ساخته‌شده از Mesa Turnip) بارگذاری می‌کند؛ همان روشی که Winlator و AetherSX2 استفاده می‌کنند. خود DXVK اکنون فقط به Vulkan 1.1 نیاز دارد، اما برخی درایورهای پیش‌فرض قدیمی‌تر Qualcomm Adreno نسخه‌ای پایین‌تر از آن را گزارش می‌دهند (یا مشکلات دیگری دارند) — این نسخه Turnip می‌تواند با این حال به این گوشی‌ها اجازه اجرای بازی را بدهد. در گوشی Adreno مناسب، این کار به‌طور خودکار انجام می‌شود — «بازنشانی به حالت پیشنهادی» پس از وارد کردن درایور دیگری، این انتخاب خودکار را بازمی‌گرداند.\n\nاین گزینه به Mali، PowerVR یا سایر پردازنده‌های گرافیکی غیر از Adreno کمکی نمی‌کند — اما آن‌ها اصلاً به این نیازی ندارند: بیشتر پردازنده‌های گرافیکی Mali (مانند Mali-G76 و Mali-G57 و مشابه آن‌ها) از قبل به‌صورت بومی نیاز Vulkan 1.1 مربوط به DXVK را برآورده می‌کنند و نیازی به تعویض درایور نیست. این گزینه فقط مخصوص Adreno است زیرا Turnip تنها سخت‌افزار Adreno را هدف قرار می‌دهد، نه اینکه سایر پردازنده‌های گرافیکی پشتیبانی نشوند.\n\n«وارد کردن درایور» به شما اجازه می‌دهد انتخاب خودکار را با فایل .zip درایور خودتان با قالب adrenotools جایگزین کنید (مثلاً از K11MCH1/AdrenoToolsDrivers یا The412Banner/Banners-Turnip در GitHub). این تغییر در اجرای بعدی اعمال می‌شود، نه بلافاصله. می‌توانید چندین درایور را نگه دارید: بیش از یکی وارد کنید، برای فعال‌سازی روی یک درایور در فهرست بزنید و برای حذف از نماد سطل زباله آن استفاده کنید. «بازنشانی به حالت پیشنهادی» بدون حذف بقیه به انتخاب خودکار بازمی‌گردد.</string>
     <string name="setup_driver_status_none">هیچ درایور سفارشی فعال نیست — از درایور Vulkan پیش‌فرض گوشی استفاده می‌شود.</string>
     <string name="setup_driver_status_auto">درایور پیشنهادی (به‌طور خودکار برای این دستگاه انتخاب شده): %1$s</string>
     <string name="setup_driver_status_manual">درایور سفارشی (به‌صورت دستی وارد شده): %1$s</string>
@@ -102,6 +102,16 @@
     <string name="setup_toast_driver_import_min_api">وارد کردن ناموفق بود: این درایور به Android API %1$s نیاز دارد اما این دستگاه %2$s را گزارش می‌کند</string>
     <string name="setup_toast_driver_import_too_large">وارد کردن ناموفق بود: فایل .zip بزرگ‌تر یا تودرتوی‌تر از حد یک بسته درایور است</string>
     <string name="setup_toast_driver_imported">درایور وارد شد: %1$s. در اجرای بعدی اعمال خواهد شد.</string>
+    <string name="setup_driver_list_empty">هنوز هیچ درایوری وارد نشده است. یک فایل .zip درایور وارد کنید تا اینجا نگه داشته شود و بین درایورها جابه‌جا شوید.</string>
+    <string name="setup_driver_active_tag">فعال</string>
+    <string name="setup_driver_delete">حذف درایور</string>
+    <string name="setup_driver_delete_confirm_title">این درایور حذف شود؟</string>
+    <string name="setup_driver_delete_confirm">%1$s از فهرست حذف خواهد شد. اگر درایور فعال باشد، درایور پیش‌فرض جای آن را می‌گیرد. در اجرای بعدی اعمال می‌شود.</string>
+    <string name="setup_toast_driver_activated">درایور فعال شد: %1$s. در اجرای بعدی اعمال خواهد شد.</string>
+    <string name="setup_toast_driver_activate_failed">فعال‌سازی این درایور ممکن نشد. درایور قبلی هنوز فعال است.</string>
+    <string name="setup_toast_driver_deleted">درایور حذف شد: %1$s</string>
+    <string name="setup_toast_driver_delete_failed">حذف این درایور ممکن نشد: %1$s</string>
+    <string name="setup_toast_reset_failed">بازگرداندن درایور پیش‌فرض ممکن نشد. درایور فعلی هنوز فعال است.</string>
 
     <!-- SetupActivity: Diagnostics card -->
     <string name="setup_card_diagnostics">عیب‌یابی</string>

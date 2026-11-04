@@ -82,7 +82,7 @@
     <string name="setup_card_vulkan_driver">Свой Vulkan-драйвер (для опытных, только Adreno)</string>
     <string name="setup_button_import_driver">Импортировать драйвер (.zip)</string>
     <string name="setup_button_reset_driver">Сбросить на рекомендуемый</string>
-    <string name="setup_driver_help">Загружает Vulkan-драйвер (сборку Mesa Turnip) вместо встроенного в телефон — тот же приём, что используют Winlator и AetherSX2. Самому DXVK теперь нужен только Vulkan 1.1, но некоторые старые штатные драйверы Qualcomm Adreno сообщают и того меньше (или содержат другие баги) — эта сборка Turnip всё равно может позволить таким телефонам запустить игру. На подходящем телефоне Adreno это применяется автоматически — «Сбросить на рекомендуемый» возвращает этот автоматический выбор после того, как вы импортировали что-то своё.\n\nЭТО НЕ поможет Mali, PowerVR и другим не-Adreno GPU — но им это и не нужно: большинство GPU Mali (Mali-G76, Mali-G57 и подобные) уже нативно соответствуют требованию DXVK по Vulkan 1.1, замена драйвера не требуется. Эта опция ограничена Adreno потому, что Turnip работает только с железом Adreno, а не потому, что остальные GPU не поддерживаются.\n\n«Импортировать драйвер» позволяет заменить автоматический выбор своим .zip в формате adrenotools (например, с K11MCH1/AdrenoToolsDrivers или The412Banner/Banners-Turnip на GitHub). Применяется при следующем запуске, не сразу.</string>
+    <string name="setup_driver_help">Загружает Vulkan-драйвер (сборку Mesa Turnip) вместо встроенного в телефон — тот же приём, что используют Winlator и AetherSX2. Самому DXVK теперь нужен только Vulkan 1.1, но некоторые старые штатные драйверы Qualcomm Adreno сообщают и того меньше (или содержат другие баги) — эта сборка Turnip всё равно может позволить таким телефонам запустить игру. На подходящем телефоне Adreno это применяется автоматически — «Сбросить на рекомендуемый» возвращает этот автоматический выбор после того, как вы импортировали что-то своё.\n\nЭТО НЕ поможет Mali, PowerVR и другим не-Adreno GPU — но им это и не нужно: большинство GPU Mali (Mali-G76, Mali-G57 и подобные) уже нативно соответствуют требованию DXVK по Vulkan 1.1, замена драйвера не требуется. Эта опция ограничена Adreno потому, что Turnip работает только с железом Adreno, а не потому, что остальные GPU не поддерживаются.\n\n«Импортировать драйвер» позволяет заменить автоматический выбор своим .zip в формате adrenotools (например, с K11MCH1/AdrenoToolsDrivers или The412Banner/Banners-Turnip на GitHub). Применяется при следующем запуске, не сразу. Можно хранить несколько драйверов: импортируйте несколько, нажмите на драйвер в списке, чтобы сделать его активным, и удалите его значком корзины. «Сбросить на рекомендуемый» возвращает автоматический выбор, не удаляя остальные.</string>
     <string name="setup_driver_status_none">Свой драйвер не используется — работает встроенный Vulkan-драйвер телефона.</string>
     <string name="setup_driver_status_auto">Рекомендуемый драйвер (выбран автоматически для этого устройства): %1$s</string>
     <string name="setup_driver_status_manual">Свой драйвер (импортирован вручную): %1$s</string>
@@ -102,6 +102,16 @@
     <string name="setup_toast_driver_import_min_api">Ошибка импорта: этому драйверу нужен Android API %1$s, а устройство сообщает %2$s</string>
     <string name="setup_toast_driver_import_too_large">Ошибка импорта: .zip больше или вложен глубже, чем должен быть пакет драйвера</string>
     <string name="setup_toast_driver_imported">Драйвер импортирован: %1$s. Применится при следующем запуске.</string>
+    <string name="setup_driver_list_empty">Драйверы ещё не импортированы. Импортируйте .zip драйвера, чтобы сохранить его здесь и переключаться между драйверами.</string>
+    <string name="setup_driver_active_tag">Активен</string>
+    <string name="setup_driver_delete">Удалить драйвер</string>
+    <string name="setup_driver_delete_confirm_title">Удалить этот драйвер?</string>
+    <string name="setup_driver_delete_confirm">%1$s будет удалён из списка. Если это активный драйвер, встроенный драйвер займёт его место. Применится при следующем запуске.</string>
+    <string name="setup_toast_driver_activated">Драйвер активирован: %1$s. Применится при следующем запуске.</string>
+    <string name="setup_toast_driver_activate_failed">Не удалось активировать этот драйвер. Предыдущий остаётся активным.</string>
+    <string name="setup_toast_driver_deleted">Драйвер удалён: %1$s</string>
+    <string name="setup_toast_driver_delete_failed">Не удалось удалить этот драйвер: %1$s</string>
+    <string name="setup_toast_reset_failed">Не удалось восстановить драйвер по умолчанию. Текущий остаётся активным.</string>
 
     <!-- SetupActivity: DXVK Config card -->
     <string name="setup_card_dxvk_config">Настройки DXVK (dxvk.conf, для опытных)</string>

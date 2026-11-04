@@ -48,6 +48,15 @@ final class CustomDriverPackage {
 
     static final String META_NAME = "meta.json";
 
+    /**
+     * GeneralsX @feature Android port 04/11/2026 Per-driver sidecar written beside a stored
+     * driver's own meta.json. The launcher's driver library (DriverLibrary) keeps each imported
+     * driver in its own folder and this records the name/vendor/version the card shows, so a
+     * folder that was unpacked from a plain asset tree (the bundled auto driver) is described
+     * like an imported one. Read by {@link #readDirInfo(File)}; the native side never reads it.
+     */
+    static final String INFO_NAME = "info.json";
+
     // A real adrenotools package is meta.json plus a few .so files of tens of MB. These caps
     // are not a format limit; they exist so a malformed or hostile archive cannot fill the
     // phone's internal storage before anything has been validated.
@@ -359,6 +368,65 @@ final class CustomDriverPackage {
         }
         deleteRecursive(backupDir);
         deleteRecursive(new File(parent, destDir.getName() + ".tmp"));
+    }
+
+    /**
+     * Validates a driver folder the library already holds (one driver per folder, meta.json and
+     * the driver .so beside it) and returns the folder itself as a {@link Package}, so the
+     * library can list what is stored, and re-activate a stored driver, with the exact checks an
+     * import uses.
+     *
+     * Returns null (rather than throwing) for anything a stored driver must never be: no
+     * meta.json, a malformed one, a libraryName that is not a plain file name, a missing named
+     * .so, or one that is not a 64-bit ARM ELF. A folder failing any of these is not offered for
+     * activation -- the alternative is naming a driver the native loader cannot open.
+     */
+    static Package describe(File dir) {
+        if (dir == null || !dir.isDirectory()) {
+            return null;
+        }
+        File metaFile = new File(dir, META_NAME);
+        if (!metaFile.isFile()) {
+            return null;
+        }
+        Meta meta;
+        try {
+            meta = parseMeta(readText(metaFile, MAX_META_BYTES));
+        } catch (Exception e) {
+            return null;
+        }
+        if (meta.libraryName.isEmpty()
+                || meta.libraryName.contains("/") || meta.libraryName.contains("\\")
+                || meta.libraryName.equals(".") || meta.libraryName.equals("..")) {
+            return null;
+        }
+        File library = new File(dir, meta.libraryName);
+        if (!library.isFile() || !isAarch64Elf(library)) {
+            return null;
+        }
+        return new Package(meta, dir);
+    }
+
+    /** Writes the per-driver info sidecar (see {@link #INFO_NAME}) beside a stored driver. */
+    static void writeDirInfo(File dir, Meta meta) throws IOException {
+        writeAtomically(new File(dir, INFO_NAME), meta.toJson().toString());
+    }
+
+    /**
+     * The name/vendor/version to show for a stored driver folder: its info sidecar when there is
+     * one, else its own meta.json. Returns null when neither can be read -- the card then falls
+     * back to the .so's file name.
+     */
+    static Meta readDirInfo(File dir) {
+        if (dir == null) {
+            return null;
+        }
+        Meta info = readInfo(new File(dir, INFO_NAME));
+        if (info != null) {
+            return info;
+        }
+        Package pkg = describe(dir);
+        return pkg != null ? pkg.meta : null;
     }
 
     /** Reads a previously written info sidecar, or null when there is none or it is unreadable. */

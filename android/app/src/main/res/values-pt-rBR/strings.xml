@@ -82,7 +82,7 @@
     <string name="setup_card_vulkan_driver">Driver Vulkan personalizado (avançado, apenas GPUs Adreno)</string>
     <string name="setup_button_import_driver">Importar driver (.zip)</string>
     <string name="setup_button_reset_driver">Redefinir para o recomendado</string>
-    <string name="setup_driver_help">Carrega um driver Vulkan (uma compilação do Mesa Turnip) no lugar do driver embutido do seu telefone — a mesma técnica usada pelo Winlator e pelo AetherSX2. O próprio DXVK agora só precisa do Vulkan 1.1, mas alguns drivers de fábrica mais antigos da Qualcomm Adreno relatam ainda menos (ou têm outros bugs) — essa compilação do Turnip pode permitir que esses telefones rodem o jogo mesmo assim. Em um telefone Adreno compatível, isso é aplicado automaticamente — \"Redefinir para o recomendado\" restaura essa escolha automática depois que você importar outra coisa.\n\nIsso NÃO ajuda com Mali, PowerVR ou outras GPUs que não sejam Adreno — mas elas também não precisam disso: a maioria das GPUs Mali (Mali-G76, Mali-G57 e similares) já atende nativamente ao requisito de Vulkan 1.1 do DXVK, sem precisar trocar de driver. Essa opção é exclusiva da Adreno porque o Turnip só funciona em hardware Adreno, não porque outras GPUs não sejam compatíveis.\n\n\"Importar driver\" permite substituir a escolha automática pelo seu próprio arquivo .zip de driver no formato adrenotools (por exemplo, do K11MCH1/AdrenoToolsDrivers ou The412Banner/Banners-Turnip no GitHub). Terá efeito na próxima inicialização, não imediatamente.</string>
+    <string name="setup_driver_help">Carrega um driver Vulkan (uma compilação do Mesa Turnip) no lugar do driver embutido do seu telefone — a mesma técnica usada pelo Winlator e pelo AetherSX2. O próprio DXVK agora só precisa do Vulkan 1.1, mas alguns drivers de fábrica mais antigos da Qualcomm Adreno relatam ainda menos (ou têm outros bugs) — essa compilação do Turnip pode permitir que esses telefones rodem o jogo mesmo assim. Em um telefone Adreno compatível, isso é aplicado automaticamente — \"Redefinir para o recomendado\" restaura essa escolha automática depois que você importar outra coisa.\n\nIsso NÃO ajuda com Mali, PowerVR ou outras GPUs que não sejam Adreno — mas elas também não precisam disso: a maioria das GPUs Mali (Mali-G76, Mali-G57 e similares) já atende nativamente ao requisito de Vulkan 1.1 do DXVK, sem precisar trocar de driver. Essa opção é exclusiva da Adreno porque o Turnip só funciona em hardware Adreno, não porque outras GPUs não sejam compatíveis.\n\n\"Importar driver\" permite substituir a escolha automática pelo seu próprio arquivo .zip de driver no formato adrenotools (por exemplo, do K11MCH1/AdrenoToolsDrivers ou The412Banner/Banners-Turnip no GitHub). Terá efeito na próxima inicialização, não imediatamente. Você pode manter vários drivers: importe mais de um, toque em um driver na lista para ativá-lo e use o ícone de lixeira para excluí-lo. \"Redefinir para o recomendado\" volta à escolha automática sem remover os outros.</string>
     <string name="setup_driver_status_none">Nenhum driver personalizado ativo — está sendo usado o driver Vulkan embutido do telefone.</string>
     <string name="setup_driver_status_auto">Driver recomendado (selecionado automaticamente para este dispositivo): %1$s</string>
     <string name="setup_driver_status_manual">Driver personalizado (importado manualmente): %1$s</string>
@@ -102,6 +102,16 @@
     <string name="setup_toast_driver_import_min_api">Falha na importação: este driver exige a API do Android %1$s, mas este aparelho informa %2$s</string>
     <string name="setup_toast_driver_import_too_large">Falha na importação: o .zip é maior ou está mais aninhado do que um pacote de driver deveria ser</string>
     <string name="setup_toast_driver_imported">Driver importado: %1$s. Terá efeito na próxima inicialização.</string>
+    <string name="setup_driver_list_empty">Nenhum driver importado ainda. Importe um .zip de driver para mantê-lo aqui e alternar entre drivers.</string>
+    <string name="setup_driver_active_tag">Ativo</string>
+    <string name="setup_driver_delete">Excluir driver</string>
+    <string name="setup_driver_delete_confirm_title">Excluir este driver?</string>
+    <string name="setup_driver_delete_confirm">%1$s será removido da lista. Se for o driver ativo, o driver embutido assume. Terá efeito na próxima inicialização.</string>
+    <string name="setup_toast_driver_activated">Driver ativado: %1$s. Terá efeito na próxima inicialização.</string>
+    <string name="setup_toast_driver_activate_failed">Não foi possível ativar este driver. O anterior continua ativo.</string>
+    <string name="setup_toast_driver_deleted">Driver excluído: %1$s</string>
+    <string name="setup_toast_driver_delete_failed">Não foi possível excluir este driver: %1$s</string>
+    <string name="setup_toast_reset_failed">Não foi possível restaurar o driver padrão. O atual continua ativo.</string>
 
     <!-- SetupActivity: Diagnostics card -->
     <string name="setup_card_diagnostics">Diagnóstico</string>

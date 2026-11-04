@@ -82,7 +82,7 @@
     <string name="setup_card_vulkan_driver">Власний Vulkan-драйвер (для досвідчених, лише Adreno)</string>
     <string name="setup_button_import_driver">Імпортувати драйвер (.zip)</string>
     <string name="setup_button_reset_driver">Скинути на рекомендований</string>
-    <string name="setup_driver_help">Завантажує Vulkan-драйвер (збірку Mesa Turnip) замість вбудованого в телефон — той самий прийом, що використовують Winlator і AetherSX2. Самому DXVK тепер потрібен лише Vulkan 1.1, але деякі старі штатні драйвери Qualcomm Adreno повідомляють ще менше (або мають інші баги) — ця збірка Turnip все одно може дозволити таким телефонам запустити гру. На відповідному телефоні Adreno це застосовується автоматично — «Скинути на рекомендований» повертає цей автоматичний вибір після того, як ви імпортували щось своє.\n\nЦЕ НЕ допоможе Mali, PowerVR та іншим не-Adreno GPU — але їм це і не потрібно: більшість GPU Mali (Mali-G76, Mali-G57 і подібні) вже нативно відповідають вимозі DXVK щодо Vulkan 1.1, заміна драйвера не потрібна. Ця опція обмежена Adreno, бо Turnip працює лише з апаратним забезпеченням Adreno, а не тому, що інші GPU не підтримуються.\n\n«Імпортувати драйвер» дозволяє замінити автоматичний вибір своїм .zip у форматі adrenotools (наприклад, з K11MCH1/AdrenoToolsDrivers або The412Banner/Banners-Turnip на GitHub). Застосовується при наступному запуску, не одразу.</string>
+    <string name="setup_driver_help">Завантажує Vulkan-драйвер (збірку Mesa Turnip) замість вбудованого в телефон — той самий прийом, що використовують Winlator і AetherSX2. Самому DXVK тепер потрібен лише Vulkan 1.1, але деякі старі штатні драйвери Qualcomm Adreno повідомляють ще менше (або мають інші баги) — ця збірка Turnip все одно може дозволити таким телефонам запустити гру. На відповідному телефоні Adreno це застосовується автоматично — «Скинути на рекомендований» повертає цей автоматичний вибір після того, як ви імпортували щось своє.\n\nЦЕ НЕ допоможе Mali, PowerVR та іншим не-Adreno GPU — але їм це і не потрібно: більшість GPU Mali (Mali-G76, Mali-G57 і подібні) вже нативно відповідають вимозі DXVK щодо Vulkan 1.1, заміна драйвера не потрібна. Ця опція обмежена Adreno, бо Turnip працює лише з апаратним забезпеченням Adreno, а не тому, що інші GPU не підтримуються.\n\n«Імпортувати драйвер» дозволяє замінити автоматичний вибір своїм .zip у форматі adrenotools (наприклад, з K11MCH1/AdrenoToolsDrivers або The412Banner/Banners-Turnip на GitHub). Застосовується при наступному запуску, не одразу. Можна зберігати кілька драйверів: імпортуйте кілька, торкніться драйвера у списку, щоб зробити його активним, і видаліть його значком кошика. «Скинути на рекомендований» повертає автоматичний вибір, не видаляючи інші.</string>
     <string name="setup_driver_status_none">Власний драйвер не використовується — працює вбудований Vulkan-драйвер телефону.</string>
     <string name="setup_driver_status_auto">Рекомендований драйвер (обрано автоматично для цього пристрою): %1$s</string>
     <string name="setup_driver_status_manual">Власний драйвер (імпортовано вручну): %1$s</string>
@@ -102,6 +102,16 @@
     <string name="setup_toast_driver_import_min_api">Помилка імпорту: цьому драйверу потрібен Android API %1$s, а пристрій повідомляє %2$s</string>
     <string name="setup_toast_driver_import_too_large">Помилка імпорту: .zip більший або вкладений глибше, ніж має бути пакет драйвера</string>
     <string name="setup_toast_driver_imported">Драйвер імпортовано: %1$s. Застосується при наступному запуску.</string>
+    <string name="setup_driver_list_empty">Драйвери ще не імпортовано. Імпортуйте .zip драйвера, щоб зберегти його тут і перемикатися між драйверами.</string>
+    <string name="setup_driver_active_tag">Активний</string>
+    <string name="setup_driver_delete">Видалити драйвер</string>
+    <string name="setup_driver_delete_confirm_title">Видалити цей драйвер?</string>
+    <string name="setup_driver_delete_confirm">%1$s буде видалено зі списку. Якщо це активний драйвер, вбудований драйвер займе його місце. Застосується при наступному запуску.</string>
+    <string name="setup_toast_driver_activated">Драйвер активовано: %1$s. Застосується при наступному запуску.</string>
+    <string name="setup_toast_driver_activate_failed">Не вдалося активувати цей драйвер. Попередній залишається активним.</string>
+    <string name="setup_toast_driver_deleted">Драйвер видалено: %1$s</string>
+    <string name="setup_toast_driver_delete_failed">Не вдалося видалити цей драйвер: %1$s</string>
+    <string name="setup_toast_reset_failed">Не вдалося відновити типовий драйвер. Поточний залишається активним.</string>
 
     <!-- SetupActivity: Diagnostics card -->
     <string name="setup_card_diagnostics">Діагностика</string>

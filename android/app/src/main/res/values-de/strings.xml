@@ -82,7 +82,7 @@
     <string name="setup_card_vulkan_driver">Eigener Vulkan-Treiber (fortgeschritten, nur Adreno-GPUs)</string>
     <string name="setup_button_import_driver">Treiber importieren (.zip)</string>
     <string name="setup_button_reset_driver">Auf Empfehlung zurücksetzen</string>
-    <string name="setup_driver_help">Lädt einen Vulkan-Treiber (einen Mesa-Turnip-Build) anstelle des werkseitigen Treibers deines Telefons — dieselbe Technik, die Winlator und AetherSX2 verwenden. DXVK selbst benötigt inzwischen nur noch Vulkan 1.1, aber manche ältere Qualcomm-Adreno-Werkstreiber melden noch weniger (oder haben andere Fehler) — dieser Turnip-Build kann solchen Telefonen trotzdem zum Laufen verhelfen. Auf einem passenden Adreno-Telefon wird dies automatisch angewendet — „Auf Empfehlung zurücksetzen“ stellt diese automatische Wahl wieder her, nachdem etwas anderes importiert wurde.\n\nDies hilft NICHT bei Mali, PowerVR oder anderen Nicht-Adreno-GPUs — die brauchen es aber auch nicht: die meisten Mali-GPUs (Mali-G76, Mali-G57 und ähnliche) erfüllen DXVKs Vulkan-1.1-Anforderung bereits von Haus aus, kein Treiberwechsel nötig. Diese Option ist auf Adreno beschränkt, weil Turnip nur Adreno-Hardware unterstützt, nicht weil andere GPUs nicht unterstützt würden.\n\n„Treiber importieren“ erlaubt es, die automatische Wahl durch eine eigene Treiber-.zip im adrenotools-Format zu ersetzen (zum Beispiel von K11MCH1/AdrenoToolsDrivers oder The412Banner/Banners-Turnip auf GitHub). Wird erst beim nächsten Start wirksam, nicht sofort.</string>
+    <string name="setup_driver_help">Lädt einen Vulkan-Treiber (einen Mesa-Turnip-Build) anstelle des werkseitigen Treibers deines Telefons — dieselbe Technik, die Winlator und AetherSX2 verwenden. DXVK selbst benötigt inzwischen nur noch Vulkan 1.1, aber manche ältere Qualcomm-Adreno-Werkstreiber melden noch weniger (oder haben andere Fehler) — dieser Turnip-Build kann solchen Telefonen trotzdem zum Laufen verhelfen. Auf einem passenden Adreno-Telefon wird dies automatisch angewendet — „Auf Empfehlung zurücksetzen“ stellt diese automatische Wahl wieder her, nachdem etwas anderes importiert wurde.\n\nDies hilft NICHT bei Mali, PowerVR oder anderen Nicht-Adreno-GPUs — die brauchen es aber auch nicht: die meisten Mali-GPUs (Mali-G76, Mali-G57 und ähnliche) erfüllen DXVKs Vulkan-1.1-Anforderung bereits von Haus aus, kein Treiberwechsel nötig. Diese Option ist auf Adreno beschränkt, weil Turnip nur Adreno-Hardware unterstützt, nicht weil andere GPUs nicht unterstützt würden.\n\n„Treiber importieren“ erlaubt es, die automatische Wahl durch eine eigene Treiber-.zip im adrenotools-Format zu ersetzen (zum Beispiel von K11MCH1/AdrenoToolsDrivers oder The412Banner/Banners-Turnip auf GitHub). Wird erst beim nächsten Start wirksam, nicht sofort. Du kannst mehrere Treiber behalten: importiere mehr als einen, tippe in der Liste auf einen Treiber, um ihn zu aktivieren, und nutze sein Papierkorb-Symbol zum Löschen. „Auf Empfehlung zurücksetzen“ kehrt zur automatischen Wahl zurück, ohne die anderen zu löschen.</string>
     <string name="setup_driver_status_none">Kein eigener Treiber aktiv — der werkseitige Vulkan-Treiber des Telefons wird verwendet.</string>
     <string name="setup_driver_status_auto">Empfohlener Treiber (automatisch für dieses Gerät ausgewählt): %1$s</string>
     <string name="setup_driver_status_manual">Eigener Treiber (manuell importiert): %1$s</string>
@@ -102,6 +102,16 @@
     <string name="setup_toast_driver_import_min_api">Import fehlgeschlagen: dieser Treiber benötigt Android-API %1$s, das Gerät meldet aber %2$s</string>
     <string name="setup_toast_driver_import_too_large">Import fehlgeschlagen: das .zip ist größer oder tiefer verschachtelt als ein Treiberpaket sein sollte</string>
     <string name="setup_toast_driver_imported">Treiber importiert: %1$s. Wird beim nächsten Start wirksam.</string>
+    <string name="setup_driver_list_empty">Noch keine Treiber importiert. Importiere eine Treiber-.zip, um sie hier zu behalten und zwischen Treibern zu wechseln.</string>
+    <string name="setup_driver_active_tag">Aktiv</string>
+    <string name="setup_driver_delete">Treiber löschen</string>
+    <string name="setup_driver_delete_confirm_title">Diesen Treiber löschen?</string>
+    <string name="setup_driver_delete_confirm">%1$s wird aus der Liste entfernt. Ist er der aktive Treiber, übernimmt der werkseitige Treiber. Wird erst beim nächsten Start wirksam.</string>
+    <string name="setup_toast_driver_activated">Treiber aktiviert: %1$s. Wird beim nächsten Start wirksam.</string>
+    <string name="setup_toast_driver_activate_failed">Dieser Treiber konnte nicht aktiviert werden. Der vorherige bleibt aktiv.</string>
+    <string name="setup_toast_driver_deleted">Treiber gelöscht: %1$s</string>
+    <string name="setup_toast_driver_delete_failed">Dieser Treiber konnte nicht gelöscht werden: %1$s</string>
+    <string name="setup_toast_reset_failed">Der Standardtreiber konnte nicht wiederhergestellt werden. Der aktuelle bleibt aktiv.</string>
 
     <!-- SetupActivity: Diagnostics card -->
     <string name="setup_card_diagnostics">Diagnose</string>
