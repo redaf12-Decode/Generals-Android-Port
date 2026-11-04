@@ -37,6 +37,7 @@ import android.content.pm.PackageManager;
 import android.content.res.AssetManager;
 import android.content.res.Configuration;
 import android.graphics.Typeface;
+import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -443,6 +444,7 @@ public class SetupActivity extends Activity {
             case TAB_INTERFACE:
                 buildLanguageSection(page);
                 buildThemeSection(page);
+                buildAccentSection(page);
                 buildUiScaleSection(page);
                 buildInterfaceScaleSection(page);
                 buildControlSchemeSection(page);
@@ -885,6 +887,91 @@ public class SetupActivity extends Activity {
                 recreate();
             });
         UiKit.helpText(card, getString(R.string.setup_appearance_help));
+    }
+
+    // GeneralsX @feature Android port 04/11/2026 The accent picker: eleven accents on top of the
+    // palette above (ThemeHelper.ACCENT_*). Each swatch is drawn in the palette now in force, so
+    // the choice is made against what the screen actually looks like rather than an idealised
+    // colour. Its own card, because it is a second, independent choice.
+    private void buildAccentSection(LinearLayout page) {
+        LinearLayout card = UiKit.card(page);
+        UiKit.sectionHeader(card, R.drawable.ic_gzh_display,
+            getString(R.string.setup_accent_title), false);
+        UiKit.body(card, getString(R.string.setup_accent_body));
+
+        LinearLayout grid = new LinearLayout(this);
+        grid.setOrientation(LinearLayout.VERTICAL);
+        LinearLayout.LayoutParams gridParams = new LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        gridParams.topMargin = UiKit.dim(this, R.dimen.gzh_item_gap);
+        card.addView(grid, gridParams);
+
+        int columns = 6;
+        LinearLayout row = null;
+        for (int accent = 0; accent < ThemeHelper.ACCENT_COUNT; accent++) {
+            if (accent % columns == 0) {
+                row = new LinearLayout(this);
+                row.setOrientation(LinearLayout.HORIZONTAL);
+                LinearLayout.LayoutParams rowParams = new LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+                rowParams.topMargin = accent == 0 ? 0 : UiKit.dim(this, R.dimen.gzh_item_gap_tight);
+                grid.addView(row, rowParams);
+            }
+            row.addView(accentSwatch(accent), swatchParams(accent % columns == 0));
+        }
+
+        UiKit.helpText(card, getString(R.string.setup_accent_help));
+    }
+
+    /**
+     * One accent dot. The selected one carries a ring rather than a tick, so the dot itself is
+     * never covered; "default" draws the palette's own accent, which is the value it restores.
+     */
+    private View accentSwatch(int accent) {
+        final boolean selected = ThemeHelper.getAccent(this) == accent;
+        View dot = new View(this);
+        GradientDrawable shape = new GradientDrawable();
+        shape.setShape(GradientDrawable.OVAL);
+        shape.setColor(ThemeHelper.swatchColor(this, accent));
+        if (selected) {
+            shape.setStroke(dp(3), UiKit.color(this, R.color.gzh_on_surface));
+        }
+        dot.setBackground(shape);
+        dot.setContentDescription(getString(accentLabel(accent)));
+        dot.setSelected(selected);
+        dot.setOnClickListener(v -> {
+            if (ThemeHelper.getAccent(this) == accent) {
+                return;
+            }
+            ThemeHelper.setAccent(this, accent);
+            recreate();
+        });
+        return dot;
+    }
+
+    private LinearLayout.LayoutParams swatchParams(boolean firstInRow) {
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0, dp(44), 1f);
+        if (!firstInRow) {
+            lp.setMarginStart(UiKit.dim(this, R.dimen.gzh_item_gap_tight));
+        }
+        return lp;
+    }
+
+    private static int accentLabel(int accent) {
+        switch (accent) {
+            case ThemeHelper.ACCENT_BLUE: return R.string.setup_accent_blue;
+            case ThemeHelper.ACCENT_GREEN: return R.string.setup_accent_green;
+            case ThemeHelper.ACCENT_TEAL: return R.string.setup_accent_teal;
+            case ThemeHelper.ACCENT_ORANGE: return R.string.setup_accent_orange;
+            case ThemeHelper.ACCENT_RED: return R.string.setup_accent_red;
+            case ThemeHelper.ACCENT_BLACK: return R.string.setup_accent_black;
+            case ThemeHelper.ACCENT_GRAY: return R.string.setup_accent_gray;
+            case ThemeHelper.ACCENT_GOLD: return R.string.setup_accent_gold;
+            case ThemeHelper.ACCENT_TRANSPARENT: return R.string.setup_accent_transparent;
+            case ThemeHelper.ACCENT_WHITE: return R.string.setup_accent_white;
+            case ThemeHelper.ACCENT_YELLOW: return R.string.setup_accent_yellow;
+            default: return R.string.setup_accent_default;
+        }
     }
 
     private void buildLanguageSection(LinearLayout root) {
