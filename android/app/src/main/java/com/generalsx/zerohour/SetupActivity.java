@@ -1793,6 +1793,12 @@ public class SetupActivity extends Activity {
     // cases are the same custom_driver.cfg/custom_driver/ that
     // TryLoadCustomVulkanDriver() in SDL3Main.cpp already reads).
     private static final String CUSTOM_DRIVER_AUTO_MARKER_NAME = "custom_driver.auto";
+    // GeneralsX @feature Android port 04/11/2026 Sidecar holding the imported package's own
+    // meta.json (name, vendor, driverVersion, ...), so the card can show which driver is
+    // installed rather than only the .so's file name. Purely a launcher detail: the native side
+    // reads custom_driver.cfg and custom_driver/ exactly as before, and a missing sidecar (an
+    // older install) just falls back to the file name.
+    private static final String CUSTOM_DRIVER_INFO_NAME = "custom_driver.info";
     // Bundled fallback driver (staged by scripts/build/android/fetch-turnip.sh
     // into this asset folder at build time) -- see applyRecommendedDriverIfNeeded().
     private static final String DEFAULT_DRIVER_ASSET_DIR = "default_driver";
@@ -1807,6 +1813,11 @@ public class SetupActivity extends Activity {
         UiKit.sectionHeader(content, R.drawable.ic_gzh_chip,
             getString(R.string.setup_card_vulkan_driver), false);
 
+        // A previous run may have died between the two renames of an install; put the previous
+        // driver back before the status line reads what is on disk, or the card would report a
+        // driver that is no longer there.
+        CustomDriverPackage.recoverInterruptedInstall(
+            new File(getFilesDir(), CUSTOM_DRIVER_DIR_NAME));
         customDriverStatusView = UiKit.supporting(content, customDriverStatusText());
 
         UiKit.button(content, UiKit.BTN_TONAL, R.drawable.ic_gzh_download,
@@ -1824,8 +1835,27 @@ public class SetupActivity extends Activity {
         }
         String driverName = readFirstLine(cfg);
         boolean isAuto = new File(getFilesDir(), CUSTOM_DRIVER_AUTO_MARKER_NAME).isFile();
-        String name = driverName != null ? driverName : getString(R.string.setup_driver_unknown);
-        return getString(isAuto ? R.string.setup_driver_status_auto : R.string.setup_driver_status_manual, name);
+        // GeneralsX @feature Android port 04/11/2026 Name the package, not its .so: the
+        // imported meta.json is kept beside the config (CustomDriverPackage), so the card can
+        // say "Mesa Turnip 25.3.0" where the file name says "libvulkan_freedreno.so". Older
+        // installs have no sidecar and fall back to the file name, as before.
+        CustomDriverPackage.Meta info =
+            CustomDriverPackage.readInfo(new File(getFilesDir(), CUSTOM_DRIVER_INFO_NAME));
+        String name = info != null && !info.displayName().isEmpty()
+            ? info.displayName()
+            : (driverName != null ? driverName : getString(R.string.setup_driver_unknown));
+        String status = getString(isAuto ? R.string.setup_driver_status_auto
+            : R.string.setup_driver_status_manual, name);
+        if (info != null) {
+            String detail = info.vendor.isEmpty() ? info.packageVersion : info.vendor;
+            if (!info.packageVersion.isEmpty() && !info.vendor.isEmpty()) {
+                detail = info.vendor + " \u00b7 " + info.packageVersion;
+            }
+            if (!detail.isEmpty()) {
+                status += "\n" + getString(R.string.setup_driver_status_package, detail);
+            }
+        }
+        return status;
     }
 
     // GeneralsX @feature Android port 13/07/2026 Auto-applies the bundled
@@ -1854,9 +1884,10 @@ public class SetupActivity extends Activity {
                 return;
             }
             String libraryName;
+            CustomDriverPackage.Meta meta = null;
             try {
-                org.json.JSONObject meta = new org.json.JSONObject(readWholeFile(metaFile));
-                libraryName = meta.optString("libraryName", "");
+                meta = CustomDriverPackage.parseMeta(readWholeFile(metaFile));
+                libraryName = meta.libraryName;
             } catch (Exception e) {
                 libraryName = "";
             }
@@ -1868,6 +1899,13 @@ public class SetupActivity extends Activity {
             try (java.io.FileWriter w = new java.io.FileWriter(cfg, false)) {
                 w.write(libraryName);
                 w.write("\n");
+            }
+            if (meta != null) {
+                try {
+                    CustomDriverPackage.writeInfo(new File(getFilesDir(), CUSTOM_DRIVER_INFO_NAME), meta);
+                } catch (Exception e) {
+                    // Only the card's wording depends on this -- the driver itself is in place.
+                }
             }
             new File(getFilesDir(), CUSTOM_DRIVER_AUTO_MARKER_NAME).createNewFile();
         } catch (Exception e) {
@@ -1964,6 +2002,7 @@ public class SetupActivity extends Activity {
     private void onClearCustomDriver() {
         new File(getFilesDir(), CUSTOM_DRIVER_CFG_NAME).delete();
         new File(getFilesDir(), CUSTOM_DRIVER_AUTO_MARKER_NAME).delete();
+        new File(getFilesDir(), CUSTOM_DRIVER_INFO_NAME).delete();
         deleteRecursive(new File(getFilesDir(), CUSTOM_DRIVER_DIR_NAME));
         applyRecommendedDriverIfNeeded();
         refreshCustomDriverStatus();
@@ -1978,115 +2017,92 @@ public class SetupActivity extends Activity {
     // sdcard/external storage (dlopen refuses world-writable paths) -- unzip
     // straight into getFilesDir() (app-private internal storage), the same
     // directory SDL_GetAndroidInternalStoragePath() resolves to in native code.
+    //
+    // GeneralsX @refactor Android port 04/11/2026 The unpack/validate/install
+    // pipeline moved to CustomDriverPackage, which is where the zip-slip guard,
+    // the meta.json parsing and the atomic swap now live -- it has no Android
+    // dependencies, so all of it is exercised by a JVM test rather than only on
+    // a phone. What stays here is the Android-shaped part: reading the picked
+    // Uri, choosing the messages, and refreshing the card.
     private void importCustomDriver(Uri uri) {
         File destDir = new File(getFilesDir(), CUSTOM_DRIVER_DIR_NAME);
         File tmpDir = new File(getFilesDir(), CUSTOM_DRIVER_DIR_NAME + ".tmp");
+        // Heals a previous run that died mid-install before touching anything else.
+        CustomDriverPackage.recoverInterruptedInstall(destDir);
         deleteRecursive(tmpDir);
         if (!tmpDir.mkdirs()) {
             Toast.makeText(this, R.string.setup_toast_driver_import_no_tmp, Toast.LENGTH_LONG).show();
             return;
         }
 
-        try (java.io.InputStream in = getContentResolver().openInputStream(uri);
-             java.util.zip.ZipInputStream zip = new java.util.zip.ZipInputStream(in)) {
-            java.util.zip.ZipEntry entry;
-            byte[] buf = new byte[8192];
-            String tmpCanonical = tmpDir.getCanonicalPath();
-            while ((entry = zip.getNextEntry()) != null) {
-                File out = new File(tmpDir, entry.getName()).getCanonicalFile();
-                // Zip-slip guard: never let an archive entry write outside tmpDir.
-                if (!out.getPath().equals(tmpCanonical) && !out.getPath().startsWith(tmpCanonical + File.separator)) {
-                    throw new java.io.IOException("zip entry escapes target folder: " + entry.getName());
-                }
-                if (entry.isDirectory()) {
-                    out.mkdirs();
-                    continue;
-                }
-                File parent = out.getParentFile();
-                if (parent != null) {
-                    parent.mkdirs();
-                }
-                try (java.io.FileOutputStream fos = new java.io.FileOutputStream(out)) {
-                    int n;
-                    while ((n = zip.read(buf)) > 0) {
-                        fos.write(buf, 0, n);
-                    }
-                }
+        CustomDriverPackage.Package pkg;
+        try (java.io.InputStream in = getContentResolver().openInputStream(uri)) {
+            if (in == null) {
+                throw new java.io.IOException("the picked file could not be opened");
             }
+            pkg = CustomDriverPackage.extract(in, tmpDir, android.os.Build.VERSION.SDK_INT);
+        } catch (CustomDriverPackage.ImportException e) {
+            deleteRecursive(tmpDir);
+            Toast.makeText(this, driverImportMessage(e), Toast.LENGTH_LONG).show();
+            return;
         } catch (Exception e) {
             deleteRecursive(tmpDir);
-            Toast.makeText(this, getString(R.string.setup_toast_driver_import_failed, e.getMessage()), Toast.LENGTH_LONG).show();
+            Toast.makeText(this, getString(R.string.setup_toast_driver_import_failed,
+                e.getMessage()), Toast.LENGTH_LONG).show();
             return;
         }
 
-        File metaFile = findFileByName(tmpDir, "meta.json");
-        if (metaFile == null) {
-            deleteRecursive(tmpDir);
-            Toast.makeText(this, R.string.setup_toast_driver_import_no_meta, Toast.LENGTH_LONG).show();
-            return;
-        }
-
-        String libraryName;
         try {
-            org.json.JSONObject meta = new org.json.JSONObject(readWholeFile(metaFile));
-            libraryName = meta.optString("libraryName", "");
-            if (libraryName.isEmpty()) {
-                throw new org.json.JSONException("meta.json has no libraryName");
-            }
-            if (!new File(metaFile.getParentFile(), libraryName).isFile()) {
-                throw new org.json.JSONException("meta.json names '" + libraryName + "' but that file isn't in the package");
-            }
-        } catch (Exception e) {
-            deleteRecursive(tmpDir);
-            Toast.makeText(this, getString(R.string.setup_toast_driver_import_bad_meta, e.getMessage()), Toast.LENGTH_LONG).show();
+            // Nothing above touched custom_driver/ or custom_driver.cfg, so the driver already
+            // in use survives every refusal; install() then swaps it in one step and puts the
+            // previous one back if anything fails, rather than leaving the phone with none.
+            CustomDriverPackage.install(pkg,
+                destDir,
+                new File(getFilesDir(), CUSTOM_DRIVER_CFG_NAME),
+                new File(getFilesDir(), CUSTOM_DRIVER_INFO_NAME),
+                new File(getFilesDir(), CUSTOM_DRIVER_AUTO_MARKER_NAME));
+        } catch (CustomDriverPackage.ImportException e) {
+            Toast.makeText(this, driverImportMessage(e), Toast.LENGTH_LONG).show();
             return;
+        } finally {
+            deleteRecursive(tmpDir);  // no-op when the package folder WAS tmpDir (moved away)
         }
-
-        // The driver .so + meta.json might be nested inside a subfolder of
-        // the zip -- move THAT folder into place as custom_driver/ (not
-        // tmpDir itself), so the native side's customDriverDir points at
-        // exactly the folder containing libraryName.
-        File driverSourceDir = metaFile.getParentFile();
-        deleteRecursive(destDir);
-        boolean moved = driverSourceDir.renameTo(destDir);
-        deleteRecursive(tmpDir);  // no-op if driverSourceDir WAS tmpDir (already moved away)
-        if (!moved) {
-            Toast.makeText(this, R.string.setup_toast_driver_import_no_finalize, Toast.LENGTH_LONG).show();
-            return;
-        }
-
-        File cfg = new File(getFilesDir(), CUSTOM_DRIVER_CFG_NAME);
-        try (java.io.FileWriter w = new java.io.FileWriter(cfg, false)) {
-            w.write(libraryName);
-            w.write("\n");
-        } catch (java.io.IOException e) {
-            Toast.makeText(this, getString(R.string.setup_toast_driver_config_failed, e.getMessage()), Toast.LENGTH_LONG).show();
-            return;
-        }
-        // This is an explicit user choice, not the auto-selected default --
-        // see applyRecommendedDriverIfNeeded() / CUSTOM_DRIVER_AUTO_MARKER_NAME.
-        new File(getFilesDir(), CUSTOM_DRIVER_AUTO_MARKER_NAME).delete();
 
         refreshCustomDriverStatus();
-        Toast.makeText(this, getString(R.string.setup_toast_driver_imported, libraryName), Toast.LENGTH_LONG).show();
+        Toast.makeText(this, getString(R.string.setup_toast_driver_imported, pkg.meta.displayName()),
+            Toast.LENGTH_LONG).show();
     }
 
-    private static File findFileByName(File dir, String name) {
-        File[] children = dir.listFiles();
-        if (children == null) {
-            return null;
+    /**
+     * Turns a refusal into the sentence that explains it. Every reason gets its own string:
+     * "import failed" on its own leaves the player with no idea whether to re-download the
+     * package, pick a different one, or update the app.
+     */
+    private String driverImportMessage(CustomDriverPackage.ImportException e) {
+        switch (e.reason) {
+            case NOT_A_ZIP:
+                return getString(R.string.setup_toast_driver_import_not_zip);
+            case UNSAFE_PATH:
+                return getString(R.string.setup_toast_driver_import_unsafe,
+                    e.args.length > 0 ? e.args[0] : "");
+            case NO_META:
+                return getString(R.string.setup_toast_driver_import_no_meta);
+            case BAD_META:
+                return getString(R.string.setup_toast_driver_import_bad_meta, e.getMessage());
+            case MISSING_LIBRARY:
+                return getString(R.string.setup_toast_driver_import_missing_lib,
+                    e.args.length > 0 ? e.args[0] : "");
+            case BAD_LIBRARY:
+                return getString(R.string.setup_toast_driver_import_bad_lib,
+                    e.args.length > 0 ? e.args[0] : "");
+            case TOO_LARGE:
+                return getString(R.string.setup_toast_driver_import_too_large);
+            case MIN_API:
+                return getString(R.string.setup_toast_driver_import_min_api,
+                    e.args.length > 1 ? e.args[0] : "", e.args.length > 1 ? e.args[1] : "");
+            default:
+                return getString(R.string.setup_toast_driver_import_failed, e.getMessage());
         }
-        for (File c : children) {
-            if (c.isDirectory()) {
-                File found = findFileByName(c, name);
-                if (found != null) {
-                    return found;
-                }
-            } else if (c.getName().equals(name)) {
-                return c;
-            }
-        }
-        return null;
     }
 
     private static void deleteRecursive(File f) {

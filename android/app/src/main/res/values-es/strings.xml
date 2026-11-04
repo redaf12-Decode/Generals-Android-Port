@@ -86,6 +86,7 @@
     <string name="setup_driver_status_none">Ningún controlador personalizado activo — se usa el controlador Vulkan de fábrica del teléfono.</string>
     <string name="setup_driver_status_auto">Controlador recomendado (seleccionado automáticamente para este dispositivo): %1$s</string>
     <string name="setup_driver_status_manual">Controlador personalizado (importado manualmente): %1$s</string>
+    <string name="setup_driver_status_package">Paquete: %1$s</string>
     <string name="setup_driver_unknown">(desconocido)</string>
     <string name="setup_toast_no_file_picker">No hay ningún selector de archivos disponible: %1$s</string>
     <string name="setup_toast_reset_auto">Restablecido. Se volvió a aplicar el controlador recomendado para este dispositivo.</string>
@@ -94,8 +95,12 @@
     <string name="setup_toast_driver_import_failed">Error al importar: %1$s</string>
     <string name="setup_toast_driver_import_no_meta">Error al importar: no se encontró meta.json en el .zip (no es un paquete de controlador adrenotools válido)</string>
     <string name="setup_toast_driver_import_bad_meta">Error al importar: meta.json no válido (%1$s)</string>
-    <string name="setup_toast_driver_import_no_finalize">Error al importar: no se pudo finalizar la carpeta del controlador</string>
-    <string name="setup_toast_driver_config_failed">No se pudo guardar la configuración del controlador: %1$s</string>
+    <string name="setup_toast_driver_import_not_zip">Error al importar: el archivo no es un .zip de controlador legible</string>
+    <string name="setup_toast_driver_import_unsafe">Error al importar: el .zip contiene una ruta no segura (%1$s)</string>
+    <string name="setup_toast_driver_import_missing_lib">Error al importar: meta.json indica «%1$s», pero ese archivo no está en el paquete</string>
+    <string name="setup_toast_driver_import_bad_lib">Error al importar: «%1$s» no es un controlador ARM de 64 bits</string>
+    <string name="setup_toast_driver_import_min_api">Error al importar: este controlador necesita la API de Android %1$s, pero este dispositivo declara %2$s</string>
+    <string name="setup_toast_driver_import_too_large">Error al importar: el .zip es más grande o está más anidado de lo que debería un paquete de controlador</string>
     <string name="setup_toast_driver_imported">Controlador importado: %1$s. Se aplicará en el próximo inicio.</string>
 
     <!-- SetupActivity: Diagnostics card -->

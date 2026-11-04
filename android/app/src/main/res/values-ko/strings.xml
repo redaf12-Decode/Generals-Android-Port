@@ -86,6 +86,7 @@
     <string name="setup_driver_status_none">사용 중인 사용자 지정 드라이버가 없습니다 — 휴대폰에 내장된 Vulkan 드라이버를 사용합니다.</string>
     <string name="setup_driver_status_auto">권장 드라이버 (이 기기에 자동으로 선택됨): %1$s</string>
     <string name="setup_driver_status_manual">사용자 지정 드라이버 (수동으로 가져옴): %1$s</string>
+    <string name="setup_driver_status_package">패키지: %1$s</string>
     <string name="setup_driver_unknown">(알 수 없음)</string>
     <string name="setup_toast_no_file_picker">사용 가능한 파일 선택기가 없습니다: %1$s</string>
     <string name="setup_toast_reset_auto">재설정되었습니다. 이 기기에 권장되는 드라이버가 다시 적용되었습니다.</string>
@@ -94,8 +95,12 @@
     <string name="setup_toast_driver_import_failed">가져오기 실패: %1$s</string>
     <string name="setup_toast_driver_import_no_meta">가져오기 실패: .zip 안에서 meta.json을 찾을 수 없습니다 (유효한 adrenotools 드라이버 패키지가 아닙니다)</string>
     <string name="setup_toast_driver_import_bad_meta">가져오기 실패: meta.json이 잘못되었습니다 (%1$s)</string>
-    <string name="setup_toast_driver_import_no_finalize">가져오기 실패: 드라이버 폴더를 완료할 수 없습니다</string>
-    <string name="setup_toast_driver_config_failed">드라이버 설정을 저장할 수 없습니다: %1$s</string>
+    <string name="setup_toast_driver_import_not_zip">가져오기 실패: 읽을 수 있는 드라이버 .zip이 아닙니다</string>
+    <string name="setup_toast_driver_import_unsafe">가져오기 실패: .zip에 안전하지 않은 경로가 있습니다 (%1$s)</string>
+    <string name="setup_toast_driver_import_missing_lib">가져오기 실패: meta.json이 '%1$s'을(를) 가리키지만 그 파일이 패키지에 없습니다</string>
+    <string name="setup_toast_driver_import_bad_lib">가져오기 실패: '%1$s'은(는) 64비트 ARM 드라이버가 아닙니다</string>
+    <string name="setup_toast_driver_import_min_api">가져오기 실패: 이 드라이버는 Android API %1$s이(가) 필요하지만 이 기기는 %2$s을(를) 보고합니다</string>
+    <string name="setup_toast_driver_import_too_large">가져오기 실패: .zip이 드라이버 패키지로 보기엔 너무 크거나 깊이 중첩되어 있습니다</string>
     <string name="setup_toast_driver_imported">드라이버를 가져왔습니다: %1$s. 다음 실행 시 적용됩니다.</string>
 
     <!-- SetupActivity: Diagnostics card -->

@@ -86,6 +86,7 @@
     <string name="setup_driver_status_none">Aucun pilote personnalisé actif — le pilote Vulkan intégré du téléphone est utilisé.</string>
     <string name="setup_driver_status_auto">Pilote recommandé (sélectionné automatiquement pour cet appareil) : %1$s</string>
     <string name="setup_driver_status_manual">Pilote personnalisé (importé manuellement) : %1$s</string>
+    <string name="setup_driver_status_package">Paquet : %1$s</string>
     <string name="setup_driver_unknown">(inconnu)</string>
     <string name="setup_toast_no_file_picker">Aucun sélecteur de fichiers disponible : %1$s</string>
     <string name="setup_toast_reset_auto">Réinitialisation effectuée. Le pilote recommandé pour cet appareil a été réappliqué.</string>
@@ -94,8 +95,12 @@
     <string name="setup_toast_driver_import_failed">Échec de l\'importation : %1$s</string>
     <string name="setup_toast_driver_import_no_meta">Échec de l\'importation : meta.json introuvable dans le .zip (ce n\'est pas un paquet de pilote adrenotools valide)</string>
     <string name="setup_toast_driver_import_bad_meta">Échec de l\'importation : meta.json invalide (%1$s)</string>
-    <string name="setup_toast_driver_import_no_finalize">Échec de l\'importation : impossible de finaliser le dossier du pilote</string>
-    <string name="setup_toast_driver_config_failed">Impossible d\'enregistrer la configuration du pilote : %1$s</string>
+    <string name="setup_toast_driver_import_not_zip">Échec de l\'importation : le fichier n\'est pas un .zip de pilote lisible</string>
+    <string name="setup_toast_driver_import_unsafe">Échec de l\'importation : le .zip contient un chemin dangereux (%1$s)</string>
+    <string name="setup_toast_driver_import_missing_lib">Échec de l\'importation : meta.json désigne « %1$s », mais ce fichier n\'est pas dans le paquet</string>
+    <string name="setup_toast_driver_import_bad_lib">Échec de l\'importation : « %1$s » n\'est pas un pilote ARM 64 bits</string>
+    <string name="setup_toast_driver_import_min_api">Échec de l\'importation : ce pilote exige l\'API Android %1$s, mais cet appareil annonce %2$s</string>
+    <string name="setup_toast_driver_import_too_large">Échec de l\'importation : le .zip est plus volumineux ou plus imbriqué qu\'un paquet de pilote ne devrait l\'être</string>
     <string name="setup_toast_driver_imported">Pilote importé : %1$s. Prendra effet au prochain lancement.</string>
 
     <!-- SetupActivity: Diagnostics card -->

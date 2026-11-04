@@ -86,6 +86,7 @@
     <string name="setup_driver_status_none">هیچ درایور سفارشی فعال نیست — از درایور Vulkan پیش‌فرض گوشی استفاده می‌شود.</string>
     <string name="setup_driver_status_auto">درایور پیشنهادی (به‌طور خودکار برای این دستگاه انتخاب شده): %1$s</string>
     <string name="setup_driver_status_manual">درایور سفارشی (به‌صورت دستی وارد شده): %1$s</string>
+    <string name="setup_driver_status_package">بسته: %1$s</string>
     <string name="setup_driver_unknown">(نامشخص)</string>
     <string name="setup_toast_no_file_picker">هیچ انتخاب‌گر فایلی در دسترس نیست: %1$s</string>
     <string name="setup_toast_reset_auto">بازنشانی انجام شد. درایور پیشنهادی برای این دستگاه دوباره اعمال شد.</string>
@@ -94,8 +95,12 @@
     <string name="setup_toast_driver_import_failed">وارد کردن ناموفق بود: %1$s</string>
     <string name="setup_toast_driver_import_no_meta">وارد کردن ناموفق بود: فایل meta.json در .zip یافت نشد (بسته درایور adrenotools معتبر نیست)</string>
     <string name="setup_toast_driver_import_bad_meta">وارد کردن ناموفق بود: meta.json نامعتبر است (%1$s)</string>
-    <string name="setup_toast_driver_import_no_finalize">وارد کردن ناموفق بود: نهایی‌سازی پوشه درایور ممکن نشد</string>
-    <string name="setup_toast_driver_config_failed">ذخیره تنظیمات درایور ممکن نشد: %1$s</string>
+    <string name="setup_toast_driver_import_not_zip">وارد کردن ناموفق بود: فایل یک .zip درایور خوانا نیست</string>
+    <string name="setup_toast_driver_import_unsafe">وارد کردن ناموفق بود: فایل .zip شامل یک مسیر ناامن است (%1$s)</string>
+    <string name="setup_toast_driver_import_missing_lib">وارد کردن ناموفق بود: meta.json به «%1$s» اشاره می‌کند اما این فایل در بسته نیست</string>
+    <string name="setup_toast_driver_import_bad_lib">وارد کردن ناموفق بود: «%1$s» یک درایور ARM ۶۴بیتی نیست</string>
+    <string name="setup_toast_driver_import_min_api">وارد کردن ناموفق بود: این درایور به Android API %1$s نیاز دارد اما این دستگاه %2$s را گزارش می‌کند</string>
+    <string name="setup_toast_driver_import_too_large">وارد کردن ناموفق بود: فایل .zip بزرگ‌تر یا تودرتوی‌تر از حد یک بسته درایور است</string>
     <string name="setup_toast_driver_imported">درایور وارد شد: %1$s. در اجرای بعدی اعمال خواهد شد.</string>
 
     <!-- SetupActivity: Diagnostics card -->

@@ -86,6 +86,7 @@
     <string name="setup_driver_status_none">Свой драйвер не используется — работает встроенный Vulkan-драйвер телефона.</string>
     <string name="setup_driver_status_auto">Рекомендуемый драйвер (выбран автоматически для этого устройства): %1$s</string>
     <string name="setup_driver_status_manual">Свой драйвер (импортирован вручную): %1$s</string>
+    <string name="setup_driver_status_package">Пакет: %1$s</string>
     <string name="setup_driver_unknown">(неизвестно)</string>
     <string name="setup_toast_no_file_picker">Нет доступного файлового менеджера: %1$s</string>
     <string name="setup_toast_reset_auto">Сброс выполнен. Рекомендуемый для этого устройства драйвер применён снова.</string>
@@ -94,8 +95,12 @@
     <string name="setup_toast_driver_import_failed">Ошибка импорта: %1$s</string>
     <string name="setup_toast_driver_import_no_meta">Ошибка импорта: meta.json не найден в .zip (это не пакет драйвера в формате adrenotools)</string>
     <string name="setup_toast_driver_import_bad_meta">Ошибка импорта: некорректный meta.json (%1$s)</string>
-    <string name="setup_toast_driver_import_no_finalize">Ошибка импорта: не удалось завершить создание папки драйвера</string>
-    <string name="setup_toast_driver_config_failed">Не удалось сохранить конфигурацию драйвера: %1$s</string>
+    <string name="setup_toast_driver_import_not_zip">Ошибка импорта: файл не читается как .zip драйвера</string>
+    <string name="setup_toast_driver_import_unsafe">Ошибка импорта: в .zip есть небезопасный путь (%1$s)</string>
+    <string name="setup_toast_driver_import_missing_lib">Ошибка импорта: meta.json указывает на «%1$s», но этого файла нет в пакете</string>
+    <string name="setup_toast_driver_import_bad_lib">Ошибка импорта: «%1$s» не является 64-битным драйвером ARM</string>
+    <string name="setup_toast_driver_import_min_api">Ошибка импорта: этому драйверу нужен Android API %1$s, а устройство сообщает %2$s</string>
+    <string name="setup_toast_driver_import_too_large">Ошибка импорта: .zip больше или вложен глубже, чем должен быть пакет драйвера</string>
     <string name="setup_toast_driver_imported">Драйвер импортирован: %1$s. Применится при следующем запуске.</string>
 
     <!-- SetupActivity: DXVK Config card -->

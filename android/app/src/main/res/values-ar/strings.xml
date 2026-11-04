@@ -86,6 +86,7 @@
     <string name="setup_driver_status_none">لا يوجد برنامج تشغيل مخصص نشط — يتم استخدام برنامج تشغيل Vulkan المدمج في الهاتف.</string>
     <string name="setup_driver_status_auto">برنامج التشغيل الموصى به (اختير تلقائيًا لهذا الجهاز): %1$s</string>
     <string name="setup_driver_status_manual">برنامج تشغيل مخصص (مستورد يدويًا): %1$s</string>
+    <string name="setup_driver_status_package">الحزمة: %1$s</string>
     <string name="setup_driver_unknown">(غير معروف)</string>
     <string name="setup_toast_no_file_picker">لا يوجد أداة اختيار ملفات متاحة: %1$s</string>
     <string name="setup_toast_reset_auto">تمت إعادة التعيين. تم تطبيق برنامج التشغيل الموصى به لهذا الجهاز مرة أخرى.</string>
@@ -94,8 +95,12 @@
     <string name="setup_toast_driver_import_failed">فشل الاستيراد: %1$s</string>
     <string name="setup_toast_driver_import_no_meta">فشل الاستيراد: لم يتم العثور على meta.json داخل ملف .zip (ليست حزمة برنامج تشغيل adrenotools صالحة)</string>
     <string name="setup_toast_driver_import_bad_meta">فشل الاستيراد: ملف meta.json غير صالح (%1$s)</string>
-    <string name="setup_toast_driver_import_no_finalize">فشل الاستيراد: تعذر إنهاء مجلد برنامج التشغيل</string>
-    <string name="setup_toast_driver_config_failed">تعذر حفظ إعدادات برنامج التشغيل: %1$s</string>
+    <string name="setup_toast_driver_import_not_zip">فشل الاستيراد: تعذر قراءة الملف كأرشيف .zip لبرنامج تشغيل</string>
+    <string name="setup_toast_driver_import_unsafe">فشل الاستيراد: يحتوي ملف .zip على مسار غير آمن (%1$s)</string>
+    <string name="setup_toast_driver_import_missing_lib">فشل الاستيراد: يشير meta.json إلى «%1$s» لكن هذا الملف غير موجود في الحزمة</string>
+    <string name="setup_toast_driver_import_bad_lib">فشل الاستيراد: «%1$s» ليس برنامج تشغيل ARM 64 بت</string>
+    <string name="setup_toast_driver_import_min_api">فشل الاستيراد: يحتاج هذا البرنامج إلى Android API رقم %1$s، لكن الجهاز يعلن %2$s</string>
+    <string name="setup_toast_driver_import_too_large">فشل الاستيراد: ملف .zip أكبر أو أكثر تعشيقًا مما ينبغي لحزمة برنامج تشغيل</string>
     <string name="setup_toast_driver_imported">تم استيراد برنامج التشغيل: %1$s. سيسري المفعول عند التشغيل القادم.</string>
 
     <!-- SetupActivity: Diagnostics card -->
