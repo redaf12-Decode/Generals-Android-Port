@@ -295,12 +295,6 @@ public class SetupActivity extends Activity {
         refreshGeneralsOnlineStatus();
         loadDxvkConfigIntoEditor();
         refreshDiagnosticsSwitches();
-        refreshUpdatesStatus();
-        // Once per process, not on every return to this screen.
-        if (!sAutoUpdateCheckedThisProcess && UpdateManager.isAutoCheckEnabled(this)) {
-            sAutoUpdateCheckedThisProcess = true;
-            runUpdateCheck(false);
-        }
     }
 
     // GeneralsX @feature Android port launcher-ui-2026 08/09/2026 The launcher
@@ -470,14 +464,12 @@ public class SetupActivity extends Activity {
         refreshGeneralsOnlineStatus();
         loadDxvkConfigIntoEditor();
         refreshDiagnosticsSwitches();
-        refreshUpdatesStatus();
     }
 
     /** Forgets every page-scoped view so a stale one is never written to. */
     private void clearPageReferences() {
         statusText = null;
         onlineStatusView = null;
-        updatesStatusView = null;
         gameLanguageStatusView = null;
         renderBackendStatusView = null;
         customDriverStatusView = null;
@@ -572,7 +564,10 @@ public class SetupActivity extends Activity {
         // people want right after picking their game folder, not something to
         // bury under settings most players never touch.
         buildGeneralsOnlineSection(page);
-        buildUpdatesSection(page);
+        // GeneralsX @refactor Android port 04/11/2026 The Updates card is gone (owner's request):
+        // no in-app engine update, no "Check for updates" button and no automatic check. Engine
+        // updates now need a new APK. The signed settings are still applied -- the GeneralsOnline
+        // screen checks them on open -- and the community data patch is still updated there.
     }
 
     // GeneralsX @feature Android port 18/10/2026 PLAN-030: where each game takes what its own folder
@@ -614,100 +609,6 @@ public class SetupActivity extends Activity {
             }
         }
         return false;
-    }
-
-    // ------------------------------------------------------------ Updates
-
-    // GeneralsX @feature Android port 27/09/2026 Signed updates from the repository without a new
-    // APK: a newer engine, when one is published. The network settings from the same signed
-    // manifest are applied by the same check but shown on the multiplayer screen. See UpdateManager.
-    private TextView updatesStatusView;
-    private View updatesOpenOnlineButton;
-    private boolean updateCheckRunning;
-    private static boolean sAutoUpdateCheckedThisProcess;
-
-    private void buildUpdatesSection(LinearLayout root) {
-        LinearLayout content = UiKit.card(root);
-        UiKit.sectionHeader(content, R.drawable.ic_gzh_refresh,
-            getString(R.string.setup_card_updates), false);
-        UiKit.supporting(content, getString(R.string.setup_updates_help));
-        updatesStatusView = UiKit.body(content, null);
-        UiKit.button(content, UiKit.BTN_TONAL, R.drawable.ic_gzh_download,
-            getString(R.string.setup_button_check_updates), () -> runUpdateCheck(true));
-        // The community data patch is updated on the multiplayer screen; this card only says a
-        // newer one is out and takes the player there.
-        updatesOpenOnlineButton = UiKit.button(content, UiKit.BTN_TONAL, R.drawable.ic_gzh_globe,
-            getString(R.string.setup_button_open_online_data), () ->
-                startActivity(new Intent(this, GeneralsOnlineActivity.class)));
-        SwitchCompat auto = UiKit.switchRow(content,
-            getString(R.string.setup_switch_auto_updates), getString(R.string.setup_switch_auto_updates_desc));
-        auto.setChecked(UpdateManager.isAutoCheckEnabled(this));
-        auto.setOnCheckedChangeListener((button, checked) -> UpdateManager.setAutoCheckEnabled(this, checked));
-        refreshUpdatesStatus();
-    }
-
-    private void refreshUpdatesStatus() {
-        if (updatesStatusView == null) {
-            return;
-        }
-        int active = UpdateManager.activeEngineSeq(this);
-        String engine = active > 0
-            ? getString(R.string.setup_updates_engine_updated, active)
-            : getString(R.string.setup_updates_engine_bundled, UpdateManager.bundledEngineSeq(this));
-        long last = UpdateManager.lastCheckMillis(this);
-        String when = last > 0
-            ? android.text.format.DateFormat.getDateFormat(this).format(new java.util.Date(last)) + " "
-              + android.text.format.DateFormat.getTimeFormat(this).format(new java.util.Date(last))
-            : getString(R.string.setup_updates_never);
-        String status = getString(R.string.setup_updates_status, engine, when);
-        final boolean newerData = UpdateManager.datapackNewerAvailable(this);
-        if (newerData) {
-            status += "\n" + getString(R.string.setup_updates_datapack_line_new,
-                UpdateManager.datapackLatestSeen(this));
-        }
-        updatesStatusView.setText(status);
-        if (updatesOpenOnlineButton != null) {
-            updatesOpenOnlineButton.setVisibility(newerData ? View.VISIBLE : View.GONE);
-        }
-    }
-
-    /** @param userAsked true for the button (always report), false for the silent start-up check. */
-    private void runUpdateCheck(boolean userAsked) {
-        if (updateCheckRunning) {
-            return;
-        }
-        updateCheckRunning = true;
-        if (userAsked) {
-            toast(getString(R.string.setup_updates_checking));
-        }
-        new Thread(() -> {
-            final android.content.Context app = getApplicationContext();
-            final UpdateManager.Result r = UpdateManager.check(app, true);
-            runOnUiThread(() -> {
-                updateCheckRunning = false;
-                refreshUpdatesStatus();
-                if (!r.ok) {
-                    if (userAsked) {
-                        toast(r.offline
-                            ? getString(R.string.setup_updates_offline)
-                            : r.error != null && r.error.startsWith("HTTP 404")
-                            ? getString(R.string.setup_updates_not_published)
-                            : getString(R.string.setup_updates_failed, r.error));
-                    }
-                    return;
-                }
-                if (r.datapackAvailable != null) {
-                    toast(getString(R.string.setup_updates_datapack_available, r.datapackAvailable));
-                }
-                if (r.engineDownloaded) {
-                    toast(getString(R.string.setup_updates_engine_ready, r.engineSeq));
-                } else if (r.engineIncompatible) {
-                    toast(getString(R.string.setup_updates_engine_needs_apk, r.engineSeq));
-                } else if (userAsked) {
-                    toast(getString(R.string.setup_updates_none));
-                }
-            });
-        }, "gx-update-check").start();
     }
 
     // ------------------------------------------------------------ Help page

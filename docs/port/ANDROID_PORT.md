@@ -339,14 +339,19 @@ a file manager to create them by hand.
 
 ## 4a. Updates without a new APK
 
-**Setup → Home → Updates.** The launcher reads a signed manifest from the repository's
-`updates` branch, at launcher start (switchable) and on **Check for updates**:
+The launcher reads a signed manifest from the repository's `updates` branch when the
+**GeneralsOnline account** screen opens, and applies its **settings**:
 
 - **Settings** (`update/config.json`): written to `files/update/remote_config.ini`, read by the
   engine through `Common/GXRemoteConfig.h` and by the launcher: the STUN and TURN lists, the PC
   checksum and its revision-tag rule, and the community data package's manifest address.
-- **Engine**: a newer `libmain.so`/`libmain60.so`, downloaded to the app's private storage and
-  loaded by `GeneralsZHActivity.loadLibraries()` instead of the APK's, from the next game start.
+
+**The engine is no longer downloaded over the air** (04/11/2026, owner's request). The Home
+screen's "Updates" card -- its status line, **Check for updates** button and automatic check --
+is gone, and it was the only caller that asked `UpdateManager.check(ctx, true)` to download a
+newer `libmain.so`/`libmain60.so`. An engine update now needs a new APK. The manifest still
+carries an `engine` entry and `publish-update.py` still publishes it, so putting the card back
+restores the old behaviour without touching the update format.
 
 The manifest is signed (ECDSA P-256; the public key is in `UpdateManager.PUBLIC_KEY_B64`, the
 private key is kept outside the repository). Its `serial` may never go down, engine files are

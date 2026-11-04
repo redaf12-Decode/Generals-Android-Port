@@ -94,7 +94,7 @@ public class GeneralsOnlineActivity extends Activity {
     private TextView dataPackChip;
     private boolean dataPackBusy;
     private boolean dataPackPrompted;
-    // The automatic version check runs once per process, like the Updates card's.
+    // The automatic version check runs once per process.
     private static boolean sDataPackCheckedThisProcess;
     private TextView networkSettingsStatus;
     private TextView crossPlayPatchChip;
@@ -281,24 +281,20 @@ public class GeneralsOnlineActivity extends Activity {
 
     /**
      * GeneralsX @feature Android port 27/09/2026 The card checks for a newer patch by itself, with
-     * the same decision the Updates card makes (UpdateManager.checkDatapackOnly) and under the
-     * same "Check automatically" switch: on Wi-Fi a newer patch is installed with its progress
-     * shown here, on mobile data the card says a new version is there and the button installs it.
+     * the same decision the removed Home Updates card made (UpdateManager.checkDatapackOnly): on
+     * Wi-Fi a newer patch is installed with its progress shown here, on mobile data the card says
+     * a new version is there and the button installs it.
      */
     private void maybeAutoCheckDataPacks() {
         if (sDataPackCheckedThisProcess || dataPackBusy) {
             return;
         }
-        if (!UpdateManager.isAutoCheckEnabled(this)) {
-            // GeneralsX @feature Android port 18/10/2026 "Check automatically" holds back downloads
-            // (engine, data patch), not the signed settings: they are a few lines, and what they
-            // switch on or off online (pc_crossplay, the servers) must reach everyone who plays
-            // online, also when the GeneralsOnline developers ask for something to stop.
-            sDataPackCheckedThisProcess = true;
-            final android.content.Context app = getApplicationContext();
-            new Thread(() -> UpdateManager.check(app, false), "gx-online-settings-check").start();
-            return;
-        }
+        // GeneralsX @refactor Android port 04/11/2026 The Home screen's "Check automatically"
+        // switch is gone with the Updates card, and it was the only thing that wrote that
+        // preference -- leaving the card gated on it would strand a player who had turned it off,
+        // with no UI left to turn it back on. The card therefore always checks: the signed
+        // settings are a few lines and must reach everyone who plays online (pc_crossplay, the
+        // servers), and the data patch is still downloaded only on an unmetered network.
         sDataPackCheckedThisProcess = true;
         final boolean havePatch = DataPackInstaller.installedVersion(this) != null;
         dataPackBusy = havePatch;

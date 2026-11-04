@@ -138,10 +138,13 @@ final class UpdateManager {
     // ---------------------------------------------------------------------------------------
     // Settings
 
+    // GeneralsX @refactor Android port 04/11/2026 No caller left: the Home "Check automatically"
+    // switch went with the Updates card. Kept so restoring the card restores the setting too.
     static boolean isAutoCheckEnabled(Context ctx) {
         return prefs(ctx).getBoolean(KEY_AUTO, true);
     }
 
+    // GeneralsX @refactor Android port 04/11/2026 See isAutoCheckEnabled.
     static void setAutoCheckEnabled(Context ctx, boolean enabled) {
         prefs(ctx).edit().putBoolean(KEY_AUTO, enabled).apply();
     }
@@ -292,8 +295,9 @@ final class UpdateManager {
      * PC checksum: a few lines, and the game needs them current whichever screen checked) and
      * notices a newer community data patch; the patch itself is installed by the multiplayer
      * screen (checkDatapackOnly).
-     * @param withEngine also download a newer engine -- the Updates card on the home screen, which
-     *        is the engine's place; the multiplayer screen passes false.
+     * @param withEngine also download a newer engine. Nothing passes true any more: the Home
+     *        screen's Updates card was removed on 04/11/2026, and with it the only caller. Kept
+     *        so the path can be re-enabled by restoring the card.
      */
     static Result check(Context ctx, boolean withEngine) {
         Result r = new Result();
@@ -368,8 +372,8 @@ final class UpdateManager {
      * Only a player who installed it is kept current -- nothing is pushed on anyone else.
      *
      * The multiplayer screen's data card is where the patch is checked and installed
-     * (checkDatapackOnly); the Updates card only notices a newer version (noticeNewerDatapack)
-     * and points there.
+     * (checkDatapackOnly) and where a newer version is noticed (noticeNewerDatapack). The Home
+     * screen's Updates card used to notice it too, until it was removed on 04/11/2026.
      */
     private static void checkDatapack(Context ctx, Result r, boolean install,
                                       DataPackInstaller.Progress progress) {
@@ -388,8 +392,9 @@ final class UpdateManager {
             r.datapackAvailable = latest;
             return;
         }
-        // The Updates card and the data card can both get here at once; the second one waits
-        // for the first and then finds nothing left to do instead of downloading it again.
+        // The data card's own check and the settings check can both get here at once; the second
+        // one waits for the first and then finds nothing left to do instead of downloading it
+        // again.
         synchronized (DataPackInstaller.INSTALL_LOCK) {
             if (!datapackUpdateWanted(ctx)) {
                 return;

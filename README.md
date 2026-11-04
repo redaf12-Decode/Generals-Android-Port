@@ -91,7 +91,7 @@ here; their notes are in [docs/port/APPLE_PLATFORMS.md](docs/port/APPLE_PLATFORM
 | Cross-play with PC (Windows) GeneralsOnline players | ⛔ Turned off — since 18/10/2026, for an indefinite time, at the request of the GeneralsOnline developers. Online games between Android players are not affected |
 | LAN games between phones | ✅ Working — on the same Wi-Fi network |
 | Game text languages | ✅ English plus 12 packs: Russian, Ukrainian, German, French, Spanish, Brazilian Portuguese, Polish, Interslavic, Simplified Chinese, Korean, Arabic, Persian — right-to-left layout and CJK glyphs included. [Add yours](languages/README.md) |
-| Updates without a new APK | ✅ Signed engine builds and network settings straight from this repository (Home → Updates) |
+| Updates without a new APK | ⚠️ Signed network settings still come from this repository (applied when the GeneralsOnline account screen opens). The in-app engine update — Home → Updates, "Check for updates" — was removed on 04/11/2026: an engine update now needs a new APK |
 | Simulation rate | ✅ 30 Hz (retail) or 60 Hz, chosen in the launcher — the APK carries both engines |
 | Upscaling (OpenGL ES) | ✅ The 3D scene rendered below screen resolution and sharpened back (Snapdragon GSR), interface at full resolution — Launcher → Graphics |
 | Interface size | ✅ Larger menus, command bar and HUD for small screens — Launcher → Interface |

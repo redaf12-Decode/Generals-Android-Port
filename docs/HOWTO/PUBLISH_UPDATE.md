@@ -1,9 +1,13 @@
 # Publishing an update without a new APK
 
-The launcher checks the repository's `updates` branch -- from **Home → Updates** (on start and
-with **Check for updates**) and when the **GeneralsOnline account** screen opens -- and takes two
-kinds of update from it. The settings are applied by either check and shown on the account
-screen; the engine is downloaded only by the Home check.
+The launcher checks the repository's `updates` branch when the **GeneralsOnline account**
+screen opens, and applies the **settings** it finds there (shown on that screen).
+
+Since 04/11/2026 the launcher no longer downloads the **engine** over the air: the Home
+screen's "Updates" card, with its **Check for updates** button and its automatic check, was
+removed at the owner's request, and with it the only caller that asked for an engine download.
+An engine update now needs a new APK. The signing, the manifest and the publishing steps below
+are unchanged, so a later change of mind only has to put the card back.
 
 - **Settings** (`update/config.json` in the main tree): values the engine reads at startup. Today
   the STUN and TURN server lists (`stun_servers`, `turn_servers`), the PC client checksum for
@@ -14,7 +18,7 @@ screen; the engine is downloaded only by the Home check.
   A missing key keeps the value built in.
   The community data patch itself comes from that manifest and is updated on the multiplayer
   screen (GeneralsOnline account → Online game data), which checks it by itself and installs a
-  newer one on Wi-Fi; the Updates card only says when a newer one is out. It also computes the PC checksum
+  newer one on Wi-Fi. It also computes the PC checksum
   from the PC executable inside that patch, and that number wins over `pc_exe_crc`, so a new PC
   release normally needs nothing published at all; `pc_exe_crc` covers players without the patch.
 - **Feature switches** (engines from 3278, launchers after 1.4.0): `name=1` / `name=0` in the
@@ -43,8 +47,9 @@ screen; the engine is downloaded only by the Home check.
   a mirror address and read the CDN themselves. The mirror is as current as the last publish: after
   a new GeneralsOnline release, publish settings again so 1.3.0 players see it. Point the key back at
   `https://cdn.playgenerals.online/manifest.json` once the CDN fixes the digest.
-- **Engine**: a newer `libmain.so` / `libmain60.so`. It is downloaded into the app's private
-  storage and used from the next game start, instead of the engine inside the APK.
+- **Engine** (published, but no longer downloaded by the launcher): a newer `libmain.so` /
+  `libmain60.so`. With the Home "Updates" card gone, nothing asks the launcher for it; the
+  entry is kept so publishing an engine still works if the card is put back.
 
 Nothing is used unless it is signed with the update key.
 
