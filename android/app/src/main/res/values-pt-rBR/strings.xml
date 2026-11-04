@@ -47,10 +47,6 @@
     <string name="setup_button_change_language">Mudar idioma</string>
     <string name="setup_language_dialog_title">Escolha um idioma</string>
     <string name="setup_language_system_default">Padrão do sistema</string>
-    <string name="setup_language_game_status_default">Texto do jogo: não afetado por esta configuração (usa o próprio idioma do jogo definido no registry.ini, ou inglês por padrão).</string>
-    <string name="setup_language_game_status_override">Texto do jogo: também alterado (data/%1$s/generals.csf encontrado na pasta do jogo).</string>
-    <string name="setup_language_game_status_missing">Texto do jogo: NÃO alterado — data/%1$s/generals.csf não encontrado na pasta do jogo, então o jogo mantém seu próprio idioma.</string>
-
     <!-- SetupActivity: Menu Text Size card -->
     <string name="setup_card_text_size">Tamanho do texto do menu</string>
     <string name="setup_text_size_label">Escala: %1$d%%</string>
@@ -75,7 +71,6 @@
     <string name="setup_render_backend_help_vulkan">Vulkan: o backend original, pela tradução de Direct3D 8 para Vulkan do DXVK. Mais rápido que os outros em aparelhos cujo driver lida bem com ele, normalmente Snapdragon recentes. Mas depende inteiramente desse driver, e em algumas GPUs produz manchas magenta, geometria distorcida ou menus corrompidos que nenhum ajuste daqui resolve \u2014 PowerVR BXM e Samsung Xclipse já foram relatados. Se o Vulkan parecer errado no seu aparelho, é exatamente para isso que existe o padrão.\n\nAs seções «Driver Vulkan personalizado» e «Configuração do DXVK» só aparecem com o Vulkan selecionado.</string>
     <string name="setup_render_backend_gpu">Sua GPU: %1$s</string>
     <string name="setup_render_backend_status">Atual: %1$s</string>
-    <string name="setup_button_change_render_backend">Alterar backend de renderização</string>
     <string name="setup_render_backend_dialog_title">Escolha um backend de renderização</string>
     <string name="setup_render_backend_vulkan">Vulkan</string>
     <string name="setup_render_backend_gles">OpenGL ES (padrão)</string>
@@ -119,10 +114,8 @@
     <string name="setup_switch_gx_audio_trace_desc">Registra o que o sistema de som está fazendo: nível dos buffers de música e fala, áudio dos vídeos e cada fonte que inicia ou para. Ative isto se pedirem um registro de áudio depois de você relatar som ausente, engasgado ou mudo. (gx_audio_trace.txt)</string>
     <string name="setup_button_download_langpack">Baixar pacote de idioma</string>
     <string name="setup_langpack_downloading">Baixando o pacote de idioma…</string>
-    <string name="setup_langpack_done">Pacote de idioma instalado. O jogo vai usá-lo no próximo início.</string>
     <string name="setup_langpack_done_n">%1$d pacote(s) de idioma instalado(s): %2$s. Escolha abaixo.</string>
     <string name="setup_langpack_failed">Não foi possível baixar o pacote de idioma: %1$s</string>
-    <string name="setup_langpack_not_available">Este idioma do inicializador não tem pacote de texto do jogo.</string>
     <string name="setup_langpack_no_folder">Selecione primeiro a pasta do jogo.</string>
     <string name="setup_langpack_err_none_yet">Ainda não há pacote para este idioma. Traduções são bem-vindas — veja languages/README.md no repositório do projeto.</string>
     <string name="setup_langpack_err_mkdir">não foi possível criar a pasta de idioma na pasta do jogo</string>
@@ -134,7 +127,6 @@
     <string name="setup_game_text_status">Texto do jogo: %1$s</string>
     <string name="setup_game_text_status_default">Texto do jogo: inglês — a menos que um .big na pasta do jogo o substitua</string>
     <string name="setup_game_text_none_found">Ainda não há pacotes de idioma na pasta do jogo. Baixe um primeiro.</string>
-    <string name="setup_langpack_dialog_title">Qual idioma?</string>
     <string name="setup_switch_dxvk_hud">Overlay de desempenho na tela</string>
     <string name="setup_switch_dxvk_hud_desc">Mostra FPS, número de draw calls, submissions e pipelines diretamente na tela e no registro. Ative para relatos de desempenho da GPU. (dxvk_hud.txt)</string>
     <string name="setup_switch_dxvk_validation">Camada de validação Vulkan</string>
@@ -155,8 +147,6 @@
     <!-- SetupActivity: folder selection / misc toasts -->
     <string name="setup_toast_grant_all_files">Conceda \"Permitir acesso para gerenciar todos os arquivos\" na próxima tela, depois volte e toque em Selecionar pasta do jogo novamente.</string>
     <string name="setup_toast_folder_saved">Pasta do jogo salva.</string>
-    <string name="setup_toast_folder_saved_invalid">Salvo, mas nenhum INIZH.big/INI.big foi encontrado lá — verifique a pasta.</string>
-    <string name="setup_toast_folder_saved_incomplete">Salvo, mas alguns arquivos do jogo parecem incompletos ou corrompidos — veja os detalhes na tela principal antes de iniciar.</string>
     <string name="setup_toast_marker_save_failed">Não foi possível salvar o marcador da pasta: %1$s</string>
     <string name="setup_toast_folder_cleared">Redefinido. O jogo voltará à sua convenção de pasta padrão.</string>
     <string name="setup_toast_options_dir_failed">Não foi possível criar a pasta para o Options.ini</string>
@@ -204,9 +194,7 @@
     <string name="online_status_continue_browser">Continue no seu navegador — volte aqui assim que tiver entrado.</string>
     <string name="online_status_network_error">Erro de rede — verifique sua conexão e tente novamente.</string>
     <string name="online_toast_signed_in_as">Conectado como %1$s</string>
-    <string name="online_status_signin_failed">O login falhou ou foi cancelado — toque em Entrar para tentar novamente.</string>
     <string name="online_status_timed_out">Tempo de espera esgotado — toque em Entrar para tentar novamente.</string>
-    <string name="online_status_unexpected">Resposta inesperada — toque em Entrar para tentar novamente.</string>
     <string name="online_toast_signed_out">Desconectado.</string>
     <string name="online_status_signed_in_as">Conectado como %1$s.</string>
     <string name="online_status_not_signed_in">Não conectado.</string>

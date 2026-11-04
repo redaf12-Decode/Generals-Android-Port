@@ -158,6 +158,30 @@ public class GeneralsZHActivity extends SDLActivity {
         setIntent(intent);
     }
 
+    // GeneralsX @bugfix Android port 04/11/2026 Release the LAN multicast lock when the game
+    // Activity goes away. udp.cpp holds one reference per open broadcast socket and releases it
+    // when the socket closes, but a socket still open at exit -- or a teardown that never reaches
+    // UDP::SetBroadcastReceive(false) -- left the lock held, which keeps Wi-Fi awake for as long
+    // as the process lives. Nothing else releases it: there was no onDestroy here at all.
+    @Override
+    protected void onDestroy() {
+        releaseLanMulticastLock();
+        super.onDestroy();
+    }
+
+    // Synchronized on the same monitor as setLanMulticastLock(): the native game thread may be
+    // releasing the last reference as the Activity is being torn down.
+    private synchronized void releaseLanMulticastLock() {
+        if (lanMulticastLock != null && lanMulticastLock.isHeld()) {
+            try {
+                lanMulticastLock.release();
+                Log.i(TAG, "LAN multicast lock released on exit");
+            } catch (RuntimeException e) {
+                Log.w(TAG, "could not release the LAN multicast lock", e);
+            }
+        }
+    }
+
     @Override
     protected String[] getArguments() {
         java.util.ArrayList<String> args = new java.util.ArrayList<>();

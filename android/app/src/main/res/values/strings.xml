@@ -47,10 +47,6 @@
     <string name="setup_button_change_language">Change Language</string>
     <string name="setup_language_dialog_title">Choose a language</string>
     <string name="setup_language_system_default">System Default</string>
-    <string name="setup_language_game_status_default">Game text: unaffected by this setting (uses its own data/registry.ini language, or English by default).</string>
-    <string name="setup_language_game_status_override">Game text: also switched to match (found data/%1$s/generals.csf in your game folder).</string>
-    <string name="setup_language_game_status_missing">Game text: NOT switched — no data/%1$s/generals.csf found in your game folder, so the game keeps its own language.</string>
-
     <!-- SetupActivity: Menu Text Size card -->
     <string name="setup_card_text_size">Menu Text Size</string>
     <string name="setup_text_size_label">Scale: %1$d%%</string>
@@ -75,7 +71,6 @@
     <string name="setup_render_backend_help_vulkan">Vulkan: the original backend, through DXVK\u0027s Direct3D 8 to Vulkan translation. Faster than the others on phones whose driver handles it well, typically recent Snapdragon. But it depends entirely on that driver, and on some GPUs it produces magenta patches, distorted geometry or corrupted menus that no setting here can fix \u2014 PowerVR BXM and Samsung Xclipse have both been reported. If Vulkan looks wrong on your device, that is what the default is for.\n\nThe Custom Vulkan Driver and DXVK Config sections only appear when Vulkan is selected.</string>
     <string name="setup_render_backend_gpu">Your GPU: %1$s</string>
     <string name="setup_render_backend_status">Current: %1$s</string>
-    <string name="setup_button_change_render_backend">Change Render Backend</string>
     <string name="setup_render_backend_dialog_title">Choose a render backend</string>
     <string name="setup_render_backend_vulkan">Vulkan</string>
     <string name="setup_render_backend_gles">OpenGL ES (default)</string>
@@ -131,10 +126,8 @@
     <string name="setup_switch_gx_net_trace_desc">Records every request the game makes to the GeneralsOnline servers, with the reply it got. Turn this on if sign-in, the lobby or matchmaking fails from inside the game. The launcher\'s own requests are always recorded; this adds the game\'s. It also turns on the cross-play desync diagnostics: the simulation checksums that are compared each interval, and, in a replay, the checksum of every single object. The checksum of every single object is written only during a Replay check, so ordinary games are not slowed down. (gx_net_trace.txt)</string>
     <string name="setup_button_download_langpack">Download language pack</string>
     <string name="setup_langpack_downloading">Downloading the language pack…</string>
-    <string name="setup_langpack_done">Language pack installed. The game will use it on the next launch.</string>
     <string name="setup_langpack_done_n">Installed %1$d language pack(s): %2$s. Pick one below.</string>
     <string name="setup_langpack_failed">Could not download the language pack: %1$s</string>
-    <string name="setup_langpack_not_available">This launcher language has no game-text pack.</string>
     <string name="setup_langpack_no_folder">Select your game folder first.</string>
     <string name="setup_langpack_err_none_yet">There is no pack for this language yet. Translations are welcome — see languages/README.md in the project repository.</string>
     <string name="setup_langpack_err_mkdir">could not create the language folder in your game folder</string>
@@ -146,7 +139,6 @@
     <string name="setup_game_text_status">Game text: %1$s</string>
     <string name="setup_game_text_status_default">Game text: English — unless a .big in your game folder replaces it</string>
     <string name="setup_game_text_none_found">No language packs found in your game folder yet. Download one first.</string>
-    <string name="setup_langpack_dialog_title">Which language?</string>
     <string name="setup_switch_dxvk_hud">On-screen performance overlay</string>
     <string name="setup_switch_dxvk_hud_desc">Shows FPS, draw calls, submissions, and pipeline count directly on screen and in the log. Turn this on for GPU performance reports. (dxvk_hud.txt)</string>
     <string name="setup_switch_dxvk_validation">Vulkan validation layer</string>
@@ -168,8 +160,6 @@
     <string name="setup_toast_grant_all_files">Grant \"Allow access to manage all files\" on the next screen, then come back and tap Select Game Folder again.</string>
     <string name="setup_toast_storage_permission_denied">Storage permission is required to browse for the game folder. Tap Select Game Folder again to retry.</string>
     <string name="setup_toast_folder_saved">Game folder saved.</string>
-    <string name="setup_toast_folder_saved_invalid">Saved, but no INIZH.big/INI.big found there — check the folder.</string>
-    <string name="setup_toast_folder_saved_incomplete">Saved, but some game files look incomplete or corrupted — see the details on the main screen before launching.</string>
     <string name="setup_toast_marker_save_failed">Could not save folder marker: %1$s</string>
     <string name="setup_toast_folder_cleared">Cleared. The game will fall back to its default folder convention.</string>
     <string name="setup_toast_options_dir_failed">Could not create Options.ini folder</string>
@@ -269,11 +259,9 @@
     <string name="online_status_continue_browser">Continue in your browser -- come back here once you\'ve signed in.</string>
     <string name="online_status_network_error">Network error -- check your connection and try again.</string>
     <string name="online_toast_signed_in_as">Signed in as %1$s</string>
-    <string name="online_status_signin_failed">Sign-in failed or was cancelled -- tap Sign In to try again.</string>
     <string name="online_status_banned">This account is banned on GeneralsOnline. You can appeal on their Discord.</string>
     <string name="online_status_banned_reason">This account is banned on GeneralsOnline: %1$s</string>
     <string name="online_status_timed_out">Timed out waiting -- tap Sign In to try again.</string>
-    <string name="online_status_unexpected">Unexpected response -- tap Sign In to try again.</string>
     <string name="online_toast_signed_out">Signed out.</string>
     <string name="online_status_signed_in_as">Signed in as %1$s.</string>
     <string name="online_status_not_signed_in">Not signed in.</string>

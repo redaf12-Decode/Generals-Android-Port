@@ -47,10 +47,6 @@
     <string name="setup_button_change_language">Змінити мову</string>
     <string name="setup_language_dialog_title">Оберіть мову</string>
     <string name="setup_language_system_default">Як у системі</string>
-    <string name="setup_language_game_status_default">Текст гри: не зачеплений цим налаштуванням (використовується власна мова гри з registry.ini, або англійська за замовчуванням).</string>
-    <string name="setup_language_game_status_override">Текст гри: теж перемкнено (знайдено data/%1$s/generals.csf у папці гри).</string>
-    <string name="setup_language_game_status_missing">Текст гри: НЕ перемкнено — у папці гри немає data/%1$s/generals.csf, тому гра зберігає свою мову.</string>
-
     <!-- SetupActivity: Menu Text Size card -->
     <string name="setup_card_text_size">Розмір тексту меню</string>
     <string name="setup_text_size_label">Масштаб: %1$d%%</string>
@@ -75,7 +71,6 @@
     <string name="setup_render_backend_help_vulkan">Vulkan: початковий бекенд, через трансляцію Direct3D 8 у Vulkan засобами DXVK. Швидший за інші на телефонах, чий драйвер із ним впорається, — зазвичай свіжі Snapdragon. Але все залежить саме від драйвера, і на деяких GPU з’являються пурпурові плями, спотворена геометрія чи зіпсовані меню, чого жодним налаштуванням звідси не виправити \u2014 повідомляли про PowerVR BXM і Samsung Xclipse. Якщо Vulkan виглядає неправильно на вашому пристрої, типовий варіант існує саме для цього.\n\nРозділи «Власний драйвер Vulkan» і «Конфігурація DXVK» показуються лише за обраного Vulkan.</string>
     <string name="setup_render_backend_gpu">Ваш GPU: %1$s</string>
     <string name="setup_render_backend_status">Зараз: %1$s</string>
-    <string name="setup_button_change_render_backend">Змінити графічний бекенд</string>
     <string name="setup_render_backend_dialog_title">Виберіть графічний бекенд</string>
     <string name="setup_render_backend_vulkan">Vulkan</string>
     <string name="setup_render_backend_gles">OpenGL ES (типовий)</string>
@@ -119,10 +114,8 @@
     <string name="setup_switch_gx_audio_trace_desc">Записує, що робить звукова система: заповнення буферів музики й мовлення, звук роликів і кожен запуск та зупинку джерела. Увімкніть, якщо після скарги на зниклий, переривчастий або тихий звук у вас попросять журнал звуку. (gx_audio_trace.txt)</string>
     <string name="setup_button_download_langpack">Завантажити мовний пакет</string>
     <string name="setup_langpack_downloading">Завантажую мовний пакет…</string>
-    <string name="setup_langpack_done">Мовний пакет встановлено. Гра підхопить його під час наступного запуску.</string>
     <string name="setup_langpack_done_n">Установлено мовних пакетів: %1$d (%2$s). Виберіть нижче.</string>
     <string name="setup_langpack_failed">Не вдалося завантажити мовний пакет: %1$s</string>
-    <string name="setup_langpack_not_available">Для цієї мови лаунчера немає пакета ігрового тексту.</string>
     <string name="setup_langpack_no_folder">Спочатку виберіть теку з грою.</string>
     <string name="setup_langpack_err_none_yet">Пакета для цієї мови ще немає. Переклади вітаються — див. languages/README.md у репозиторії проєкту.</string>
     <string name="setup_langpack_err_mkdir">не вдалося створити мовну теку в теці гри</string>
@@ -134,7 +127,6 @@
     <string name="setup_game_text_status">Текст гри: %1$s</string>
     <string name="setup_game_text_status_default">Текст гри: англійська — якщо тільки її не замінює .big у теці гри</string>
     <string name="setup_game_text_none_found">У теці гри поки немає мовних пакетів. Спершу завантажте.</string>
-    <string name="setup_langpack_dialog_title">Яка мова?</string>
     <string name="setup_switch_dxvk_hud">Екранний оверлей продуктивності</string>
     <string name="setup_switch_dxvk_hud_desc">Показує FPS, кількість draw call, надсилань і пайплайнів прямо на екрані та в логу. Вмикайте для звітів про продуктивність GPU. (dxvk_hud.txt)</string>
     <string name="setup_switch_dxvk_validation">Шар валідації Vulkan</string>
@@ -155,8 +147,6 @@
     <!-- SetupActivity: folder selection / misc toasts -->
     <string name="setup_toast_grant_all_files">Надайте дозвіл «Доступ до всіх файлів» на наступному екрані, потім поверніться і знову натисніть «Обрати папку з грою».</string>
     <string name="setup_toast_folder_saved">Папку з грою збережено.</string>
-    <string name="setup_toast_folder_saved_invalid">Збережено, але INIZH.big/INI.big там не знайдено — перевірте папку.</string>
-    <string name="setup_toast_folder_saved_incomplete">Збережено, але деякі файли гри виглядають неповними або пошкодженими — перегляньте деталі на головному екрані перед запуском.</string>
     <string name="setup_toast_marker_save_failed">Не вдалося зберегти мітку папки: %1$s</string>
     <string name="setup_toast_folder_cleared">Скинуто. Гра використовуватиме папку за замовчуванням.</string>
     <string name="setup_toast_options_dir_failed">Не вдалося створити папку для Options.ini</string>
@@ -204,9 +194,7 @@
     <string name="online_status_continue_browser">Продовжте в браузері — поверніться сюди після входу.</string>
     <string name="online_status_network_error">Помилка мережі — перевірте з’єднання і спробуйте ще раз.</string>
     <string name="online_toast_signed_in_as">Вхід виконано як %1$s</string>
-    <string name="online_status_signin_failed">Вхід не вдався або був скасований — натисніть «Увійти», щоб спробувати знову.</string>
     <string name="online_status_timed_out">Час очікування вичерпано — натисніть «Увійти», щоб спробувати знову.</string>
-    <string name="online_status_unexpected">Неочікувана відповідь — натисніть «Увійти», щоб спробувати знову.</string>
     <string name="online_toast_signed_out">Вихід виконано.</string>
     <string name="online_status_signed_in_as">Вхід виконано як %1$s.</string>
     <string name="online_status_not_signed_in">Вхід не виконано.</string>

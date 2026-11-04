@@ -47,10 +47,6 @@
     <string name="setup_button_change_language">Changer de langue</string>
     <string name="setup_language_dialog_title">Choisir une langue</string>
     <string name="setup_language_system_default">Par défaut du système</string>
-    <string name="setup_language_game_status_default">Texte du jeu : non affecté par ce paramètre (utilise la langue propre au jeu depuis registry.ini, ou l\'anglais par défaut).</string>
-    <string name="setup_language_game_status_override">Texte du jeu : également changé (data/%1$s/generals.csf trouvé dans votre dossier de jeu).</string>
-    <string name="setup_language_game_status_missing">Texte du jeu : PAS changé — data/%1$s/generals.csf introuvable dans votre dossier de jeu, le jeu conserve donc sa propre langue.</string>
-
     <!-- SetupActivity: Menu Text Size card -->
     <string name="setup_card_text_size">Taille du texte des menus</string>
     <string name="setup_text_size_label">Échelle : %1$d%%</string>
@@ -75,7 +71,6 @@
     <string name="setup_render_backend_help_vulkan">Vulkan : le backend d\u0027origine, via la traduction Direct3D 8 vers Vulkan de DXVK. Plus rapide que les autres sur les téléphones dont le pilote le gère bien, typiquement les Snapdragon récents. Mais tout dépend de ce pilote, et sur certains GPU il produit des taches magenta, une géométrie déformée ou des menus corrompus qu\u0027aucun réglage d\u0027ici ne corrige \u2014 PowerVR BXM et Samsung Xclipse ont tous deux été signalés. Si Vulkan s\u0027affiche mal sur votre appareil, c\u0027est précisément à cela que sert le choix par défaut.\n\nLes sections « Pilote Vulkan personnalisé » et « Configuration DXVK » n\u0027apparaissent que si Vulkan est sélectionné.</string>
     <string name="setup_render_backend_gpu">Votre GPU : %1$s</string>
     <string name="setup_render_backend_status">Actuel : %1$s</string>
-    <string name="setup_button_change_render_backend">Changer de moteur de rendu</string>
     <string name="setup_render_backend_dialog_title">Choisir un moteur de rendu</string>
     <string name="setup_render_backend_vulkan">Vulkan</string>
     <string name="setup_render_backend_gles">OpenGL ES (par défaut)</string>
@@ -119,10 +114,8 @@
     <string name="setup_switch_gx_audio_trace_desc">Enregistre ce que fait le système sonore : niveau des tampons de musique et de voix, audio des vidéos, et chaque source qui démarre ou s\'arrête. Activez-le si un journal audio vous est demandé après un signalement de son absent, haché ou muet. (gx_audio_trace.txt)</string>
     <string name="setup_button_download_langpack">Télécharger le pack de langue</string>
     <string name="setup_langpack_downloading">Téléchargement du pack de langue…</string>
-    <string name="setup_langpack_done">Pack de langue installé. Le jeu l\'utilisera au prochain lancement.</string>
     <string name="setup_langpack_done_n">%1$d pack(s) de langue installé(s) : %2$s. Choisissez ci-dessous.</string>
     <string name="setup_langpack_failed">Impossible de télécharger le pack de langue : %1$s</string>
-    <string name="setup_langpack_not_available">Cette langue du lanceur n\'a pas de pack de texte de jeu.</string>
     <string name="setup_langpack_no_folder">Sélectionnez d\'abord votre dossier de jeu.</string>
     <string name="setup_langpack_err_none_yet">Il n\'y a pas encore de pack pour cette langue. Les traductions sont bienvenues — voir languages/README.md dans le dépôt du projet.</string>
     <string name="setup_langpack_err_mkdir">impossible de créer le dossier de langue dans le dossier du jeu</string>
@@ -134,7 +127,6 @@
     <string name="setup_game_text_status">Textes du jeu : %1$s</string>
     <string name="setup_game_text_status_default">Textes du jeu : anglais, sauf si un .big du dossier de jeu le remplace</string>
     <string name="setup_game_text_none_found">Aucun pack de langue dans le dossier du jeu pour le moment. Téléchargez-en un.</string>
-    <string name="setup_langpack_dialog_title">Quelle langue ?</string>
     <string name="setup_switch_dxvk_hud">Overlay de performances à l\'écran</string>
     <string name="setup_switch_dxvk_hud_desc">Affiche les FPS, le nombre d\'appels de dessin, de soumissions et de pipelines directement à l\'écran et dans le journal. Activez-le pour les rapports de performances GPU. (dxvk_hud.txt)</string>
     <string name="setup_switch_dxvk_validation">Couche de validation Vulkan</string>
@@ -155,8 +147,6 @@
     <!-- SetupActivity: folder selection / misc toasts -->
     <string name="setup_toast_grant_all_files">Accordez « Autoriser l\'accès pour gérer tous les fichiers » sur l\'écran suivant, puis revenez et appuyez à nouveau sur Sélectionner le dossier du jeu.</string>
     <string name="setup_toast_folder_saved">Dossier du jeu enregistré.</string>
-    <string name="setup_toast_folder_saved_invalid">Enregistré, mais aucun INIZH.big/INI.big trouvé — vérifiez le dossier.</string>
-    <string name="setup_toast_folder_saved_incomplete">Enregistré, mais certains fichiers du jeu semblent incomplets ou corrompus — consultez les détails sur l\'écran principal avant de lancer le jeu.</string>
     <string name="setup_toast_marker_save_failed">Impossible d\'enregistrer le repère du dossier : %1$s</string>
     <string name="setup_toast_folder_cleared">Réinitialisé. Le jeu utilisera à nouveau son dossier par défaut.</string>
     <string name="setup_toast_options_dir_failed">Impossible de créer le dossier pour Options.ini</string>
@@ -204,9 +194,7 @@
     <string name="online_status_continue_browser">Continuez dans votre navigateur — revenez ici une fois connecté.</string>
     <string name="online_status_network_error">Erreur réseau — vérifiez votre connexion et réessayez.</string>
     <string name="online_toast_signed_in_as">Connecté en tant que %1$s</string>
-    <string name="online_status_signin_failed">La connexion a échoué ou a été annulée — appuyez sur Se connecter pour réessayer.</string>
     <string name="online_status_timed_out">Délai d\'attente dépassé — appuyez sur Se connecter pour réessayer.</string>
-    <string name="online_status_unexpected">Réponse inattendue — appuyez sur Se connecter pour réessayer.</string>
     <string name="online_toast_signed_out">Déconnecté.</string>
     <string name="online_status_signed_in_as">Connecté en tant que %1$s.</string>
     <string name="online_status_not_signed_in">Non connecté.</string>

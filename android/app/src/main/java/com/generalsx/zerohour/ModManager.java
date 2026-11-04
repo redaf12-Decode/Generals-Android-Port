@@ -299,16 +299,6 @@ final class ModManager {
         return entries;
     }
 
-    static int enabledCount(Context ctx) {
-        int count = 0;
-        for (Mod mod : listMods(ctx)) {
-            if (mod.enabled) {
-                count++;
-            }
-        }
-        return count;
-    }
-
     /**
      * Right before the game starts: the enabled folders of the selected game, highest priority
      * first, for the engine (GXManagedMods.h). No enabled mod: no file.

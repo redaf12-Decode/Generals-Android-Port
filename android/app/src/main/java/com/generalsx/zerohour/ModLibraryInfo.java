@@ -13,15 +13,6 @@ import java.nio.file.attribute.BasicFileAttributes;
 final class ModLibraryInfo {
     private ModLibraryInfo() {}
 
-    static boolean isManagedEntry(File root, File entry) {
-        try {
-            return !Files.isSymbolicLink(entry.toPath())
-                && root.getCanonicalFile().equals(entry.getCanonicalFile().getParentFile());
-        } catch (IOException | SecurityException e) {
-            return false;
-        }
-    }
-
     static long measure(File entry) {
         final long[] bytes = { 0 };
         final int[] visited = { 0 };

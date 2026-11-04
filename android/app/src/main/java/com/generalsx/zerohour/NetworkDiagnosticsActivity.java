@@ -57,6 +57,11 @@ public class NetworkDiagnosticsActivity extends Activity {
     private MaterialButton shareButton;
     private String report = "";
     private boolean running = false;
+    // GeneralsX @bugfix Android port 04/11/2026 Held so onDestroy can interrupt it. A sweep against
+    // an unreachable host blocks for tens of seconds, and it reports each step back through
+    // handler.post; without this the thread outlived the screen and kept posting to a destroyed
+    // Activity's views.
+    private Thread sweepThread;
 
     @Override
     protected void attachBaseContext(android.content.Context newBase) {
@@ -142,18 +147,37 @@ public class NetworkDiagnosticsActivity extends Activity {
         shareButton.setEnabled(false);
         reportText.setText(R.string.netdiag_running);
 
-        new Thread(() -> {
+        sweepThread = new Thread(() -> {
             String result = NetworkDiagnostics.run(this,
                 label -> handler.post(() ->
                     reportText.setText(getString(R.string.netdiag_running_step, label))));
             handler.post(() -> {
+                // The interrupt above races this post: a sweep that finished just as the screen
+                // closed must not touch its views.
+                if (isFinishing() || isDestroyed()) {
+                    return;
+                }
                 running = false;
                 runButton.setEnabled(true);
                 shareButton.setEnabled(true);
                 report = result;
                 reportText.setText(result);
             });
-        }, "NetworkDiagnostics").start();
+        }, "NetworkDiagnostics");
+        sweepThread.start();
+    }
+
+    @Override
+    protected void onDestroy() {
+        // GeneralsX @bugfix Android port 04/11/2026 Stop the sweep and drop its pending posts.
+        // NetworkDiagnostics.run() checks Thread.interrupted() between probes, so the thread ends
+        // at the next step boundary instead of holding the Activity until the whole sweep is done.
+        if (sweepThread != null) {
+            sweepThread.interrupt();
+            sweepThread = null;
+        }
+        handler.removeCallbacksAndMessages(null);
+        super.onDestroy();
     }
 
     private void copyReport() {

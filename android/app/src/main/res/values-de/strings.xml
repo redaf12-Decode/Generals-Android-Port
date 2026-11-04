@@ -47,10 +47,6 @@
     <string name="setup_button_change_language">Sprache ändern</string>
     <string name="setup_language_dialog_title">Sprache wählen</string>
     <string name="setup_language_system_default">Systemstandard</string>
-    <string name="setup_language_game_status_default">Spieltext: von dieser Einstellung nicht betroffen (verwendet die eigene Sprache des Spiels aus registry.ini, sonst Englisch als Standard).</string>
-    <string name="setup_language_game_status_override">Spieltext: ebenfalls umgeschaltet (data/%1$s/generals.csf im Spielordner gefunden).</string>
-    <string name="setup_language_game_status_missing">Spieltext: NICHT umgeschaltet — data/%1$s/generals.csf fehlt im Spielordner, das Spiel behält daher seine eigene Sprache.</string>
-
     <!-- SetupActivity: Menu Text Size card -->
     <string name="setup_card_text_size">Menütextgröße</string>
     <string name="setup_text_size_label">Skalierung: %1$d%%</string>
@@ -75,7 +71,6 @@
     <string name="setup_render_backend_help_vulkan">Vulkan: das ursprüngliche Backend, über DXVKs Übersetzung von Direct3D 8 nach Vulkan. Schneller als die anderen auf Telefonen, deren Treiber damit umgehen kann, typischerweise neuere Snapdragon. Es hängt aber vollständig an diesem Treiber, und auf manchen GPUs entstehen magentafarbene Flächen, verzerrte Geometrie oder kaputte Menüs, gegen die keine Einstellung hier hilft \u2014 gemeldet wurden PowerVR BXM und Samsung Xclipse. Wenn Vulkan auf deinem Gerät falsch aussieht, ist genau dafür der Standard da.\n\nDie Abschnitte „Eigener Vulkan-Treiber“ und „DXVK-Konfiguration“ erscheinen nur bei ausgewähltem Vulkan.</string>
     <string name="setup_render_backend_gpu">Deine GPU: %1$s</string>
     <string name="setup_render_backend_status">Aktuell: %1$s</string>
-    <string name="setup_button_change_render_backend">Render-Backend ändern</string>
     <string name="setup_render_backend_dialog_title">Render-Backend wählen</string>
     <string name="setup_render_backend_vulkan">Vulkan</string>
     <string name="setup_render_backend_gles">OpenGL ES (Standard)</string>
@@ -119,10 +114,8 @@
     <string name="setup_switch_gx_audio_trace_desc">Zeichnet auf, was das Soundsystem tut: Pufferstände von Musik und Sprache, Filmton sowie jede Quelle, die startet oder stoppt. Aktivieren Sie dies, wenn nach einer Meldung über fehlenden, stockenden oder stummen Ton ein Audio-Protokoll angefordert wird. (gx_audio_trace.txt)</string>
     <string name="setup_button_download_langpack">Sprachpaket herunterladen</string>
     <string name="setup_langpack_downloading">Sprachpaket wird heruntergeladen…</string>
-    <string name="setup_langpack_done">Sprachpaket installiert. Das Spiel verwendet es beim nächsten Start.</string>
     <string name="setup_langpack_done_n">%1$d Sprachpaket(e) installiert: %2$s. Wählen Sie unten aus.</string>
     <string name="setup_langpack_failed">Sprachpaket konnte nicht heruntergeladen werden: %1$s</string>
-    <string name="setup_langpack_not_available">Für diese Launcher-Sprache gibt es kein Spieltext-Paket.</string>
     <string name="setup_langpack_no_folder">Wählen Sie zuerst Ihren Spielordner aus.</string>
     <string name="setup_langpack_err_none_yet">Für diese Sprache gibt es noch kein Paket. Übersetzungen sind willkommen — siehe languages/README.md im Projekt-Repository.</string>
     <string name="setup_langpack_err_mkdir">der Sprachordner konnte im Spielordner nicht angelegt werden</string>
@@ -134,7 +127,6 @@
     <string name="setup_game_text_status">Spieltexte: %1$s</string>
     <string name="setup_game_text_status_default">Spieltexte: Englisch — sofern keine .big im Spielordner sie ersetzt</string>
     <string name="setup_game_text_none_found">Noch keine Sprachpakete im Spielordner. Laden Sie zuerst eines herunter.</string>
-    <string name="setup_langpack_dialog_title">Welche Sprache?</string>
     <string name="setup_switch_dxvk_hud">Bildschirm-Leistungsanzeige</string>
     <string name="setup_switch_dxvk_hud_desc">Zeigt FPS, Draw Calls, Submissions und Pipeline-Anzahl direkt auf dem Bildschirm und im Protokoll. Aktiviere dies für GPU-Leistungsberichte. (dxvk_hud.txt)</string>
     <string name="setup_switch_dxvk_validation">Vulkan-Validierungsschicht</string>
@@ -155,8 +147,6 @@
     <!-- SetupActivity: folder selection / misc toasts -->
     <string name="setup_toast_grant_all_files">Erteile auf dem nächsten Bildschirm „Zugriff auf alle Dateien verwalten erlauben“, komm dann zurück und tippe erneut auf „Spielordner auswählen“.</string>
     <string name="setup_toast_folder_saved">Spielordner gespeichert.</string>
-    <string name="setup_toast_folder_saved_invalid">Gespeichert, aber dort wurden keine INIZH.big/INI.big gefunden — bitte Ordner prüfen.</string>
-    <string name="setup_toast_folder_saved_incomplete">Gespeichert, aber einige Spieldateien sehen unvollständig oder beschädigt aus — sieh dir die Details auf dem Hauptbildschirm an, bevor du startest.</string>
     <string name="setup_toast_marker_save_failed">Ordner-Markierung konnte nicht gespeichert werden: %1$s</string>
     <string name="setup_toast_folder_cleared">Zurückgesetzt. Das Spiel verwendet wieder seinen Standardordner.</string>
     <string name="setup_toast_options_dir_failed">Ordner für Options.ini konnte nicht erstellt werden</string>
@@ -204,9 +194,7 @@
     <string name="online_status_continue_browser">Fahre in deinem Browser fort — komm hierher zurück, sobald du angemeldet bist.</string>
     <string name="online_status_network_error">Netzwerkfehler — überprüfe deine Verbindung und versuche es erneut.</string>
     <string name="online_toast_signed_in_as">Angemeldet als %1$s</string>
-    <string name="online_status_signin_failed">Anmeldung fehlgeschlagen oder abgebrochen — tippe auf Anmelden, um es erneut zu versuchen.</string>
     <string name="online_status_timed_out">Zeitüberschreitung beim Warten — tippe auf Anmelden, um es erneut zu versuchen.</string>
-    <string name="online_status_unexpected">Unerwartete Antwort — tippe auf Anmelden, um es erneut zu versuchen.</string>
     <string name="online_toast_signed_out">Abgemeldet.</string>
     <string name="online_status_signed_in_as">Angemeldet als %1$s.</string>
     <string name="online_status_not_signed_in">Nicht angemeldet.</string>

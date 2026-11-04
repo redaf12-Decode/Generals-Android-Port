@@ -102,6 +102,9 @@ final class UpdateManager {
     // The engine downloaded last came from this channel; a release APK installed over a test one
     // must not keep running the test channel's engine.
     private static final String KEY_ENGINE_CHANNEL = "engine_channel";
+    // Dead since 04/11/2026: the "Check automatically" switch that wrote it went with the Home
+    // Updates card, and nothing reads it either. Kept as the documented name of the stored
+    // preference, so a restored card keeps the value a player had already chosen.
     private static final String KEY_AUTO = "auto_check";
     private static final String KEY_LAST_CHECK = "last_check";
     private static final String KEY_DEPS_OK_FOR = "deps_ok_for";
@@ -137,17 +140,6 @@ final class UpdateManager {
 
     // ---------------------------------------------------------------------------------------
     // Settings
-
-    // GeneralsX @refactor Android port 04/11/2026 No caller left: the Home "Check automatically"
-    // switch went with the Updates card. Kept so restoring the card restores the setting too.
-    static boolean isAutoCheckEnabled(Context ctx) {
-        return prefs(ctx).getBoolean(KEY_AUTO, true);
-    }
-
-    // GeneralsX @refactor Android port 04/11/2026 See isAutoCheckEnabled.
-    static void setAutoCheckEnabled(Context ctx, boolean enabled) {
-        prefs(ctx).edit().putBoolean(KEY_AUTO, enabled).apply();
-    }
 
     static long lastCheckMillis(Context ctx) {
         return prefs(ctx).getLong(KEY_LAST_CHECK, 0L);
