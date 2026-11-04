@@ -224,7 +224,6 @@ public class SetupActivity extends Activity {
             buildFallbackUi(t);
         }
         moveOffVulkanOnce();
-        maybeShowSupportPopup();
     }
 
     @Override
@@ -687,12 +686,6 @@ public class SetupActivity extends Activity {
             runOnUiThread(() -> {
                 updateCheckRunning = false;
                 refreshUpdatesStatus();
-                // The support card is read from the support.json this check may just have replaced.
-                if (r.supportUpdated && currentTab == TAB_HELP && contentHost != null) {
-                    showTab(TAB_HELP);
-                }
-                // A new announcement may have just arrived with it.
-                maybeShowSupportPopup();
                 if (!r.ok) {
                     if (userAsked) {
                         toast(r.offline
@@ -727,201 +720,10 @@ public class SetupActivity extends Activity {
         UiKit.chip(about, R.drawable.ic_gzh_check, versionLabel(),
             R.color.gzh_primary, R.color.gzh_surface_container_high);
 
-        buildSupportSection(page);
-
         LinearLayout help = UiKit.card(page);
         UiKit.sectionHeader(help, R.drawable.ic_gzh_doc,
             getString(R.string.setup_card_how_it_works), false);
         UiKit.supporting(help, getString(R.string.setup_how_it_works_body));
-    }
-
-    // GeneralsX @feature Android port 03/10/2026 README "Support the project", in the launcher.
-    // On the Help page, next to the version, rather than on Home: Home is for getting into the game,
-    // and nothing here should stand between a player and the Play button. Text, languages and
-    // entries all come from the published support.json (SupportLinks), none from this APK.
-    private void buildSupportSection(LinearLayout page) {
-        SupportLinks support = SupportLinks.load(this);
-        if (support == null) {
-            return;
-        }
-        LinearLayout card = UiKit.card(page);
-        UiKit.sectionHeader(card, R.drawable.ic_gzh_heart, support.title, false);
-        // GeneralsX @feature Android port 18/10/2026 The card as blocks when the file has them
-        // (SupportLinks "card"): supporters, goals, buttons -- all added online.
-        if (support.cardBlocks != null) {
-            renderSupportBlocks(card, support.cardBlocks, support);
-            return;
-        }
-        if (!support.body.isEmpty()) {
-            UiKit.supporting(card, support.body);
-        }
-        for (SupportLinks.Entry e : support.entries) {
-            if (e.isLink()) {
-                UiKit.listRow(card, R.drawable.ic_gzh_globe, e.label,
-                    e.value, () -> openSupportLink(e.value));
-            } else {
-                final CharSequence idle = support.copyHint.isEmpty()
-                    ? e.value : e.value + "\n" + support.copyHint;
-                final UiKit.Row[] row = new UiKit.Row[1];
-                row[0] = UiKit.listRow(card, R.drawable.ic_gzh_copy, e.label, idle,
-                    () -> copySupportAddress(row[0], idle, e.label, e.value, support.copied));
-            }
-        }
-        if (!support.warning.isEmpty()) {
-            UiKit.helpText(card, support.warning);
-        }
-    }
-
-    /** Draws SupportLinks blocks into a card or a dialog's body. */
-    private void renderSupportBlocks(LinearLayout parent, java.util.List<SupportLinks.Block> blocks,
-                                     SupportLinks support) {
-        for (SupportLinks.Block b : blocks) {
-            switch (b.type) {
-                case "heading": {
-                    TextView t = UiKit.body(parent, b.text);
-                    t.setTypeface(t.getTypeface(), android.graphics.Typeface.BOLD);
-                    break;
-                }
-                case "text":
-                    UiKit.supporting(parent, b.text);
-                    break;
-                case "note":
-                    UiKit.helpText(parent, b.text);
-                    break;
-                case "link":
-                    UiKit.listRow(parent, R.drawable.ic_gzh_globe, b.text, b.value,
-                        () -> openSupportLink(b.value));
-                    break;
-                case "button":
-                    UiKit.button(parent, UiKit.BTN_TONAL, R.drawable.ic_gzh_heart, b.text,
-                        () -> openSupportLink(b.value));
-                    break;
-                case "copy": {
-                    final CharSequence idle = support.copyHint.isEmpty()
-                        ? b.value : b.value + "\n" + support.copyHint;
-                    final UiKit.Row[] row = new UiKit.Row[1];
-                    row[0] = UiKit.listRow(parent, R.drawable.ic_gzh_copy, b.text, idle,
-                        () -> copySupportAddress(row[0], idle, b.text, b.value, support.copied));
-                    break;
-                }
-                case "rows":
-                    if (!b.text.isEmpty()) {
-                        TextView t = UiKit.body(parent, b.text);
-                        t.setTypeface(t.getTypeface(), android.graphics.Typeface.BOLD);
-                    }
-                    for (String[] r : b.rows) {
-                        UiKit.listRow(parent, R.drawable.ic_gzh_heart, r[0], r[1], null);
-                    }
-                    break;
-                case "progress": {
-                    UiKit.supporting(parent, b.text.isEmpty()
-                        ? String.format(java.util.Locale.ROOT, "%.0f / %.0f", b.progress, b.max)
-                        : b.text);
-                    android.widget.ProgressBar bar = new android.widget.ProgressBar(this, null,
-                        android.R.attr.progressBarStyleHorizontal);
-                    bar.setMax(1000);
-                    bar.setProgress((int) Math.min(1000, Math.round(b.progress * 1000 / b.max)));
-                    bar.setProgressTintList(UiKit.tint(this, R.color.gzh_primary));
-                    parent.addView(bar, new LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.MATCH_PARENT, UiKit.dp(this, 12)));
-                    break;
-                }
-                case "divider":
-                    UiKit.divider(parent);
-                    break;
-                default:
-                    break;
-            }
-        }
-    }
-
-    private static final String PREF_SUPPORT_POPUP_SEEN = "support_popup_seen";
-
-    /**
-     * GeneralsX @feature Android port 18/10/2026 The window described by support.json's "popup",
-     * shown once per id: the first time the launcher has it, and again only when a new id is
-     * published (an announcement, a donation drive). Never over the game, never twice.
-     */
-    private void maybeShowSupportPopup() {
-        if (isFinishing() || contentHost == null) {
-            return;
-        }
-        SupportLinks support = SupportLinks.load(this);
-        if (support == null || support.popup == null) {
-            return;
-        }
-        final SupportLinks.Popup popup = support.popup;
-        android.content.SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
-        if (popup.id.equals(prefs.getString(PREF_SUPPORT_POPUP_SEEN, ""))) {
-            return;
-        }
-        prefs.edit().putString(PREF_SUPPORT_POPUP_SEEN, popup.id).apply();
-
-        android.widget.ScrollView scroll = new android.widget.ScrollView(this);
-        LinearLayout body = new LinearLayout(this);
-        body.setOrientation(LinearLayout.VERTICAL);
-        int pad = UiKit.dp(this, 20);
-        body.setPadding(pad, UiKit.dp(this, 8), pad, 0);
-        scroll.addView(body);
-        renderSupportBlocks(body, popup.blocks, support);
-
-        com.google.android.material.dialog.MaterialAlertDialogBuilder builder =
-            new com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
-                .setView(scroll);
-        if (!popup.title.isEmpty()) {
-            builder.setTitle(popup.title);
-        }
-        // Up to two buttons from the file; closing is always there.
-        for (int i = 0; i < popup.buttons.size() && i < 2; i++) {
-            final String[] b = popup.buttons.get(i);
-            final android.content.DialogInterface.OnClickListener action = (d, w) -> {
-                if ("support".equals(b[1])) {
-                    showTab(TAB_HELP);
-                } else {
-                    openSupportLink(b[1]);
-                }
-            };
-            if (i == 0) {
-                builder.setPositiveButton(b[0], action);
-            } else {
-                builder.setNeutralButton(b[0], action);
-            }
-        }
-        builder.setNegativeButton(R.string.setup_support_popup_later, null);
-        builder.show();
-    }
-
-    // GeneralsX @bugfix Android port 03/10/2026 The copy was silent: Android 13+ was trusted to
-    // confirm it, and several vendor builds show nothing. The row itself now says so for a moment
-    // (with a tick of haptics), and the toast is shown on every version.
-    private void copySupportAddress(UiKit.Row row, CharSequence idle, String label, String value,
-                                    String copiedText) {
-        android.content.ClipboardManager clipboard =
-            (android.content.ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
-        if (clipboard == null) {
-            return;
-        }
-        clipboard.setPrimaryClip(android.content.ClipData.newPlainText(label, value));
-        String done = copiedText.isEmpty() ? value : copiedText.replace("%s", label);
-        row.root.performHapticFeedback(android.view.HapticFeedbackConstants.VIRTUAL_KEY);
-        row.supporting.setText(value + "\n\u2713 " + done);
-        row.supporting.setTextColor(UiKit.color(this, R.color.gzh_primary));
-        row.root.removeCallbacks((Runnable) row.root.getTag());
-        Runnable restore = () -> {
-            row.supporting.setText(idle);
-            row.supporting.setTextColor(UiKit.color(this, R.color.gzh_on_surface_variant));
-        };
-        row.root.setTag(restore);
-        row.root.postDelayed(restore, 2500);
-        toast(done);
-    }
-
-    private void openSupportLink(String url) {
-        try {
-            startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url)));
-        } catch (android.content.ActivityNotFoundException e) {
-            toast(url);
-        }
     }
 
     // The build's own version, as the manifest carries it -- no new string
