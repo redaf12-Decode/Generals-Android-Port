@@ -117,7 +117,6 @@ accounts at risk, not your own.
 - **The game folder one or two levels down**: pick the folder the archive was unpacked into, and the
   launcher finds the game inside it. A complete Generals folder is no longer reported as incomplete.
 - **Downloading language packs no longer fails with HTTP 403** on mobile networks.
-- A support card and occasional announcements from the project.
 - A sharper launcher icon.
 
 ## Install / update
@@ -125,9 +124,3 @@ accounts at risk, not your own.
 Install over 1.4.0 -- settings, sign-in and game folders are kept. Requires Android 9 or newer, 64-bit (arm64).
 
 Thanks to everyone who reported problems on GitHub and 4PDA.
-
-## ❤️ Heroes of the project
-
-**Diaa Abu Jazar — $2 via Boosty.** Thank you! Every donation goes to the Claude Code subscription this port is built
-with, and keeps the updates coming. The game and every build stay free; if you enjoy it and want to help, the
-addresses are in the launcher (**Help → Support the project**) and in the README.

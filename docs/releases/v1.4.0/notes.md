@@ -81,8 +81,6 @@ of JetErorr's fork.)
 
 ### Launcher
 
-- **Support the project** card on the Help page (Boosty -- like Patreon -- and USDT). Its contents come with the
-  signed settings, so they are kept current without a new APK.
 - Settings from the signed updates now also cover the data package's address and the PC checksum rules, so
   fixes like the "checksum mismatch" one reach older launchers too.
 - List rows on the Tools and Help pages respond to a tap.
@@ -94,11 +92,3 @@ of JetErorr's fork.)
 - Tokens are removed from the launcher's network log before it is shared.
 
 **Full Changelog**: https://github.com/MYSOREZ/GeneralsZH-Android-Port/compare/v1.3.0...v1.4.0
-
-## Support the project
-
-This port is developed with Claude Code, and the subscription is paid out of pocket. If the port is useful to
-you, donations are welcome -- on [Boosty](https://boosty.to/antikeks_m/donate) (a Patreon-like platform,
-bank cards from anywhere) or in USDT, see the launcher's Help page or the
-[README](https://github.com/MYSOREZ/GeneralsZH-Android-Port#support-the-project). The game and every build stay
-free; nothing is unlocked by donating.

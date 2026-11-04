@@ -51,14 +51,3 @@ Install over 1.4.1 -- settings, sign-in and game folders are kept. Requires Andr
 
 Thanks to everyone who reported problems and tested the test builds on GitHub and 4PDA -- generalmilk,
 Jayzer74, Piano23, Meto0401, Play4FunOnly and many others.
-
-## ❤️ Heroes of October
-
-Thank you to everyone who supported the project in October -- $18.73 of the $20 monthly subscription:
-
-**Diaa Abu Jazar, hein htetsan, [UA]Den^, Zhask Dominator, Mukhiddin (WaruEdition), Shahre Masore, MAD ATOM
-and an unknown general.**
-
-Every donation goes to the Claude Code subscription this port is built with, and keeps the updates coming.
-The game and every build stay free; if you enjoy it and want to help, the addresses are in the launcher
-(**Help → Support the project**) and in the README.

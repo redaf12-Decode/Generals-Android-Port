@@ -11,14 +11,12 @@
 <p align="center">
   <a href="https://github.com/MYSOREZ/GeneralsZH-Android-Port/releases/latest"><img alt="Download the latest APK" src="https://img.shields.io/github/v/release/MYSOREZ/GeneralsZH-Android-Port?label=Download%20APK&style=for-the-badge&logo=android&logoColor=white&color=3DDC84"></a>
   <a href="https://gitverse.ru/MYSOREZ/Generals_ZeroHour/releases"><img alt="Mirror on GitVerse" src="https://img.shields.io/badge/Mirror-GitVerse-5B5BD6?style=for-the-badge"></a>
-  <a href="https://boosty.to/antikeks_m/donate"><img alt="Support on Boosty" src="https://img.shields.io/badge/Support-Boosty-F15F2C?style=for-the-badge"></a>
 </p>
 <p align="center">
   <a href="#quick-start--android"><img alt="Quick start" src="https://img.shields.io/badge/Quick%20start-2b3137?style=flat-square"></a>
   <a href="#touch-controls"><img alt="Touch controls" src="https://img.shields.io/badge/Touch%20controls-2b3137?style=flat-square"></a>
   <a href="#known-issues"><img alt="Known issues" src="https://img.shields.io/badge/Known%20issues-2b3137?style=flat-square"></a>
   <a href="https://github.com/MYSOREZ/GeneralsZH-Android-Port/issues"><img alt="Report a problem" src="https://img.shields.io/badge/Report%20a%20problem-2b3137?style=flat-square"></a>
-  <a href="#heroes-of-the-project"><img alt="Heroes of the project" src="https://img.shields.io/badge/Heroes%20of%20the%20project-2b3137?style=flat-square"></a>
 </p>
 <p align="center">
   <img alt="Downloads" src="https://img.shields.io/github/downloads/MYSOREZ/GeneralsZH-Android-Port/total?label=downloads">
@@ -258,56 +256,6 @@ architecture, bring-up log): [docs/port/ANDROID_PORT.md](docs/port/ANDROID_PORT.
 - Cross-play with PC players is turned off at the GeneralsOnline developers'
   request: Android clients cannot join PC games, and PC clients cannot join
   Android games. Online play between Android players works as before.
-
-## Support the project
-
-This port is developed with [Claude Code](https://claude.com/claude-code) (Anthropic's Claude),
-and the subscription is paid out of pocket. If the port is useful to you and you'd like to help
-keep it going, donations are welcome — they go to that subscription.
-
-**[Boosty](https://boosty.to/antikeks_m/donate)** (a Patreon-like platform; sending a tip needs a
-Boosty account) takes a bank card, from Russia and from abroad
-(the amount is shown in your currency and converted automatically). Or send USDT:
-
-| Currency and network | Address |
-|---|---|
-| **USDT — TRON (TRC20)** | `TAQHCF733ovKpvBjUgvkE6wHxkntnKZ6br` |
-| **USDT — BSC (BEP20)** | `0x52c05c81485d68367385ff389cf19a453f036310` |
-| **USDT — TON** (no memo needed) | `UQAOdBpFSPhlgbvUIJ2O2w2NuwWashaNjFWDsOirDqH9kGbR` |
-
-Send **USDT only, and only over the network written next to the address** — any other token,
-or USDT over a different network, will be lost. Donations support development only: the game
-and every build stay free, and nothing is unlocked by donating. *Command & Conquer* is a
-trademark of Electronic Arts; this is an unofficial fan project.
-
-Boosty keeps about $0.25 of a donation when it is paid out, so a tip of that size or
-smaller does not reach the subscription.
-
-### Heroes of the project
-
-Everyone who has supported the port, month by month (amounts in US dollars, approximate where the
-donation was in another currency). The launcher shows the current month only; at the end of every
-month its heroes move here. Thank you!
-
-**November 2026** — $2.88 of the $20 monthly subscription so far
-
-| Hero | Amount |
-|---|---|
-| Sammy Denilson | $1.88 · Boosty |
-| Unknown General | $1 · USDC |
-
-**October 2026** — $18.73 of the $20 monthly subscription
-
-| Hero | Amount |
-|---|---|
-| Diaa Abu Jazar | $2 · Boosty |
-| hein htetsan | $0.19 · Boosty |
-| [UA]Den^ | $4.79 · Boosty |
-| Zhask Dominator | $6.21 · Boosty |
-| Mukhiddin (WaruEdition) | $2.81 · Boosty |
-| Shahre Masore | $0.47 · Boosty |
-| MAD ATOM | $1.88 · Boosty |
-| Unknown General | $0.38 · USDT |
 
 ## Popularity
 
