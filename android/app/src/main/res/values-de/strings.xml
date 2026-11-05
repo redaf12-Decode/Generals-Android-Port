@@ -556,7 +556,7 @@
     <string name="touch_color_picker_title">Farbe wählen</string>
     <string name="touch_button_size">Schaltflächengröße: %1$d%%</string>
     <string name="touch_button_opacity">Deckkraft: %1$d%%</string>
-    <string name="touch_too_many_buttons">Höchstens 20 Schaltflächen</string>
+    <string name="touch_too_many_buttons">Höchstens 40 Schaltflächen</string>
     <string name="touch_select_button_first">Zuerst eine Schaltfläche wählen</string>
     <string name="toolbox_style_rounded">Abgerundet</string>
     <string name="toolbox_style_circle">Kreis</string>
@@ -604,12 +604,14 @@
     <string name="setup_touch_controls_help">Ein Knopf drückt eine echte Tastaturtaste, jeder Knopf ist also eine der eigenen Tastenkürzel des Spiels. Knöpfe wirken beim Drücken, beim Halten oder als Umschalter und können Ctrl, Shift oder Alt tragen. Dieses Spiel behält sein eigenes Layout, und ein Zurücksetzen der Launcher-Einstellungen berührt es nicht.</string>
     <string name="setup_button_touch_editor">Editor öffnen</string>
     <string name="setup_button_touch_reset">Knöpfe zurücksetzen</string>
+    <string name="setup_button_touch_show_toolbox">Werkzeugkasten anzeigen</string>
+    <string name="setup_toast_toolbox_shown">Schwebender Werkzeugkasten wiederhergestellt. Er ist an der zuletzt festgelegten Position.</string>
     <string name="setup_touch_reset_title">Bildschirmknöpfe zurücksetzen?</string>
     <string name="setup_touch_reset_message">Die Knöpfe kehren zum mitgelieferten Layout zurück. Ihr gespeichertes Standardlayout bleibt erhalten.</string>
     <string name="setup_touch_reset_confirm">Zurücksetzen</string>
     <string name="toolbox_tool_add_button">Schaltfläche hinzufügen</string>
     <string name="toolbox_tool_hide_toolbox">Werkzeugkasten ausblenden</string>
-    <string name="toolbox_toast_hidden">Werkzeugkasten ausgeblendet. Das Symbol bleibt auf dem Bildschirm; tippen Sie darauf, um das Menü wieder zu öffnen.</string>
+    <string name="toolbox_toast_hidden">Werkzeugkasten ausgeblendet. Das Symbol ist weg; holen Sie es mit „Werkzeugkasten anzeigen“ in den Bildschirmsteuerungen zurück.</string>
     <string name="touch_toast_button_added">Schaltfläche hinzugefügt. Ziehen Sie sie an die gewünschte Stelle.</string>
     <string name="setup_icon_credit">Werkzeugkasten-Symbol: „Control“ von Creatype, von Flaticon – genutzt unter der Flaticon Free License.</string>
 </resources>

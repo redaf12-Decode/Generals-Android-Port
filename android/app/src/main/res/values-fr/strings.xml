@@ -556,7 +556,7 @@
     <string name="touch_color_picker_title">Choisir une couleur</string>
     <string name="touch_button_size">Taille du bouton : %1$d%%</string>
     <string name="touch_button_opacity">Opacité : %1$d%%</string>
-    <string name="touch_too_many_buttons">20 boutons maximum</string>
+    <string name="touch_too_many_buttons">40 boutons maximum</string>
     <string name="touch_select_button_first">Sélectionnez d’abord un bouton</string>
     <string name="toolbox_style_rounded">Arrondi</string>
     <string name="toolbox_style_circle">Cercle</string>
@@ -604,12 +604,14 @@
     <string name="setup_touch_controls_help">Un bouton appuie sur une vraie touche du clavier : chaque bouton est donc un raccourci propre au jeu. Les boutons agissent à l\'appui, au maintien ou en bascule, et peuvent porter Ctrl, Shift ou Alt. Ce jeu garde sa propre disposition, et une réinitialisation des réglages du lanceur ne la touche pas.</string>
     <string name="setup_button_touch_editor">Ouvrir l\'éditeur</string>
     <string name="setup_button_touch_reset">Réinitialiser les boutons</string>
+    <string name="setup_button_touch_show_toolbox">Afficher la boîte à outils</string>
+    <string name="setup_toast_toolbox_shown">Boîte à outils flottante restaurée. Elle revient à la dernière position que vous avez définie.</string>
     <string name="setup_touch_reset_title">Réinitialiser les boutons à l\'écran ?</string>
     <string name="setup_touch_reset_message">Les boutons reviennent à la disposition fournie. Votre disposition par défaut enregistrée est conservée.</string>
     <string name="setup_touch_reset_confirm">Réinitialiser</string>
     <string name="toolbox_tool_add_button">Ajouter un bouton</string>
     <string name="toolbox_tool_hide_toolbox">Masquer la boîte à outils</string>
-    <string name="toolbox_toast_hidden">Boîte à outils masquée. L’icône reste à l’écran ; touchez-la pour rouvrir le panneau.</string>
+    <string name="toolbox_toast_hidden">Boîte à outils masquée. L’icône a disparu ; ramenez-la avec « Afficher la boîte à outils » dans les commandes à l’écran.</string>
     <string name="touch_toast_button_added">Bouton ajouté. Faites-le glisser pour le placer.</string>
     <string name="setup_icon_credit">Icône de la boîte à outils : « Control » par Creatype, de Flaticon — utilisée sous la licence gratuite Flaticon.</string>
 </resources>

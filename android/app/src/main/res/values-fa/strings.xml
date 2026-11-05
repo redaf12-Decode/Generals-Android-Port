@@ -556,7 +556,7 @@
     <string name="touch_color_picker_title">انتخاب رنگ</string>
     <string name="touch_button_size">اندازه دکمه: %1$d%%</string>
     <string name="touch_button_opacity">شفافیت: %1$d%%</string>
-    <string name="touch_too_many_buttons">حداکثر ۲۰ دکمه</string>
+    <string name="touch_too_many_buttons">حداکثر ۴۰ دکمه</string>
     <string name="touch_select_button_first">ابتدا یک دکمه را انتخاب کنید</string>
     <string name="toolbox_style_rounded">گرد</string>
     <string name="toolbox_style_circle">دایره</string>
@@ -604,12 +604,14 @@
     <string name="setup_touch_controls_help">هر دکمه یک کلید واقعی صفحه‌کلید را می‌فشارد، پس هر دکمه یکی از میان‌برهای خود بازی است. دکمه‌ها با فشردن، با نگه‌داشتن یا به‌صورت کلید تغییر عمل می‌کنند و می‌توانند Ctrl، Shift یا Alt داشته باشند. این بازی چیدمان خودش را نگه می‌دارد و بازنشانی تنظیمات لانچر آن را تغییر نمی‌دهد.</string>
     <string name="setup_button_touch_editor">باز کردن ویرایشگر</string>
     <string name="setup_button_touch_reset">بازنشانی دکمه‌ها</string>
+    <string name="setup_button_touch_show_toolbox">نمایش جعبه‌ابزار</string>
+    <string name="setup_toast_toolbox_shown">جعبه‌ابزار شناور بازگردانده شد. به آخرین موقعیتی که تنظیم کردید بازگشت.</string>
     <string name="setup_touch_reset_title">دکمه‌های روی صفحه بازنشانی شوند؟</string>
     <string name="setup_touch_reset_message">دکمه‌ها به چیدمان همراه بازی برمی‌گردند. چیدمان پیش‌فرض ذخیره‌شده شما باقی می‌ماند.</string>
     <string name="setup_touch_reset_confirm">بازنشانی</string>
     <string name="toolbox_tool_add_button">افزودن دکمه</string>
     <string name="toolbox_tool_hide_toolbox">پنهان کردن جعبه‌ابزار</string>
-    <string name="toolbox_toast_hidden">جعبه‌ابزار پنهان شد. نماد روی صفحه می‌ماند؛ برای باز کردن دوباره پنل روی آن بزنید.</string>
+    <string name="toolbox_toast_hidden">جعبه‌ابزار پنهان شد. نماد از صفحه رفت؛ آن را با «نمایش جعبه‌ابزار» در تنظیمات کنترل صفحه بازگردانید.</string>
     <string name="touch_toast_button_added">دکمه افزوده شد. برای جای‌گذاری آن را بکشید.</string>
     <string name="setup_icon_credit">نماد جعبه‌ابزار: «Control» از Creatype، از Flaticon — تحت مجوز رایگان Flaticon.</string>
 </resources>

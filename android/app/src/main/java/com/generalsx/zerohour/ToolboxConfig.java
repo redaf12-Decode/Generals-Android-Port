@@ -40,7 +40,7 @@ final class ToolboxConfig {
     static final String PREFS_NAME = "generalszh_toolbox";
 
     /** Bumped when the key layout changes; migrate() moves an older file forward. */
-    static final int SCHEMA = 2;
+    static final int SCHEMA = 3;
     private static final String PREF_SCHEMA = "schema";
 
     static final int STYLE_ROUNDED = 0;
@@ -63,6 +63,7 @@ final class ToolboxConfig {
     private static final String KEY_Y = "icon_y";
     private static final String KEY_DEFAULT_LAYOUT = "default_layout";
     private static final String KEY_PANEL_OPEN = "panel_open";
+    private static final String KEY_ICON_VISIBLE = "icon_visible";
 
     boolean enabled;
     int style = STYLE_ROUNDED;
@@ -73,14 +74,24 @@ final class ToolboxConfig {
     float y = 0.30f;
     /**
      * GeneralsX @feature Android touch editor 05/11/2026 Whether the tool panel is showing. This
-     * is the "Hide toolbox" state, stored per game and separate from the buttons' own visibility
-     * (TouchControlConfig.enabled): hiding the panel leaves the icon and every button in place.
+     * is the panel's own visibility, stored per game and separate from the buttons' own visibility
+     * (TouchControlConfig.enabled) and from the icon's (iconVisible).
      *
      * The default is false, which is what the overlay did before this was stored: the icon is on
      * screen at launch and the panel opens when it is tapped. An older install has no stored value
      * and therefore keeps exactly that behaviour.
      */
     boolean panelOpen = false;
+    /**
+     * GeneralsX @bugfix Android touch editor 05/11/2026 "Hide toolbox" removes the floating icon,
+     * not just the panel, so this is the icon's own on-screen state and the flag the hide/show
+     * actions write. It is deliberately NOT <code>enabled</code>: <code>enabled</code> is the
+     * launcher's switch for whether the toolbox exists at all, and the player's hide must not
+     * flip it -- otherwise reopening the toolbox from the launcher could not tell "the player hid
+     * it" from "the toolbox was never wanted". Stored per game, and true by default so an existing
+     * install keeps its icon exactly where it was.
+     */
+    boolean iconVisible = true;
     /** The layout the panel's "Load saved layout" row applies, as TouchControlConfig JSON. */
     String defaultLayoutJson;
 
@@ -123,6 +134,7 @@ final class ToolboxConfig {
         config.y = TouchControlConfig.clamp(
             prefs.getFloat(prefixed(game, KEY_Y), 0.30f), 0.04f, 0.96f);
         config.panelOpen = prefs.getBoolean(prefixed(game, KEY_PANEL_OPEN), false);
+        config.iconVisible = prefs.getBoolean(prefixed(game, KEY_ICON_VISIBLE), true);
         config.defaultLayoutJson = prefs.getString(prefixed(game, KEY_DEFAULT_LAYOUT), null);
         return config;
     }
@@ -137,6 +149,7 @@ final class ToolboxConfig {
             .putFloat(prefixed(game, KEY_X), TouchControlConfig.clamp(x, 0.02f, 0.98f))
             .putFloat(prefixed(game, KEY_Y), TouchControlConfig.clamp(y, 0.04f, 0.96f))
             .putBoolean(prefixed(game, KEY_PANEL_OPEN), panelOpen)
+            .putBoolean(prefixed(game, KEY_ICON_VISIBLE), iconVisible)
             .putString(prefixed(game, KEY_DEFAULT_LAYOUT), defaultLayoutJson)
             .apply();
     }

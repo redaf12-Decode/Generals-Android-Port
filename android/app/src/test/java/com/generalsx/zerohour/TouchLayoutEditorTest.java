@@ -1,8 +1,13 @@
 // GeneralsX @build Android touch editor 05/11/2026
 //
 // The edit session's arithmetic, without a screen. The properties here are the ones a finger
-// tests on a device: a drag does not drift, a button cannot leave the screen, a resize keeps the
-// opposite corner put, and Cancel leaves the stored layout exactly as it was.
+// tests on a device: a drag does not drift, a coordinate can never be stored non-finite or
+// outside the screen fraction, a resize keeps the opposite corner put, and Cancel leaves the
+// stored layout exactly as it was.
+//
+// Placement itself is free by design, so the tests below assert the OPPOSITE of a layout policy:
+// a button reaches every corner exactly, two buttons may share a point, and a button may hang off
+// the edge -- and in every case nothing is nudged back into a "safe" area.
 
 package com.generalsx.zerohour;
 
@@ -89,7 +94,7 @@ public class TouchLayoutEditorTest {
         assertEquals(300f + 8f, editor.centerY(spec), 0.5f);
     }
 
-    /** A drag past the edge clamps the button, and it is still on the screen afterwards. */
+    /** A drag past the edge clamps the stored fraction, and the button is still usable there. */
     @Test
     public void dragPastTheEdgeClampsAndKeepsTheButtonUsable() {
         editor.select(0);
@@ -103,6 +108,89 @@ public class TouchLayoutEditorTest {
         assertTrue(spec.y <= TouchControlConfig.MAX_Y);
         // Still selectable where it now is.
         assertTrue(editor.hitTest(editor.centerX(spec), editor.centerY(spec)) >= 0);
+    }
+
+    /**
+     * GeneralsX @feature Android touch editor 05/11/2026 A button reaches each corner exactly.
+     * The four corners are the case a safe-area inset used to forbid, so they are asserted one by
+     * one: the stored fraction is the corner itself, 0 or 1, and the button's centre lands on the
+     * screen's own corner.
+     */
+    @Test
+    public void aButtonReachesEveryScreenCorner() {
+        float[][] corners = {{0f, 0f}, {1f, 0f}, {0f, 1f}, {1f, 1f}};
+        for (float[] corner : corners) {
+            editor.select(0);
+            TouchControlConfig.ButtonSpec spec = editor.selectedButton();
+            editor.beginDrag(editor.centerX(spec), editor.centerY(spec));
+            editor.dragTo(corner[0] * WIDTH, corner[1] * HEIGHT);
+            assertEquals("x at the corner", corner[0], spec.x, 0.0001f);
+            assertEquals("y at the corner", corner[1], spec.y, 0.0001f);
+            assertEquals("centre x lands on the screen corner",
+                corner[0] * WIDTH, editor.centerX(spec), 0.5f);
+            assertEquals("centre y lands on the screen corner",
+                corner[1] * HEIGHT, editor.centerY(spec), 0.5f);
+        }
+    }
+
+    /**
+     * GeneralsX @feature Android touch editor 05/11/2026 Two buttons may occupy the same point.
+     * Nothing moves one away from the other, and both keep their own position when saved.
+     */
+    @Test
+    public void twoButtonsMayShareOnePosition() {
+        editor.select(0);
+        editor.beginDrag(editor.centerX(editor.selectedButton()),
+            editor.centerY(editor.selectedButton()));
+        editor.dragTo(WIDTH * 0.3f, HEIGHT * 0.7f);
+        editor.select(1);
+        editor.beginDrag(editor.centerX(editor.selectedButton()),
+            editor.centerY(editor.selectedButton()));
+        editor.dragTo(WIDTH * 0.3f, HEIGHT * 0.7f);
+        assertEquals("both at the same x", editor.buttons().get(0).x,
+            editor.buttons().get(1).x, 0.0001f);
+        assertEquals("both at the same y", editor.buttons().get(0).y,
+            editor.buttons().get(1).y, 0.0001f);
+        editor.save(context);
+        TouchControlConfig reloaded = TouchControlConfig.load(context);
+        assertEquals("and both survive a save", reloaded.buttons.get(0).x,
+            reloaded.buttons.get(1).x, 0.0001f);
+    }
+
+    /**
+     * GeneralsX @feature Android touch editor 05/11/2026 A button may be parked half past the
+     * edge on purpose. The centre stays on screen (that is what makes it recoverable), the box is
+     * allowed to hang outside, and nothing drags it back in.
+     */
+    @Test
+    public void aButtonMayHangOffTheEdgeOnPurpose() {
+        editor.select(0);
+        TouchControlConfig.ButtonSpec spec = editor.selectedButton();
+        spec.setSize(200f, 200f);
+        editor.beginDrag(editor.centerX(spec), editor.centerY(spec));
+        editor.dragTo(0f, 0f);                       // centre on the very corner
+        android.graphics.RectF rect = new android.graphics.RectF();
+        editor.bounds(spec, rect);
+        assertTrue("the box reaches outside the screen", rect.left < 0f && rect.top < 0f);
+        assertEquals("and the stored position was not corrected back", 0f, spec.x, 0.0001f);
+        // The centre is still findable, so the editor can pick the button up again.
+        assertTrue(editor.hitTest(editor.centerX(spec), editor.centerY(spec)) >= 0);
+    }
+
+    /**
+     * GeneralsX @feature Android touch editor 05/11/2026 A button placed in a corner survives a
+     * save and reload at the same coordinate -- there is no migration step that re-homes it.
+     */
+    @Test
+    public void aCornerPositionSurvivesSaveAndReload() {
+        editor.select(0);
+        editor.beginDrag(editor.centerX(editor.selectedButton()),
+            editor.centerY(editor.selectedButton()));
+        editor.dragTo(0f, HEIGHT);
+        editor.save(context);
+        TouchControlConfig reloaded = TouchControlConfig.load(context);
+        assertEquals(0f, reloaded.buttons.get(0).x, 0.0001f);
+        assertEquals(1f, reloaded.buttons.get(0).y, 0.0001f);
     }
 
     /** The corner opposite the handle does not move while the handle is dragged. */
@@ -227,7 +315,7 @@ public class TouchLayoutEditorTest {
         assertFalse(editor.isDirty());
     }
 
-    /** A scale change re-clamps every button, so none is pushed off the screen. */
+    /** A scale change keeps every stored coordinate finite and inside the screen fraction. */
     @Test
     public void scaleChangeKeepsEveryButtonOnScreen() {
         editor.setScale(TouchControlConfig.MAX_SCALE);
@@ -235,6 +323,37 @@ public class TouchLayoutEditorTest {
             assertTrue(spec.x >= TouchControlConfig.MIN_X && spec.x <= TouchControlConfig.MAX_X);
             assertTrue(spec.y >= TouchControlConfig.MIN_Y && spec.y <= TouchControlConfig.MAX_Y);
         }
+    }
+
+    /**
+     * GeneralsX @feature Android touch editor 05/11/2026 The ceiling is exactly 40: 39 buttons can
+     * be added, the 40th is accepted, the 41st is refused, and all 40 survive a save and reload
+     * with their positions intact -- nothing is silently discarded on load.
+     */
+    @Test
+    public void fortyButtonsFitAndTheFortyFirstIsRefused() {
+        assertEquals(40, TouchControlConfig.MAX_BUTTONS);
+        // The shipped layout starts with 10, so this lands exactly on 39 and then 40.
+        while (editor.buttons().size() < 39) {
+            assertTrue(editor.addButton());
+        }
+        assertEquals(39, editor.buttons().size());
+        assertTrue("the 40th button is accepted", editor.addButton());
+        assertEquals(40, editor.buttons().size());
+        assertFalse("the 41st button is refused", editor.addButton());
+        assertEquals("and nothing was removed to make room", 40, editor.buttons().size());
+
+        // Give the last one a corner so the reload has something distinctive to check.
+        editor.select(39);
+        editor.beginDrag(editor.centerX(editor.selectedButton()),
+            editor.centerY(editor.selectedButton()));
+        editor.dragTo(0f, 0f);
+        assertTrue(editor.save(context));
+
+        TouchControlConfig reloaded = TouchControlConfig.load(context);
+        assertEquals("every button survives the reload", 40, reloaded.buttons.size());
+        assertEquals("and the corner one kept its position",
+            0f, reloaded.buttons.get(39).x, 0.0001f);
     }
 
     /** Import replaces the working copy; nothing is stored until save(). */

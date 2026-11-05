@@ -556,7 +556,7 @@
     <string name="touch_color_picker_title">Elegir un color</string>
     <string name="touch_button_size">Tamaño del botón: %1$d%%</string>
     <string name="touch_button_opacity">Opacidad: %1$d%%</string>
-    <string name="touch_too_many_buttons">Máximo 20 botones</string>
+    <string name="touch_too_many_buttons">Máximo 40 botones</string>
     <string name="touch_select_button_first">Selecciona primero un botón</string>
     <string name="toolbox_style_rounded">Redondeado</string>
     <string name="toolbox_style_circle">Círculo</string>
@@ -604,12 +604,14 @@
     <string name="setup_touch_controls_help">Un botón pulsa una tecla real del teclado, así que cada botón es un atajo propio del juego. Los botones actúan al pulsar, al mantener o como alternador, y pueden llevar Ctrl, Shift o Alt. Este juego conserva su propia disposición, y restablecer los ajustes del lanzador no la toca.</string>
     <string name="setup_button_touch_editor">Abrir el editor</string>
     <string name="setup_button_touch_reset">Restablecer botones</string>
+    <string name="setup_button_touch_show_toolbox">Mostrar caja de herramientas</string>
+    <string name="setup_toast_toolbox_shown">Caja de herramientas flotante restaurada. Vuelve a la última posición que fijaste.</string>
     <string name="setup_touch_reset_title">¿Restablecer los botones en pantalla?</string>
     <string name="setup_touch_reset_message">Los botones vuelven a la disposición incluida. Tu disposición predeterminada guardada se conserva.</string>
     <string name="setup_touch_reset_confirm">Restablecer</string>
     <string name="toolbox_tool_add_button">Añadir botón</string>
     <string name="toolbox_tool_hide_toolbox">Ocultar caja de herramientas</string>
-    <string name="toolbox_toast_hidden">Caja de herramientas oculta. El icono permanece en pantalla; tócalo para abrir el panel de nuevo.</string>
+    <string name="toolbox_toast_hidden">Caja de herramientas oculta. El icono ha desaparecido; recupéralo con «Mostrar caja de herramientas» en los controles en pantalla.</string>
     <string name="touch_toast_button_added">Botón añadido. Arrástralo para colocarlo.</string>
     <string name="setup_icon_credit">Icono de la caja de herramientas: «Control» de Creatype, de Flaticon — usado bajo la Licencia Gratuita de Flaticon.</string>
 </resources>

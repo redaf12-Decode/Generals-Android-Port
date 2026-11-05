@@ -144,9 +144,11 @@ final class HotkeyOverlayView extends View {
     private final int accentColor;
     private final int toolbarBackground = 0xE0101418;
 
-    private int insetLeft;
-    private int insetTop;
-    private int insetRight;
+    /**
+     * The bottom system inset, which is all the overlay still needs: the toolbar is drawn above the
+     * gesture bar, and a freshly added button must not be created underneath it. No other inset is
+     * read, because placement is no longer restricted by the cutout or the side bars.
+     */
     private int insetBottom;
 
     private HotkeyOverlayView(Activity activity) {
@@ -203,9 +205,6 @@ final class HotkeyOverlayView extends View {
         ViewCompat.setOnApplyWindowInsetsListener(this, (view, windowInsets) -> {
             Insets bars = windowInsets.getInsets(
                 WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout());
-            insetLeft = bars.left;
-            insetTop = bars.top;
-            insetRight = bars.right;
             insetBottom = bars.bottom;
             rebuildGeometry();
             invalidate();
@@ -234,11 +233,20 @@ final class HotkeyOverlayView extends View {
     /**
      * Opens the in-game editor. From here every touch belongs to the editor until leaveEditor()
      * or saveEditor() is called, so an edit gesture cannot become a gameplay command.
+     *
+     * GeneralsX @bugfix Android touch editor 05/11/2026 The edit session is re-seeded from the
+     * SAVED layout every time it is opened (editor.cancel() is "throw the working copy away and
+     * re-read the store"). The overlay's own copy is only refreshed by reload(), so without this a
+     * layout changed elsewhere -- the toolbox's "Restore default buttons", a launcher edit made
+     * while the match was paused, an import -- would open the editor on the stale copy and the
+     * player would be editing buttons that no longer match what the match is drawing. Re-seeding
+     * makes the editor show the same buttons the overlay draws, which is the whole requirement.
      */
     void enterEditor() {
         if (editing) {
             return;
         }
+        editor.cancel(activity);
         presser.releaseAll();
         activePointers.clear();
         editorPointer = MotionEvent.INVALID_POINTER_ID;
@@ -339,16 +347,43 @@ final class HotkeyOverlayView extends View {
     }
 
     /**
-     * Applies the layer's current size and insets to the edit session. The launcher's editor has
-     * no such view, so it calls this with its own measured size; the in-game editor's size is the
-     * live window.
+     * GeneralsX @bugfix Android touch editor 05/11/2026 Applies the layer's current size to the
+     * edit session. The launcher's editor has no such view, so it calls this with its own measured
+     * size; the in-game editor's size is the live window.
      */
     void applyViewport() {
         float scale = editing ? editor.working().buttonScale : config.buttonScale;
-        editor.viewport().set(getWidth() > 0 ? getWidth() : 1, getHeight() > 0 ? getHeight() : 1,
-            density(), scale);
-        editor.viewport().setInsets(insetLeft, insetTop, insetRight, insetBottom);
+        editor.viewport().set(viewportWidth(), viewportHeight(), density(), scale);
+        // The only thing the editor still reserves is the strip the toolbar itself occupies, so a
+        // freshly added button is not created underneath it. This is not a placement restriction
+        // on a button the player moves -- the player may drag one onto the toolbar if they want.
         editor.setReservedBottomPx(toolbarHeightPx());
+    }
+
+    /**
+     * GeneralsX @bugfix Android touch editor 05/11/2026 The layer's width for geometry, falling
+     * back to the display when the view has not been laid out yet.
+     *
+     * A GONE view is never measured, so getWidth() is 0 while the button layer is switched off.
+     * The editor is opened by the toolbox even then, and the old 1x1 fallback collapsed every
+     * button onto the top-left pixel: the editing surface looked empty because all ten buttons
+     * were drawn inside one pixel. The display size is the correct answer for a full-screen
+     * overlay and is what makes the editor draw the real layout before the first layout pass.
+     */
+    private int viewportWidth() {
+        if (getWidth() > 0) {
+            return getWidth();
+        }
+        int width = getResources().getDisplayMetrics().widthPixels;
+        return width > 0 ? width : 1;
+    }
+
+    private int viewportHeight() {
+        if (getHeight() > 0) {
+            return getHeight();
+        }
+        int height = getResources().getDisplayMetrics().heightPixels;
+        return height > 0 ? height : 1;
     }
 
     /** Selects the button under a point, for a host that handles the touch itself. */
@@ -364,9 +399,7 @@ final class HotkeyOverlayView extends View {
 
     private void rebuildGeometry() {
         float scale = editing ? editor.working().buttonScale : config.buttonScale;
-        editor.viewport().set(getWidth() > 0 ? getWidth() : 1, getHeight() > 0 ? getHeight() : 1,
-            density(), scale);
-        editor.viewport().setInsets(insetLeft, insetTop, insetRight, insetBottom);
+        editor.viewport().set(viewportWidth(), viewportHeight(), density(), scale);
         editor.setReservedBottomPx(toolbarHeightPx());
 
         TouchControlConfig source = editing ? editor.working() : config;

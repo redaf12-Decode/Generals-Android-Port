@@ -243,21 +243,35 @@ public class TouchEditorAppearanceTest {
             a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top);
     }
 
-    /** Rotating the display re-clamps every button, and each stays fully on screen. */
+    /**
+     * GeneralsX @feature Android touch editor 05/11/2026 Rotating the display re-seeds the
+     * viewport and every button keeps the position it was given. What is asserted is stability,
+     * not containment: placement is free, so a button near an edge may hang past it after the
+     * aspect ratio changes -- what must never happen is a lost, NaN or out-of-range coordinate,
+     * because that is what would make a button unrecoverable through the editor.
+     */
     @Test
-    public void rotatingTheViewportKeepsEveryButtonOnScreen() {
+    public void rotatingTheViewportKeepsEveryButtonRecoverable() {
         TouchLayoutEditor editor = new TouchLayoutEditor(TouchControlConfig.load(activity));
         editor.applyViewportTo(WIDTH, HEIGHT, 2f);
         editor.addButton();
         int rotatedWidth = HEIGHT;
         int rotatedHeight = WIDTH;
         editor.applyViewportTo(rotatedWidth, rotatedHeight, 2f);   // landscape -> portrait
-        android.graphics.RectF rect = new android.graphics.RectF();
         for (TouchControlConfig.ButtonSpec spec : editor.buttons()) {
+            assertTrue("a finite stored x after rotation: " + spec.label,
+                !Float.isNaN(spec.x) && !Float.isInfinite(spec.x));
+            assertTrue("a finite stored y after rotation: " + spec.label,
+                !Float.isNaN(spec.y) && !Float.isInfinite(spec.y));
+            assertTrue("x is inside the screen fraction after rotation: " + spec.label,
+                spec.x >= TouchControlConfig.MIN_X && spec.x <= TouchControlConfig.MAX_X);
+            assertTrue("y is inside the screen fraction after rotation: " + spec.label,
+                spec.y >= TouchControlConfig.MIN_Y && spec.y <= TouchControlConfig.MAX_Y);
+            // Recoverable: the editor can still find the button at its own centre.
+            android.graphics.RectF rect = new android.graphics.RectF();
             editor.bounds(spec, rect);
-            assertTrue("on screen after rotation: " + spec.label,
-                rect.left >= -1f && rect.top >= -1f && rect.right <= rotatedWidth + 1f
-                    && rect.bottom <= rotatedHeight + 1f);
+            assertTrue("the centre stays finite: " + spec.label,
+                !Float.isNaN(rect.centerX()) && !Float.isNaN(rect.centerY()));
         }
     }
 
@@ -430,6 +444,61 @@ public class TouchEditorAppearanceTest {
         return overlay;
     }
 
+    /**
+     * GeneralsX @bugfix Android touch editor 05/11/2026 The in-game editor draws the REAL buttons,
+     * not an empty field. This renders the live overlay exactly as the game's view tree does
+     * (overlay.draw -> onDraw -> drawEditor) after entering edit mode through the toolbox's own
+     * Edit row, and counts the button's fill pixels. Before the fix the same path could leave the
+     * editing surface blank, so the assertion is on pixels, not on the model.
+     */
+    @Test
+    public void theInGameEditorDrawsTheExistingButtons() {
+        HotkeyOverlayView hotkeys = laidOutOverlay();
+        ToolboxOverlayView toolbox = ToolboxOverlayView.attach(activity, hotkeys);
+        assertNotNull(toolbox);
+        toolbox.measure(View.MeasureSpec.makeMeasureSpec(WIDTH, View.MeasureSpec.EXACTLY),
+            View.MeasureSpec.makeMeasureSpec(HEIGHT, View.MeasureSpec.EXACTLY));
+        toolbox.layout(0, 0, WIDTH, HEIGHT);
+        toolbox.ensurePanelOpenForTest();
+
+        Bitmap before = Bitmap.createBitmap(WIDTH, HEIGHT, Bitmap.Config.ARGB_8888);
+        hotkeys.draw(new Canvas(before));
+        int liveFill = countFill(before);
+
+        // Enter the editor through the toolbox's real Edit row -- the path a player uses.
+        android.graphics.PointF editRow = toolbox.toolRowCenterForTest(0); // TOOL_EDIT_LAYOUT
+        tap(toolbox, editRow.x, editRow.y);
+        assertTrue("the toolbox's Edit row opened the editor", hotkeys.isEditing());
+
+        Bitmap inEditor = Bitmap.createBitmap(WIDTH, HEIGHT, Bitmap.Config.ARGB_8888);
+        hotkeys.draw(new Canvas(inEditor));
+        assertTrue("the editor shows the existing button's own fill, not an empty surface",
+            countFill(inEditor) > 0);
+        assertTrue("and it is the same button the match draws",
+            Math.abs(countFill(inEditor) - liveFill) < liveFill);
+    }
+
+    /** Counts the central button's own fill pixels in a full-overlay render. */
+    private int countFill(Bitmap bitmap) {
+        TouchControlConfig.ButtonSpec spec = TouchControlConfig.load(activity).buttons.get(0);
+        int cx = Math.round(spec.x * WIDTH);
+        int cy = Math.round(spec.y * HEIGHT);
+        int halfW = Math.round(spec.widthDp * 2f * 0.5f);
+        int halfH = Math.round(spec.heightDp * 2f * 0.5f);
+        int count = 0;
+        for (int x = cx - halfW; x <= cx + halfW; x += 2) {
+            for (int y = cy - halfH; y <= cy + halfH; y += 2) {
+                if (x < 0 || y < 0 || x >= WIDTH || y >= HEIGHT) {
+                    continue;
+                }
+                if (bitmap.getPixel(x, y) == FILL) {
+                    count++;
+                }
+            }
+        }
+        return count;
+    }
+
     /** A tap on the toolbar's Add cell creates a button through the model, on the real view. */
     @Test
     public void tappingTheToolbarAddCellAddsAButton() {
@@ -529,9 +598,14 @@ public class TouchEditorAppearanceTest {
             hotkeys.editorButtonCountForTest());
     }
 
-    /** The toolbox's Hide row closes the panel but leaves the icon and the buttons. */
+    /**
+     * GeneralsX @bugfix Android touch editor 05/11/2026 The toolbox's Hide row closes the panel
+     * AND removes the floating icon -- the requirement -- while leaving the game buttons exactly
+     * as they were. The three visibility states are independent: the button layer stays enabled,
+     * every button keeps its position, and the hidden icon is neither drawn nor tappable.
+     */
     @Test
-    public void theToolboxHideRowKeepsTheIconAndButtons() {
+    public void theToolboxHideRowRemovesTheIconAndKeepsTheButtons() {
         HotkeyOverlayView hotkeys = laidOutOverlay();
         ToolboxOverlayView toolbox = ToolboxOverlayView.attach(activity, hotkeys);
         assertNotNull(toolbox);
@@ -539,18 +613,41 @@ public class TouchEditorAppearanceTest {
             View.MeasureSpec.makeMeasureSpec(HEIGHT, View.MeasureSpec.EXACTLY));
         toolbox.layout(0, 0, WIDTH, HEIGHT);
         toolbox.ensurePanelOpenForTest();
+        float beforeX = TouchControlConfig.load(activity).buttons.get(0).x;
+        int beforeCount = TouchControlConfig.load(activity).buttons.size();
+
         android.graphics.PointF hideRow = toolbox.toolRowCenterForTest(7); // TOOL_HIDE_TOOLBOX
         tap(toolbox, hideRow.x, hideRow.y);
+
         assertFalse("the panel is hidden", toolbox.isPanelOpenForTest());
-        assertTrue("the toolbox icon is still there to reopen it",
-            toolbox.iconIsVisibleForTest());
+        assertFalse("the floating icon is gone", toolbox.iconIsVisibleForTest());
+        assertFalse("the stored icon flag is false", toolbox.iconVisibleFlagForTest());
         assertTrue("the buttons are still enabled", TouchControlConfig.load(activity).enabled);
-        assertFalse("hidden state is stored",
+        assertEquals("every button is still in the layout",
+            beforeCount, TouchControlConfig.load(activity).buttons.size());
+        assertEquals("and at the same position",
+            beforeX, TouchControlConfig.load(activity).buttons.get(0).x, 0.0001f);
+        assertFalse("the hidden state is stored",
             ToolboxConfig.load(activity, SetupActivity.GAME_ZERO_HOUR).panelOpen);
-        // Tapping the icon reopens the panel.
+        assertFalse("the stored icon flag survives a reload",
+            ToolboxConfig.load(activity, SetupActivity.GAME_ZERO_HOUR).iconVisible);
+        assertTrue("the launcher switch is NOT flipped by hiding",
+            ToolboxConfig.load(activity, SetupActivity.GAME_ZERO_HOUR).enabled);
+
+        // The icon is not merely invisible: a tap where it used to be runs nothing and the
+        // overlay refuses the gesture, so the touch falls through to the game.
         android.graphics.PointF icon = toolbox.iconCenterForTest();
-        tap(toolbox, icon.x, icon.y);
-        assertTrue("the icon reopens the panel", toolbox.isPanelOpenForTest());
+        assertFalse("a touch on the gone icon falls through to the battlefield",
+            toolbox.onTouchEvent(down(icon.x, icon.y)));
+        assertFalse("the panel stayed closed", toolbox.isPanelOpenForTest());
+
+        // The launcher's Show toolbox action restores it at the stored position.
+        toolbox.showIcon();
+        assertTrue("the icon came back", toolbox.iconIsVisibleForTest());
+        assertTrue("and it is tappable again",
+            toolbox.onTouchEvent(down(icon.x, icon.y)));
+        toolbox.onTouchEvent(up(icon.x, icon.y));
+        assertTrue("the restored icon reopens the panel", toolbox.isPanelOpenForTest());
     }
 
     /** A toolbox at the window's own size, panel open: the size a phone actually gives it. */

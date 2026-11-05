@@ -556,7 +556,7 @@
     <string name="touch_color_picker_title">Izberi boju</string>
     <string name="touch_button_size">Veličina dugmeta: %1$d%%</string>
     <string name="touch_button_opacity">Prozračnost: %1$d%%</string>
-    <string name="touch_too_many_buttons">Najviše 20 dugmad</string>
+    <string name="touch_too_many_buttons">Najviše 40 dugmad</string>
     <string name="touch_select_button_first">Najprve izberite dugme</string>
     <string name="toolbox_style_rounded">Obkruženo</string>
     <string name="toolbox_style_circle">Krug</string>
@@ -604,12 +604,14 @@
     <string name="setup_touch_controls_help">Knopka natyka pravy klaviš klaviatury, tak vsaka knopka jest vlastna skraćenica igry. Knopky dělajut pri natyku, pri držanju ili jako prěključnik i mogut nesti Ctrl, Shift ili Alt. Ta igra drži svoj razklad, i zbros nastavjenj launčera jego ne trpje.</string>
     <string name="setup_button_touch_editor">Otvoriti redaktor</string>
     <string name="setup_button_touch_reset">Zbrositi knopky</string>
+    <string name="setup_button_touch_show_toolbox">Pokazati orudijny skrinju</string>
+    <string name="setup_toast_toolbox_shown">Plavajuči orudijny skrinja vratjena. Ona jest na poslednjem městu, ktoro vy postavili.</string>
     <string name="setup_touch_reset_title">Zbrositi knopky na ekranu?</string>
     <string name="setup_touch_reset_message">Knopky se vratjut k priloženomu razkladu. Vash zachovany razklad po umolčanju ostaje.</string>
     <string name="setup_touch_reset_confirm">Zbrositi</string>
     <string name="toolbox_tool_add_button">Dodati dugmo</string>
     <string name="toolbox_tool_hide_toolbox">Skryti orudijny skrinju</string>
-    <string name="toolbox_toast_hidden">Orudijny skrinja skryta. Znak ostaje na ekranu; klikniti za otkrivanje paneli.</string>
+    <string name="toolbox_toast_hidden">Orudijny skrinja skryta. Znak je odšel; vratite jego s «Pokazati orudijny skrinju» v nastavjenjah ekrannogo upravljanja.</string>
     <string name="touch_toast_button_added">Dugma dodana. Peretahnuti za postavljenje.</string>
     <string name="setup_icon_credit">Ikona orudjarnje: «Control» od Creatype, iz Flaticon — pod Flaticon Free License.</string>
 </resources>

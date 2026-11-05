@@ -556,7 +556,7 @@
     <string name="touch_color_picker_title">Escolher uma cor</string>
     <string name="touch_button_size">Tamanho do botão: %1$d%%</string>
     <string name="touch_button_opacity">Opacidade: %1$d%%</string>
-    <string name="touch_too_many_buttons">No máximo 20 botões</string>
+    <string name="touch_too_many_buttons">No máximo 40 botões</string>
     <string name="touch_select_button_first">Selecione um botão primeiro</string>
     <string name="toolbox_style_rounded">Arredondado</string>
     <string name="toolbox_style_circle">Círculo</string>
@@ -604,12 +604,14 @@
     <string name="setup_touch_controls_help">Um botão pressiona uma tecla real do teclado, então cada botão é um atalho do próprio jogo. Os botões agem ao pressionar, ao manter ou como alternador, e podem carregar Ctrl, Shift ou Alt. Este jogo mantém o próprio layout, e redefinir os ajustes do launcher não o afeta.</string>
     <string name="setup_button_touch_editor">Abrir o editor</string>
     <string name="setup_button_touch_reset">Redefinir botões</string>
+    <string name="setup_button_touch_show_toolbox">Mostrar caixa de ferramentas</string>
+    <string name="setup_toast_toolbox_shown">Caixa de ferramentas flutuante restaurada. Voltou à última posição que você definiu.</string>
     <string name="setup_touch_reset_title">Redefinir os botões na tela?</string>
     <string name="setup_touch_reset_message">Os botões voltam ao layout fornecido. Seu layout padrão salvo é mantido.</string>
     <string name="setup_touch_reset_confirm">Redefinir</string>
     <string name="toolbox_tool_add_button">Adicionar botão</string>
     <string name="toolbox_tool_hide_toolbox">Ocultar caixa de ferramentas</string>
-    <string name="toolbox_toast_hidden">Caixa de ferramentas oculta. O ícone permanece na tela; toque nele para abrir o painel novamente.</string>
+    <string name="toolbox_toast_hidden">Caixa de ferramentas oculta. O ícone sumiu; traga-o de volta com «Mostrar caixa de ferramentas» nos controles na tela.</string>
     <string name="touch_toast_button_added">Botão adicionado. Arraste-o para posicioná-lo.</string>
     <string name="setup_icon_credit">Ícone da caixa de ferramentas: “Control” por Creatype, do Flaticon — usado sob a Licença Gratuita do Flaticon.</string>
 </resources>

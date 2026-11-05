@@ -556,7 +556,7 @@
     <string name="touch_color_picker_title">اختيار لون</string>
     <string name="touch_button_size">حجم الزر: %1$d%%</string>
     <string name="touch_button_opacity">شفافية الزر: %1$d%%</string>
-    <string name="touch_too_many_buttons">الحد الأقصى 20 زرًا</string>
+    <string name="touch_too_many_buttons">الحد الأقصى 40 زرًا</string>
     <string name="touch_select_button_first">حدد زرًا أولًا</string>
     <string name="toolbox_style_rounded">مستدير</string>
     <string name="toolbox_style_circle">دائري</string>
@@ -604,12 +604,14 @@
     <string name="setup_touch_controls_help">الزر يضغط مفتاح لوحة مفاتيح حقيقياً، لذا فكل زر هو أحد اختصارات اللعبة نفسها. تعمل الأزرار بالنقر أو بالاستمرار أو كتبديل، ويمكنها حمل Ctrl أو Shift أو Alt. تحتفظ هذه اللعبة بتخطيطها الخاص، ولا تؤثر فيه إعادة ضبط إعدادات المشغّل.</string>
     <string name="setup_button_touch_editor">فتح المحرر</string>
     <string name="setup_button_touch_reset">إعادة ضبط الأزرار</string>
+    <string name="setup_button_touch_show_toolbox">إظهار صندوق الأدوات</string>
+    <string name="setup_toast_toolbox_shown">تمت استعادة صندوق الأدوات العائم. عاد إلى آخر موضع ضبطته.</string>
     <string name="setup_touch_reset_title">إعادة ضبط أزرار الشاشة؟</string>
     <string name="setup_touch_reset_message">تعود الأزرار إلى التخطيط المرفق. يبقى التخطيط الافتراضي المحفوظ لديك.</string>
     <string name="setup_touch_reset_confirm">إعادة الضبط</string>
     <string name="toolbox_tool_add_button">إضافة زر</string>
     <string name="toolbox_tool_hide_toolbox">إخفاء صندوق الأدوات</string>
-    <string name="toolbox_toast_hidden">تم إخفاء صندوق الأدوات. تبقى الأيقونة على الشاشة؛ انقر عليها لفتح اللوحة مرة أخرى.</string>
+    <string name="toolbox_toast_hidden">تم إخفاء صندوق الأدوات. اختفت الأيقونة؛ أعِدها بزر «إظهار صندوق الأدوات» في إعدادات التحكم على الشاشة.</string>
     <string name="touch_toast_button_added">تمت إضافة الزر. اسحبه لوضعه.</string>
     <string name="setup_icon_credit">أيقونة صندوق الأدوات: «Control» من Creatype، من Flaticon — مستخدمة بموجب رخصة Flaticon المجانية.</string>
 </resources>

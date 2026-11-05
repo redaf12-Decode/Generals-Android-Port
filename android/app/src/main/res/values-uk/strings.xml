@@ -556,7 +556,7 @@
     <string name="touch_color_picker_title">Оберіть колір</string>
     <string name="touch_button_size">Розмір кнопки: %1$d%%</string>
     <string name="touch_button_opacity">Прозорість: %1$d%%</string>
-    <string name="touch_too_many_buttons">Не більше 20 кнопок</string>
+    <string name="touch_too_many_buttons">Не більше 40 кнопок</string>
     <string name="touch_select_button_first">Спочатку оберіть кнопку</string>
     <string name="toolbox_style_rounded">Заокруглений</string>
     <string name="toolbox_style_circle">Коло</string>
@@ -604,12 +604,14 @@
     <string name="setup_touch_controls_help">Кнопка натискає справжню клавішу клавіатури, тож кожна кнопка — це власне сполучення гри. Кнопки спрацьовують на натискання, на утримання або як перемикач і можуть нести Ctrl, Shift або Alt. У цієї гри власне розташування, і скидання налаштувань лаунчера його не зачіпає.</string>
     <string name="setup_button_touch_editor">Відкрити редактор</string>
     <string name="setup_button_touch_reset">Скинути кнопки</string>
+    <string name="setup_button_touch_show_toolbox">Показати панель</string>
+    <string name="setup_toast_toolbox_shown">Плавальну панель відновлено. Вона повернулася на останнє задане місце.</string>
     <string name="setup_touch_reset_title">Скинути екранні кнопки?</string>
     <string name="setup_touch_reset_message">Кнопки повернуться до початкового розташування. Збережене розташування за замовчуванням залишиться.</string>
     <string name="setup_touch_reset_confirm">Скинути</string>
     <string name="toolbox_tool_add_button">Додати кнопку</string>
     <string name="toolbox_tool_hide_toolbox">Сховати панель</string>
-    <string name="toolbox_toast_hidden">Панель приховано. Значок залишається на екрані — торкніться його, щоб відкрити панель знову.</string>
+    <string name="toolbox_toast_hidden">Панель приховано. Значок зник — поверніть його кнопкою «Показати панель» в налаштуваннях екранного керування.</string>
     <string name="touch_toast_button_added">Кнопку додано. Перетягніть її на потрібне місце.</string>
     <string name="setup_icon_credit">Значок панелі інструментів: «Control» від Creatype, з Flaticon — використовується за безкоштовною ліцензією Flaticon.</string>
 </resources>

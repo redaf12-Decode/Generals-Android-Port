@@ -63,21 +63,27 @@ final class TouchControlConfig {
 
     /** The document this writes and accepts. The reference wrote the same name at version 1/2. */
     static final String FORMAT = "GeneralsZHTouchControls";
-    /** Bumped when the button document gains fields; see migrate(). */
-    static final int SCHEMA = 3;
+    /** Bumped when the button document gains fields; see migrate(). v4 = the 40-button ceiling. */
+    static final int SCHEMA = 4;
     private static final int SCHEMA_MIN = 1;
 
-    /** More than this stop being usable on a phone. The reference's limit, kept. */
-    static final int MAX_BUTTONS = 20;
+    /** The number of buttons one layout may carry. A v3 document holds at most 20, so raising
+     *  this to 40 is what makes an existing layout load with every button kept, never trimmed. */
+    static final int MAX_BUTTONS = 40;
 
     // Bounds. Every one of them is applied where a value is produced -- parsed, dragged or
     // resized -- so no code path can store a button off the screen or a size that cannot be hit.
     static final float MIN_SIZE_DP = 28f;
     static final float MAX_SIZE_DP = 220f;
-    static final float MIN_X = 0.02f;
-    static final float MAX_X = 0.98f;
-    static final float MIN_Y = 0.04f;
-    static final float MAX_Y = 0.96f;
+    // Placement is the WHOLE viewport, as a fraction of the screen: 0 is the top/left edge and 1
+    // the bottom/right. There is no safe-area inset and no reserved strip -- a button may sit in a
+    // corner, on the game's own HUD, on another button, or half past the edge. The bounds exist
+    // only to reject a non-finite or out-of-range coordinate, which is the one thing that would
+    // crash the renderer; they are deliberately not a layout policy.
+    static final float MIN_X = 0f;
+    static final float MAX_X = 1f;
+    static final float MIN_Y = 0f;
+    static final float MAX_Y = 1f;
     static final float MIN_SCALE = 0.65f;
     static final float MAX_SCALE = 1.75f;
     static final float MIN_OPACITY = 0.15f;

@@ -29,8 +29,11 @@
 //    and nothing else, so a button keeps pressing the key it always did.
 //  * Edits happen on a copy. Only save() writes, so Cancel, Back, closing the editor and any
 //    interruption leave the stored layout untouched.
-//  * Every value is clamped where it is produced, so a button cannot leave the screen or exceed
-//    the model's limits -- whatever a finger does, including a drag past the edge.
+//  * Every value is validated where it is produced, so a button cannot store a NaN or a
+//    coordinate outside the screen fraction 0..1 -- whatever a finger does, including a drag past
+//    the edge. What is deliberately NOT clamped is the button's own box: a button may hang off
+//    the screen, sit in a corner, lie over the HUD or overlap another button, and it is never
+//    nudged back into a "safe" area. The fraction is the position; the box is drawn from it.
 //
 // Dragging is absolute, not incremental: beginDrag() records where inside the button the finger
 // landed and dragTo() places the centre from the finger's current position minus that offset. An
@@ -56,24 +59,12 @@ final class TouchLayoutEditor {
         int height;
         float density = 1f;
         float scale = 1f;
-        /** System insets the buttons must stay clear of (cutout, gesture bars). */
-        float insetLeft;
-        float insetTop;
-        float insetRight;
-        float insetBottom;
 
         void set(int width, int height, float density, float scale) {
             this.width = width;
             this.height = height;
             this.density = density > 0f ? density : 1f;
             this.scale = scale > 0f ? scale : 1f;
-        }
-
-        void setInsets(float left, float top, float right, float bottom) {
-            this.insetLeft = left;
-            this.insetTop = top;
-            this.insetRight = right;
-            this.insetBottom = bottom;
         }
     }
 
@@ -303,23 +294,27 @@ final class TouchLayoutEditor {
         setCenterPixels(spec, centerX(spec) + dxPx, centerY(spec) + dyPx);
     }
 
+    /**
+     * GeneralsX @feature Android touch editor 05/11/2026 Places a button's centre from a pixel
+     * point. The only rule left is that the stored fraction is finite and inside 0..1: there is no
+     * inset, no reserved strip and no "keep the whole button on screen" clamp, because the editor
+     * is expected to let a button sit in a corner, over the HUD, or half past the edge. A button
+     * may therefore hang off the screen on purpose -- it stays recoverable through the editor,
+     * which draws it wherever its centre says.
+     */
     private void setCenterPixels(TouchControlConfig.ButtonSpec spec, float cx, float cy) {
-        float halfWidth = pixelWidth(spec) * 0.5f;
-        float halfHeight = pixelHeight(spec) * 0.5f;
-        float minCx = Math.max(viewport.insetLeft + halfWidth, TouchControlConfig.MIN_X * viewport.width);
-        float maxCx = Math.min(viewport.width - viewport.insetRight - halfWidth,
-            TouchControlConfig.MAX_X * viewport.width);
-        float minCy = Math.max(viewport.insetTop + halfHeight, TouchControlConfig.MIN_Y * viewport.height);
-        float maxCy = Math.min(viewport.height - viewport.insetBottom - halfHeight,
-            TouchControlConfig.MAX_Y * viewport.height);
-        // A button wider than the usable strip cannot satisfy both bounds: centre it instead of
-        // collapsing it against one edge.
-        cx = minCx > maxCx ? (minCx + maxCx) * 0.5f : TouchControlConfig.clamp(cx, minCx, maxCx);
-        cy = minCy > maxCy ? (minCy + maxCy) * 0.5f : TouchControlConfig.clamp(cy, minCy, maxCy);
-        spec.x = TouchControlConfig.clamp(cx / viewport.width, TouchControlConfig.MIN_X,
+        spec.x = TouchControlConfig.clamp(safeFraction(cx, viewport.width), TouchControlConfig.MIN_X,
             TouchControlConfig.MAX_X);
-        spec.y = TouchControlConfig.clamp(cy / viewport.height, TouchControlConfig.MIN_Y,
+        spec.y = TouchControlConfig.clamp(safeFraction(cy, viewport.height), TouchControlConfig.MIN_Y,
             TouchControlConfig.MAX_Y);
+    }
+
+    /** A pixel coordinate as a screen fraction, guarding a zero-sized viewport and a NaN. */
+    private static float safeFraction(float pixels, int extent) {
+        if (extent <= 0 || Float.isNaN(pixels) || Float.isInfinite(pixels)) {
+            return 0.5f;
+        }
+        return pixels / extent;
     }
 
     // ------------------------------------------------------------------ resize
@@ -354,13 +349,11 @@ final class TouchLayoutEditor {
         float widthDp = (px - resizeAnchorX) / unit;
         float heightDp = (py - resizeAnchorY) / unit;
         spec.setSize(widthDp, heightDp);
-        // Keep the anchored corner where it was: the centre moves by half the size change.
+        // Keep the anchored corner where it was: the centre moves by half the size change. No
+        // on-screen clamp here either -- resizing at a corner may push the button past the edge.
         float cx = resizeAnchorX + pixelWidth(spec) * 0.5f;
         float cy = resizeAnchorY + pixelHeight(spec) * 0.5f;
-        spec.x = TouchControlConfig.clamp(cx / viewport.width, TouchControlConfig.MIN_X,
-            TouchControlConfig.MAX_X);
-        spec.y = TouchControlConfig.clamp(cy / viewport.height, TouchControlConfig.MIN_Y,
-            TouchControlConfig.MAX_Y);
+        setCenterPixels(spec, cx, cy);
     }
 
     /** Grows or shrinks both dimensions by a delta in dp, for the toolbar's size buttons. */
@@ -577,10 +570,13 @@ final class TouchLayoutEditor {
     }
 
     /**
-     * GeneralsX @feature Android touch editor 05/11/2026 Places a freshly added button somewhere
-     * it is visible and selectable: clear of the editor toolbar, inside the viewport, and -- when
-     * the screen has room -- not on top of an existing button. The search walks a coarse grid from
-     * the centre outwards, so the result is deterministic and needs no randomness.
+     * GeneralsX @feature Android touch editor 05/11/2026 Places a freshly added button where it is
+     * visible and selectable: inside the viewport, in the middle band, clear of the toolbar strip
+     * when the host reports one, and -- when the screen has room -- not on top of an existing
+     * button. This is a courtesy for the ONE button being created, not a layout policy: nothing
+     * here is ever re-applied to a button the player has placed, and the player may drag it
+     * straight back onto another button or into a corner. The search walks a coarse grid from the
+     * centre outwards, so the result is deterministic and needs no randomness.
      */
     private void placeNewButton(TouchControlConfig.ButtonSpec spec) {
         float width = pixelWidth(spec);
@@ -590,14 +586,11 @@ final class TouchLayoutEditor {
         // A new button keeps a hair of margin from the usable edges, so it never lands flush
         // against the screen edge or the toolbar, where its handle would be hard to grab.
         float margin = viewport.density * 8f;
-        float minCx = Math.max(viewport.insetLeft + halfW + margin,
-            TouchControlConfig.MIN_X * viewport.width);
-        float maxCx = Math.min(viewport.width - viewport.insetRight - halfW - margin,
-            TouchControlConfig.MAX_X * viewport.width);
-        float minCy = Math.max(viewport.insetTop + halfH + margin,
-            TouchControlConfig.MIN_Y * viewport.height);
-        float maxCy = Math.min(viewport.height - reservedBottomPx - halfH - margin,
-            TouchControlConfig.MAX_Y * viewport.height);
+        float minCx = Math.min(halfW + margin, viewport.width * 0.5f);
+        float maxCx = Math.max(viewport.width - halfW - margin, viewport.width * 0.5f);
+        float minCy = Math.min(halfH + margin, viewport.height * 0.5f);
+        float maxCy = Math.max(viewport.height - reservedBottomPx - halfH - margin,
+            viewport.height * 0.5f);
         if (minCx > maxCx) {
             minCx = maxCx = (minCx + maxCx) * 0.5f;
         }

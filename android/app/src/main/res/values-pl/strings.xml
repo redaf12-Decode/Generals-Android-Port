@@ -556,7 +556,7 @@
     <string name="touch_color_picker_title">Wybierz kolor</string>
     <string name="touch_button_size">Rozmiar przycisku: %1$d%%</string>
     <string name="touch_button_opacity">Krycie: %1$d%%</string>
-    <string name="touch_too_many_buttons">Maksymalnie 20 przycisków</string>
+    <string name="touch_too_many_buttons">Maksymalnie 40 przycisków</string>
     <string name="touch_select_button_first">Najpierw zaznacz przycisk</string>
     <string name="toolbox_style_rounded">Zaokrąglony</string>
     <string name="toolbox_style_circle">Koło</string>
@@ -604,12 +604,14 @@
     <string name="setup_touch_controls_help">Przycisk naciska prawdziwy klawisz klawiatury, więc każdy przycisk jest własnym skrótem gry. Przyciski działają przy naciśnięciu, przy przytrzymaniu lub jako przełącznik i mogą nieść Ctrl, Shift lub Alt. Ta gra zachowuje własny układ, a reset ustawień launchera go nie narusza.</string>
     <string name="setup_button_touch_editor">Otwórz edytor</string>
     <string name="setup_button_touch_reset">Zresetuj przyciski</string>
+    <string name="setup_button_touch_show_toolbox">Pokaż pasek narzędzi</string>
+    <string name="setup_toast_toolbox_shown">Pływający pasek narzędzi przywrócony. Wrócił na ostatnio ustawioną pozycję.</string>
     <string name="setup_touch_reset_title">Zresetować przyciski ekranowe?</string>
     <string name="setup_touch_reset_message">Przyciski wrócą do dołączonego układu. Zapisany układ domyślny zostanie zachowany.</string>
     <string name="setup_touch_reset_confirm">Resetuj</string>
     <string name="toolbox_tool_add_button">Dodaj przycisk</string>
     <string name="toolbox_tool_hide_toolbox">Ukryj pasek narzędzi</string>
-    <string name="toolbox_toast_hidden">Pasek narzędzi ukryty. Ikona pozostaje na ekranie — dotknij jej, aby ponownie otworzyć panel.</string>
+    <string name="toolbox_toast_hidden">Pasek narzędzi ukryty. Ikona zniknęła — przywróć ją opcją „Pokaż pasek narzędzi” w ustawieniach sterowania ekranowego.</string>
     <string name="touch_toast_button_added">Dodano przycisk. Przeciągnij go, aby go umieścić.</string>
     <string name="setup_icon_credit">Ikona skrzynki narzędzi: „Control” autorstwa Creatype, z Flaticon — używana na licencji Flaticon Free License.</string>
 </resources>

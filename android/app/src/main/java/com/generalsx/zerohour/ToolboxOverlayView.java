@@ -301,8 +301,12 @@ final class ToolboxOverlayView extends View {
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
-        layoutIcon();
-        drawIcon(canvas);
+        // The icon is drawn only while it is visible: "Hide toolbox" removes it from the screen
+        // entirely, rather than leaving an invisible tappable box behind.
+        if (config.iconVisible) {
+            layoutIcon();
+            drawIcon(canvas);
+        }
         if (panelOpen) {
             layoutPanel();
             drawPanel(canvas);
@@ -407,7 +411,13 @@ final class ToolboxOverlayView extends View {
     /** True while the toolbox icon is on screen and tappable: the reopen affordance. */
     boolean iconIsVisibleForTest() {
         layoutIcon();
-        return !iconRect.isEmpty() && iconRect.width() > 0f && iconRect.height() > 0f;
+        return config.iconVisible && !iconRect.isEmpty()
+            && iconRect.width() > 0f && iconRect.height() > 0f;
+    }
+
+    /** The stored icon-visibility flag, independent of layout. */
+    boolean iconVisibleFlagForTest() {
+        return config.iconVisible;
     }
 
     android.graphics.PointF iconCenterForTest() {
@@ -477,7 +487,7 @@ final class ToolboxOverlayView extends View {
                 downX = event.getX();
                 downY = event.getY();
                 scrollingPanel = false;
-                if (iconRect.contains(downX, downY)) {
+                if (config.iconVisible && iconRect.contains(downX, downY)) {
                     activePointer = event.getPointerId(0);
                     draggingIcon = false;
                     iconDownX = config.x;
@@ -555,7 +565,7 @@ final class ToolboxOverlayView extends View {
                     invalidate();
                     return true;
                 }
-                if (iconRect.contains(x, y)) {
+                if (config.iconVisible && iconRect.contains(x, y)) {
                     panelOpen = !panelOpen;
                     panelScroll = 0f;
                     persistPanelState();
@@ -654,14 +664,42 @@ final class ToolboxOverlayView extends View {
     }
 
     /**
-     * Hides the tool panel but keeps the icon, so it can be reopened with a tap. The button layer
-     * and the keyboard buttons are untouched: only the panel's own visibility changes.
+     * GeneralsX @bugfix Android touch editor 05/11/2026 "Hide toolbox" now removes the floating
+     * icon as well as closing the panel, which is what the row says. It writes only the toolbox's
+     * own icon state (ToolboxConfig.iconVisible) and the panel's open state; it never touches
+     * TouchControlConfig, so every game button stays visible, keeps its key, and the button layer
+     * stays on. The two states are independent by construction, not by a check.
+     *
+     * The icon is off the screen rather than transparent, so its tap and drag areas are gone too
+     * (onTouchEvent and onDraw both consult iconVisible). Reopening is the launcher's Show toolbox
+     * action, which restores this same stored position.
      */
     private void hideToolbox() {
         panelOpen = false;
-        persistPanelState();
+        config.panelOpen = false;
+        config.iconVisible = false;
+        config.save(activity, game);
+        draggingIcon = false;
+        scrollingPanel = false;
+        activePointer = MotionEvent.INVALID_POINTER_ID;
         invalidate();
         toast(activity.getString(R.string.toolbox_toast_hidden));
+    }
+
+    /**
+     * GeneralsX @feature Android touch editor 05/11/2026 Restores the floating icon at its stored
+     * position. The launcher's "Show toolbox" action calls this on the live overlay when the match
+     * is running; the stored flag alone brings it back on the next launch. The panel is left
+     * closed, so the icon appears and a tap opens the panel -- the same state as a fresh install.
+     */
+    void showIcon() {
+        if (config.iconVisible) {
+            return;
+        }
+        config.iconVisible = true;
+        config.save(activity, game);
+        rebuildRows();
+        invalidate();
     }
 
     /** Stores the panel's visibility, which is per game and independent of the buttons. */
