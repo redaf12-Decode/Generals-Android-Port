@@ -82,6 +82,14 @@ final class TouchLayoutEditor {
     private TouchControlConfig baseline;
     private int selected = -1;
 
+    /**
+     * GeneralsX @feature Android touch editor 05/11/2026 The bottom strip a new button must stay
+     * out of, in pixels: the in-game editor's toolbar sits there, and a button dropped underneath
+     * it would be invisible and uneditable. The host sets it (0 when it has no toolbar), so the
+     * placement rule itself lives here, once, for both entry points.
+     */
+    private float reservedBottomPx;
+
     /** Where the finger grabbed the button, relative to its centre, in pixels. */
     private float grabDx;
     private float grabDy;
@@ -534,6 +542,15 @@ final class TouchLayoutEditor {
     }
 
     /**
+     * GeneralsX @feature Android touch editor 05/11/2026 Tells the editor that a strip at the
+     * bottom of the viewport is the host's toolbar, so a new button is never placed under it. The
+     * launcher's full-screen editor draws no toolbar over the canvas and leaves this at 0.
+     */
+    void setReservedBottomPx(float px) {
+        reservedBottomPx = Math.max(0f, px);
+    }
+
+    /**
      * Adds a button in a free-ish spot and selects it. False at the model's maximum, which is
      * what the toolbar's Add row reports rather than silently doing nothing.
      */
@@ -553,10 +570,83 @@ final class TouchLayoutEditor {
             highest = Math.max(highest, other.zOrder);
         }
         spec.zOrder = highest + 1;
-        setCenterPixels(spec, 0.5f * viewport.width, 0.6f * viewport.height);
         working.buttons.add(spec);
         selected = working.buttons.size() - 1;
+        placeNewButton(spec);
         return true;
+    }
+
+    /**
+     * GeneralsX @feature Android touch editor 05/11/2026 Places a freshly added button somewhere
+     * it is visible and selectable: clear of the editor toolbar, inside the viewport, and -- when
+     * the screen has room -- not on top of an existing button. The search walks a coarse grid from
+     * the centre outwards, so the result is deterministic and needs no randomness.
+     */
+    private void placeNewButton(TouchControlConfig.ButtonSpec spec) {
+        float width = pixelWidth(spec);
+        float height = pixelHeight(spec);
+        float halfW = width * 0.5f;
+        float halfH = height * 0.5f;
+        // A new button keeps a hair of margin from the usable edges, so it never lands flush
+        // against the screen edge or the toolbar, where its handle would be hard to grab.
+        float margin = viewport.density * 8f;
+        float minCx = Math.max(viewport.insetLeft + halfW + margin,
+            TouchControlConfig.MIN_X * viewport.width);
+        float maxCx = Math.min(viewport.width - viewport.insetRight - halfW - margin,
+            TouchControlConfig.MAX_X * viewport.width);
+        float minCy = Math.max(viewport.insetTop + halfH + margin,
+            TouchControlConfig.MIN_Y * viewport.height);
+        float maxCy = Math.min(viewport.height - reservedBottomPx - halfH - margin,
+            TouchControlConfig.MAX_Y * viewport.height);
+        if (minCx > maxCx) {
+            minCx = maxCx = (minCx + maxCx) * 0.5f;
+        }
+        if (minCy > maxCy) {
+            minCy = maxCy = (minCy + maxCy) * 0.5f;
+        }
+        float startX = TouchControlConfig.clamp(viewport.width * 0.5f, minCx, maxCx);
+        float startY = TouchControlConfig.clamp(viewport.height * 0.42f, minCy, maxCy);
+        float stepX = Math.max(viewport.density * 12f, width * 0.6f);
+        float stepY = Math.max(viewport.density * 12f, height * 0.6f);
+        // A bounded ring search: near the centre first, then outwards. Ten rings always cover a
+        // phone-sized viewport at these steps.
+        for (int ring = 0; ring <= 10; ++ring) {
+            for (int gy = -ring; gy <= ring; ++gy) {
+                for (int gx = -ring; gx <= ring; ++gx) {
+                    if (ring > 0 && Math.abs(gx) != ring && Math.abs(gy) != ring) {
+                        continue;
+                    }
+                    float cx = TouchControlConfig.clamp(startX + gx * stepX, minCx, maxCx);
+                    float cy = TouchControlConfig.clamp(startY + gy * stepY, minCy, maxCy);
+                    if (!overlapsAny(spec, cx, cy, width, height)) {
+                        setCenterPixels(spec, cx, cy);
+                        return;
+                    }
+                }
+            }
+        }
+        // Everything is crowded: the centre is still a valid, visible spot.
+        setCenterPixels(spec, startX, startY);
+    }
+
+    /**
+     * Does a box of this size centred here overlap any live button other than <code>spec</code>?
+     * Disabled buttons are not drawn in the match, so they are not in the way.
+     */
+    private boolean overlapsAny(TouchControlConfig.ButtonSpec spec, float cx, float cy,
+                                float width, float height) {
+        android.graphics.RectF rect = new android.graphics.RectF();
+        for (TouchControlConfig.ButtonSpec other : working.buttons) {
+            if (other == spec || !other.enabled) {
+                continue;
+            }
+            bounds(other, rect);
+            if (cx - width * 0.5f < rect.right && cx + width * 0.5f > rect.left
+                && cy - height * 0.5f < rect.bottom && cy + height * 0.5f > rect.top) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /** Puts the shipped layout into the working copy; nothing is stored until save(). */

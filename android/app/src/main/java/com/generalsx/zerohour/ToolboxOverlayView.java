@@ -59,13 +59,15 @@ final class ToolboxOverlayView extends View {
 
     /** The panel's rows, in order. Each one is implemented; none is a placeholder. */
     private static final int TOOL_EDIT_LAYOUT = 0;
-    private static final int TOOL_TOUCH_LAYER = 1;
-    private static final int TOOL_BUTTON_SIZE = 2;
-    private static final int TOOL_SAVE_DEFAULT = 3;
-    private static final int TOOL_LOAD_DEFAULT = 4;
-    private static final int TOOL_RESTORE_BUTTONS = 5;
-    private static final int TOOL_CLOSE = 6;
-    private static final int TOOL_COUNT = 7;
+    private static final int TOOL_ADD_BUTTON = 1;
+    private static final int TOOL_TOUCH_LAYER = 2;
+    private static final int TOOL_BUTTON_SIZE = 3;
+    private static final int TOOL_SAVE_DEFAULT = 4;
+    private static final int TOOL_LOAD_DEFAULT = 5;
+    private static final int TOOL_RESTORE_BUTTONS = 6;
+    private static final int TOOL_HIDE_TOOLBOX = 7;
+    private static final int TOOL_CLOSE = 8;
+    private static final int TOOL_COUNT = 9;
 
     private static final float ROW_HEIGHT_DP = 40f;
     private static final float PANEL_PADDING_DP = 10f;
@@ -101,6 +103,15 @@ final class ToolboxOverlayView extends View {
     private final Paint glyphPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Path iconPath = new Path();
 
+    /**
+     * GeneralsX @feature Android touch editor 05/11/2026 The toolbox glyph, loaded once from the
+     * bundled VectorDrawable (res/drawable/ic_gzh_toolbox.xml, traced from the Flaticon "Control"
+     * icon) and drawn as a bitmap scaled to the icon box. Drawn on the UI thread, so it never
+     * touches the render thread's frame budget; the raster happens once, at construction.
+     */
+    private android.graphics.Bitmap iconBitmap;
+    private final android.graphics.Matrix iconMatrix = new android.graphics.Matrix();
+
     private final int accentColor;
     private final int panelBackground = 0xF014181C;
 
@@ -117,6 +128,8 @@ final class ToolboxOverlayView extends View {
         this.config = ToolboxConfig.load(activity, game);
         this.touchSlop = ViewConfiguration.get(activity).getScaledTouchSlop();
         this.accentColor = resolveAccent();
+        this.panelOpen = config.panelOpen;
+        loadIconBitmap();
         for (int i = 0; i < TOOL_COUNT; ++i) {
             rowRects[i] = new RectF();
             rowLabels[i] = "";
@@ -134,6 +147,31 @@ final class ToolboxOverlayView extends View {
             return ThemeHelper.swatchColor(activity, ThemeHelper.getAccent(activity));
         } catch (Exception e) {
             return Color.rgb(220, 181, 86);
+        }
+    }
+
+    /**
+     * Rasterises the bundled toolbox VectorDrawable once, at the largest size the icon can take
+     * (the large preset), so every density and every size setting samples from a sharp source and
+     * onDraw only ever draws a bitmap. A failure here leaves the icon null and the draw falls back
+     * to the panel's own outline, so a bad resource can never crash the game surface.
+     */
+    private void loadIconBitmap() {
+        try {
+            android.graphics.drawable.Drawable drawable = androidx.core.content.ContextCompat
+                .getDrawable(activity, R.drawable.ic_gzh_toolbox);
+            if (drawable == null) {
+                return;
+            }
+            int side = Math.round(dp(ToolboxConfig.sizeDp(ToolboxConfig.SIZE_LARGE))
+                * 2f);
+            drawable.setBounds(0, 0, side, side);
+            android.graphics.Bitmap bitmap = android.graphics.Bitmap.createBitmap(side, side,
+                android.graphics.Bitmap.Config.ARGB_8888);
+            drawable.draw(new Canvas(bitmap));
+            iconBitmap = bitmap;
+        } catch (Exception e) {
+            Log.w(TAG, "could not load the toolbox icon drawable", e);
         }
     }
 
@@ -221,6 +259,7 @@ final class ToolboxOverlayView extends View {
     /** Caches the row labels and values: onDraw must not build strings. */
     private void rebuildRows() {
         rowLabels[TOOL_EDIT_LAYOUT] = activity.getString(R.string.toolbox_tool_edit_layout);
+        rowLabels[TOOL_ADD_BUTTON] = activity.getString(R.string.toolbox_tool_add_button);
         rowLabels[TOOL_TOUCH_LAYER] = activity.getString(R.string.toolbox_tool_touch_layer);
         rowValues[TOOL_TOUCH_LAYER] = activity.getString(
             TouchControlConfig.load(activity).enabled
@@ -232,6 +271,7 @@ final class ToolboxOverlayView extends View {
         rowLabels[TOOL_LOAD_DEFAULT] = activity.getString(R.string.toolbox_tool_load_default);
         rowLabels[TOOL_RESTORE_BUTTONS] =
             activity.getString(R.string.toolbox_tool_restore_buttons);
+        rowLabels[TOOL_HIDE_TOOLBOX] = activity.getString(R.string.toolbox_tool_hide_toolbox);
         rowLabels[TOOL_CLOSE] = activity.getString(R.string.toolbox_close);
     }
 
@@ -273,13 +313,25 @@ final class ToolboxOverlayView extends View {
         glyphPaint.setStrokeWidth(dp(2.5f));
         glyphPaint.setAlpha(255);
         canvas.drawPath(iconPath, glyphPaint);
-        // A wrench-ish glyph: two bars, so the icon reads as "tools" at any size.
-        float cx = iconRect.centerX();
-        float cy = iconRect.centerY();
-        float arm = iconRect.width() * 0.22f;
-        glyphPaint.setStrokeWidth(dp(2f));
-        canvas.drawLine(cx - arm, cy - arm, cx + arm, cy + arm, glyphPaint);
-        canvas.drawLine(cx - arm, cy + arm, cx + arm, cy - arm, glyphPaint);
+
+        // The bundled Flaticon "Control" glyph, centred in the icon and kept at its own aspect
+        // ratio: it is square, so it is scaled by the shorter side of the icon box.
+        if (iconBitmap != null && !iconBitmap.isRecycled()) {
+            float inset = iconRect.width() * 0.18f;
+            float side = Math.min(iconRect.width(), iconRect.height()) - inset * 2f;
+            if (side > 0f) {
+                float left = iconRect.centerX() - side * 0.5f;
+                float top = iconRect.centerY() - side * 0.5f;
+                iconMatrix.reset();
+                iconMatrix.setRectToRect(
+                    new android.graphics.RectF(0, 0, iconBitmap.getWidth(),
+                        iconBitmap.getHeight()),
+                    new android.graphics.RectF(left, top, left + side, top + side),
+                    android.graphics.Matrix.ScaleToFit.CENTER);
+                iconPaint.setAlpha(255);
+                canvas.drawBitmap(iconBitmap, iconMatrix, iconPaint);
+            }
+        }
     }
 
     private void drawPanel(Canvas canvas) {
@@ -311,6 +363,58 @@ final class ToolboxOverlayView extends View {
             }
         }
         textPaint.setTextAlign(Paint.Align.CENTER);
+    }
+
+    // ------------------------------------------------------------------ test hooks
+
+    /** Opens the panel and lays it out, for a test that drives the real touch path. */
+    void ensurePanelOpenForTest() {
+        panelOpen = true;
+        layoutIcon();
+        layoutPanel();
+    }
+
+    boolean isPanelOpenForTest() {
+        return panelOpen;
+    }
+
+    /** True while the toolbox icon is on screen and tappable: the reopen affordance. */
+    boolean iconIsVisibleForTest() {
+        layoutIcon();
+        return !iconRect.isEmpty() && iconRect.width() > 0f && iconRect.height() > 0f;
+    }
+
+    android.graphics.PointF iconCenterForTest() {
+        layoutIcon();
+        return new android.graphics.PointF(iconRect.centerX(), iconRect.centerY());
+    }
+
+    /** A tool row's centre, by index, for a test that taps it. */
+    android.graphics.PointF toolRowCenterForTest(int index) {
+        layoutIcon();
+        layoutPanel();
+        RectF row = rowRects[index];
+        return new android.graphics.PointF(row.centerX(), row.centerY());
+    }
+
+    /** True when the bundled VectorDrawable rasterised to a bitmap with any opaque pixel. */
+    boolean iconBitmapHasContentForTest() {
+        if (iconBitmap == null || iconBitmap.isRecycled()) {
+            return false;
+        }
+        for (int y = 0; y < iconBitmap.getHeight(); y += 2) {
+            for (int x = 0; x < iconBitmap.getWidth(); x += 2) {
+                if (android.graphics.Color.alpha(iconBitmap.getPixel(x, y)) > 16) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    android.graphics.RectF iconRectForTest() {
+        layoutIcon();
+        return new android.graphics.RectF(iconRect);
     }
 
     // ------------------------------------------------------------------ touch
@@ -387,6 +491,7 @@ final class ToolboxOverlayView extends View {
                 }
                 if (iconRect.contains(x, y)) {
                     panelOpen = !panelOpen;
+                    persistPanelState();
                     performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
                     rebuildRows();
                     invalidate();
@@ -420,10 +525,14 @@ final class ToolboxOverlayView extends View {
         switch (tool) {
             case TOOL_EDIT_LAYOUT:
                 panelOpen = false;
+                persistPanelState();
                 invalidate();
                 if (hotkeyOverlay != null) {
                     hotkeyOverlay.enterEditor();
                 }
+                return;
+            case TOOL_ADD_BUTTON:
+                addButtonFromToolbox();
                 return;
             case TOOL_TOUCH_LAYER:
                 setTouchLayerEnabled(!TouchControlConfig.load(activity).enabled);
@@ -444,13 +553,53 @@ final class ToolboxOverlayView extends View {
                 invalidate();
                 toast(activity.getString(R.string.toolbox_toast_buttons_restored));
                 return;
+            case TOOL_HIDE_TOOLBOX:
+                hideToolbox();
+                return;
             case TOOL_CLOSE:
                 panelOpen = false;
+                persistPanelState();
                 invalidate();
                 return;
             default:
                 return;
         }
+    }
+
+    /**
+     * GeneralsX @feature Android touch editor 05/11/2026 The panel's "Add button": it opens the
+     * editor and adds a button through the same model call the editor toolbar and the launcher page
+     * use, then selects it. There is no second button-management system here.
+     */
+    private void addButtonFromToolbox() {
+        panelOpen = false;
+        persistPanelState();
+        invalidate();
+        if (hotkeyOverlay == null) {
+            return;
+        }
+        if (hotkeyOverlay.addButtonInEditor()) {
+            toast(activity.getString(R.string.touch_toast_button_added));
+        } else {
+            toast(activity.getString(R.string.touch_too_many_buttons));
+        }
+    }
+
+    /**
+     * Hides the tool panel but keeps the icon, so it can be reopened with a tap. The button layer
+     * and the keyboard buttons are untouched: only the panel's own visibility changes.
+     */
+    private void hideToolbox() {
+        panelOpen = false;
+        persistPanelState();
+        invalidate();
+        toast(activity.getString(R.string.toolbox_toast_hidden));
+    }
+
+    /** Stores the panel's visibility, which is per game and independent of the buttons. */
+    private void persistPanelState() {
+        config.panelOpen = panelOpen;
+        config.save(activity, game);
     }
 
     /**

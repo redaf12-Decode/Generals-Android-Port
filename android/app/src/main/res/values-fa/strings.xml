@@ -548,6 +548,7 @@
     <string name="touch_shape_square">مربع</string>
     <string name="touch_shape_circle">دایره</string>
     <string name="touch_shape_oval">بیضی</string>
+    <string name="touch_border_color">رنگ حاشیه دکمه</string>
     <string name="touch_text_color">رنگ متن دکمه</string>
     <string name="touch_text_color_picker">انتخاب رنگ متن</string>
     <string name="touch_fill_color">رنگ پسزمینه دکمه</string>
@@ -606,4 +607,9 @@
     <string name="setup_touch_reset_title">دکمه‌های روی صفحه بازنشانی شوند؟</string>
     <string name="setup_touch_reset_message">دکمه‌ها به چیدمان همراه بازی برمی‌گردند. چیدمان پیش‌فرض ذخیره‌شده شما باقی می‌ماند.</string>
     <string name="setup_touch_reset_confirm">بازنشانی</string>
+    <string name="toolbox_tool_add_button">افزودن دکمه</string>
+    <string name="toolbox_tool_hide_toolbox">پنهان کردن جعبه‌ابزار</string>
+    <string name="toolbox_toast_hidden">جعبه‌ابزار پنهان شد. نماد روی صفحه می‌ماند؛ برای باز کردن دوباره پنل روی آن بزنید.</string>
+    <string name="touch_toast_button_added">دکمه افزوده شد. برای جای‌گذاری آن را بکشید.</string>
+    <string name="setup_icon_credit">نماد جعبه‌ابزار: «Control» از Creatype، از Flaticon — تحت مجوز رایگان Flaticon.</string>
 </resources>

@@ -152,7 +152,29 @@ public class HotkeyOverlayTouchRoutingTest {
         overlay.onTouchEvent(down(centre[0], centre[1]));
         overlay.onTouchEvent(cancel());
         overlay.releaseAllKeys();
+        assertEquals("the down was matched by an up, so no key is left held",
+            presser.downs.size(), presser.ups.size());
         assertFalse(overlay.isEditing());
+    }
+
+    /**
+     * The lifecycle promise: whatever the touch layer is holding when the activity pauses is
+     * released, so a Hold or a Toggle interrupted by a pause cannot leave a key down for the rest
+     * of the process.
+     */
+    @Test
+    public void pauseReleasesAKeyThatWasStillHeld() {
+        TouchControlConfig stored = TouchControlConfig.load(activity);
+        stored.buttons.get(0).activationMode = TouchControlConfig.MODE_HOLD;
+        stored.save(activity);
+        overlay.reload();
+        float[] centre = buttonCentre(0);
+        overlay.onTouchEvent(down(centre[0], centre[1]));
+        assertTrue("the Hold pressed its key", presser.downs.size() > presser.ups.size());
+
+        overlay.releaseAllKeys();
+
+        assertEquals("the pause released it", presser.downs.size(), presser.ups.size());
     }
 
     /** Opening the editor takes every touch, including empty space. */

@@ -113,6 +113,14 @@ android {
         }
     }
 
+    testOptions {
+        // GeneralsX @build Android touch editor 05/11/2026 The toolbox and overlay build their row
+        // labels from strings.xml, so a unit test that drives them needs the merged resources on
+        // the classpath; without this Robolectric throws Resources$NotFoundException for every
+        // label. It is the standard setting for testing views that read resources.
+        unitTests.includeAndroidResources = true
+    }
+
     packagingOptions {
         jniLibs {
             // GeneralsX @bugfix Android port 10/07/2026 libadrenotools (custom

@@ -62,6 +62,7 @@ final class ToolboxConfig {
     private static final String KEY_X = "icon_x";
     private static final String KEY_Y = "icon_y";
     private static final String KEY_DEFAULT_LAYOUT = "default_layout";
+    private static final String KEY_PANEL_OPEN = "panel_open";
 
     boolean enabled;
     int style = STYLE_ROUNDED;
@@ -70,6 +71,16 @@ final class ToolboxConfig {
     /** Screen fraction of the icon's centre. */
     float x = 0.92f;
     float y = 0.30f;
+    /**
+     * GeneralsX @feature Android touch editor 05/11/2026 Whether the tool panel is showing. This
+     * is the "Hide toolbox" state, stored per game and separate from the buttons' own visibility
+     * (TouchControlConfig.enabled): hiding the panel leaves the icon and every button in place.
+     *
+     * The default is false, which is what the overlay did before this was stored: the icon is on
+     * screen at launch and the panel opens when it is tapped. An older install has no stored value
+     * and therefore keeps exactly that behaviour.
+     */
+    boolean panelOpen = false;
     /** The layout the panel's "Load saved layout" row applies, as TouchControlConfig JSON. */
     String defaultLayoutJson;
 
@@ -111,6 +122,7 @@ final class ToolboxConfig {
             prefs.getFloat(prefixed(game, KEY_X), 0.92f), 0.02f, 0.98f);
         config.y = TouchControlConfig.clamp(
             prefs.getFloat(prefixed(game, KEY_Y), 0.30f), 0.04f, 0.96f);
+        config.panelOpen = prefs.getBoolean(prefixed(game, KEY_PANEL_OPEN), false);
         config.defaultLayoutJson = prefs.getString(prefixed(game, KEY_DEFAULT_LAYOUT), null);
         return config;
     }
@@ -124,6 +136,7 @@ final class ToolboxConfig {
             .putFloat(prefixed(game, KEY_OPACITY), TouchControlConfig.clamp(opacity, 0.2f, 1f))
             .putFloat(prefixed(game, KEY_X), TouchControlConfig.clamp(x, 0.02f, 0.98f))
             .putFloat(prefixed(game, KEY_Y), TouchControlConfig.clamp(y, 0.04f, 0.96f))
+            .putBoolean(prefixed(game, KEY_PANEL_OPEN), panelOpen)
             .putString(prefixed(game, KEY_DEFAULT_LAYOUT), defaultLayoutJson)
             .apply();
     }

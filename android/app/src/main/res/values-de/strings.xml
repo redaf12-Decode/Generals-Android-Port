@@ -548,6 +548,7 @@
     <string name="touch_shape_square">Quadrat</string>
     <string name="touch_shape_circle">Kreis</string>
     <string name="touch_shape_oval">Oval</string>
+    <string name="touch_border_color">Rahmenfarbe der Schaltfläche</string>
     <string name="touch_text_color">Textfarbe der Schaltfläche</string>
     <string name="touch_text_color_picker">Textfarbe wählen</string>
     <string name="touch_fill_color">Füllfarbe der Schaltfläche</string>
@@ -606,4 +607,9 @@
     <string name="setup_touch_reset_title">Bildschirmknöpfe zurücksetzen?</string>
     <string name="setup_touch_reset_message">Die Knöpfe kehren zum mitgelieferten Layout zurück. Ihr gespeichertes Standardlayout bleibt erhalten.</string>
     <string name="setup_touch_reset_confirm">Zurücksetzen</string>
+    <string name="toolbox_tool_add_button">Schaltfläche hinzufügen</string>
+    <string name="toolbox_tool_hide_toolbox">Werkzeugkasten ausblenden</string>
+    <string name="toolbox_toast_hidden">Werkzeugkasten ausgeblendet. Das Symbol bleibt auf dem Bildschirm; tippen Sie darauf, um das Menü wieder zu öffnen.</string>
+    <string name="touch_toast_button_added">Schaltfläche hinzugefügt. Ziehen Sie sie an die gewünschte Stelle.</string>
+    <string name="setup_icon_credit">Werkzeugkasten-Symbol: „Control“ von Creatype, von Flaticon – genutzt unter der Flaticon Free License.</string>
 </resources>

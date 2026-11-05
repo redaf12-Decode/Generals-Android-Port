@@ -625,6 +625,10 @@ public class SetupActivity extends Activity {
         UiKit.supporting(about, getString(R.string.setup_subtitle));
         UiKit.chip(about, R.drawable.ic_gzh_check, versionLabel(),
             R.color.gzh_primary, R.color.gzh_surface_container_high);
+        // GeneralsX @feature Android touch editor 05/11/2026 The floating toolbox icon is the
+        // Flaticon "Control" icon, whose free license requires attribution. This is that notice:
+        // it is in the app, not only in the repository, so the credit ships with the APK.
+        UiKit.caption(about, getString(R.string.setup_icon_credit));
 
         LinearLayout help = UiKit.card(page);
         UiKit.sectionHeader(help, R.drawable.ic_gzh_doc,

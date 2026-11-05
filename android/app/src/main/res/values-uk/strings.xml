@@ -548,6 +548,7 @@
     <string name="touch_shape_square">Квадрат</string>
     <string name="touch_shape_circle">Коло</string>
     <string name="touch_shape_oval">Овал</string>
+    <string name="touch_border_color">Колір рамки кнопки</string>
     <string name="touch_text_color">Колір тексту кнопки</string>
     <string name="touch_text_color_picker">Обрати колір тексту</string>
     <string name="touch_fill_color">Колір заливки кнопки</string>
@@ -606,4 +607,9 @@
     <string name="setup_touch_reset_title">Скинути екранні кнопки?</string>
     <string name="setup_touch_reset_message">Кнопки повернуться до початкового розташування. Збережене розташування за замовчуванням залишиться.</string>
     <string name="setup_touch_reset_confirm">Скинути</string>
+    <string name="toolbox_tool_add_button">Додати кнопку</string>
+    <string name="toolbox_tool_hide_toolbox">Сховати панель</string>
+    <string name="toolbox_toast_hidden">Панель приховано. Значок залишається на екрані — торкніться його, щоб відкрити панель знову.</string>
+    <string name="touch_toast_button_added">Кнопку додано. Перетягніть її на потрібне місце.</string>
+    <string name="setup_icon_credit">Значок панелі інструментів: «Control» від Creatype, з Flaticon — використовується за безкоштовною ліцензією Flaticon.</string>
 </resources>

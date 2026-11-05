@@ -571,6 +571,7 @@
     <string name="touch_exported">Controls mapping exported</string>
     <string name="touch_imported">Controls mapping imported and saved</string>
     <string name="touch_transfer_failed">Controls transfer failed: %1$s</string>
+    <string name="touch_border_color">Button border color</string>
     <string name="touch_text_color">Button text color</string>
     <string name="touch_text_color_picker">Pick text color</string>
     <string name="touch_fill_color">Button fill color</string>
@@ -613,4 +614,9 @@
     <string name="setup_touch_reset_title">Reset the on-screen buttons?</string>
     <string name="setup_touch_reset_message">The buttons go back to the shipped layout. Your saved default layout is kept.</string>
     <string name="setup_touch_reset_confirm">Reset</string>
+    <string name="toolbox_tool_add_button">Add button</string>
+    <string name="toolbox_tool_hide_toolbox">Hide toolbox</string>
+    <string name="toolbox_toast_hidden">Toolbox hidden. The icon stays on screen; tap it to open the panel again.</string>
+    <string name="touch_toast_button_added">Button added. Drag it to place it.</string>
+    <string name="setup_icon_credit">Toolbox icon: “Control” by Creatype, from Flaticon — used under the Flaticon Free License.</string>
 </resources>

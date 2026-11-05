@@ -548,6 +548,7 @@
     <string name="touch_shape_square">Kwadrat</string>
     <string name="touch_shape_circle">Okrąg</string>
     <string name="touch_shape_oval">Owal</string>
+    <string name="touch_border_color">Kolor obramowania przycisku</string>
     <string name="touch_text_color">Kolor tekstu przycisku</string>
     <string name="touch_text_color_picker">Wybierz kolor tekstu</string>
     <string name="touch_fill_color">Kolor wypełnienia przycisku</string>
@@ -606,4 +607,9 @@
     <string name="setup_touch_reset_title">Zresetować przyciski ekranowe?</string>
     <string name="setup_touch_reset_message">Przyciski wrócą do dołączonego układu. Zapisany układ domyślny zostanie zachowany.</string>
     <string name="setup_touch_reset_confirm">Resetuj</string>
+    <string name="toolbox_tool_add_button">Dodaj przycisk</string>
+    <string name="toolbox_tool_hide_toolbox">Ukryj pasek narzędzi</string>
+    <string name="toolbox_toast_hidden">Pasek narzędzi ukryty. Ikona pozostaje na ekranie — dotknij jej, aby ponownie otworzyć panel.</string>
+    <string name="touch_toast_button_added">Dodano przycisk. Przeciągnij go, aby go umieścić.</string>
+    <string name="setup_icon_credit">Ikona skrzynki narzędzi: „Control” autorstwa Creatype, z Flaticon — używana na licencji Flaticon Free License.</string>
 </resources>

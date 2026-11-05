@@ -17,11 +17,19 @@
 */
 
 // GeneralsX @feature Android touch editor 05/11/2026 Draws a button layout in edit mode: every
-// button, its shape, the selection ring, the resize handle and the position badge.
+// button, its shape, the selection indicator, the resize handle and the position badge.
 //
 // Both editors use it -- the in-game one and the launcher's full-screen one -- so a button looks
 // the same in both and there is exactly one place that knows how an editable button is drawn.
 // Each host draws its own toolbar, because the two toolbars are genuinely different.
+//
+// GeneralsX @bugfix Android touch editor 05/11/2026 A button is drawn with its OWN colours in the
+// editor, exactly as it is drawn in the match: fillColor for the body and borderColor for the
+// border. The launcher's accent is never painted onto a button, so entering the editor cannot
+// change what a button looks like and the global accent cannot overwrite a per-button colour.
+// Selection is shown by a separate indicator drawn OUTSIDE the button -- an accent dashed frame
+// around its box, the resize handle, and the position badge -- so the selection visuals never
+// alter the saved appearance.
 //
 // The renderer owns its Paints, RectFs and Paths and reuses all of them: draw() allocates
 // nothing, which matters because it runs inside the game's frame loop.
@@ -43,21 +51,27 @@ final class TouchEditorRenderer {
     private final Paint textPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint outlinePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint badgePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint handlePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Path shapePath = new Path();
     private final Path dashPath = new Path();
+    private final Path handlePath = new Path();
     private final RectF rect = new RectF();
+    private final RectF frameRect = new RectF();
     private final RectF handleRect = new RectF();
 
     private final int accentColor;
+    private final float density;
 
     TouchEditorRenderer(Context context) {
         this.context = context;
         this.accentColor = resolveAccent(context);
+        this.density = context.getResources().getDisplayMetrics().density;
         textPaint.setTextAlign(Paint.Align.CENTER);
         borderPaint.setStyle(Paint.Style.STROKE);
         outlinePaint.setStyle(Paint.Style.STROKE);
         outlinePaint.setPathEffect(new android.graphics.DashPathEffect(
             new float[] {dp(7f), dp(5f)}, 0f));
+        handlePaint.setStyle(Paint.Style.STROKE);
     }
 
     private static int resolveAccent(Context context) {
@@ -70,6 +84,11 @@ final class TouchEditorRenderer {
 
     int accentColor() {
         return accentColor;
+    }
+
+    /** The accent this renderer resolves for a context, so a test can assert a button is NOT it. */
+    static int accentForTest(Context context) {
+        return resolveAccent(context);
     }
 
     private float dp(float value) {
@@ -88,41 +107,63 @@ final class TouchEditorRenderer {
             editor.bounds(spec, rect);
             boolean selected = editor.buttons().indexOf(spec) == selectedIndex;
             float alpha = TouchControlConfig.clamp(spec.opacity * globalOpacity, 0f, 1f);
+            // The button's own appearance, exactly as the match draws it: its fill and its own
+            // border. The launcher accent is never used here, so the editor cannot recolour it.
             fillPaint.setColor(spec.fillColor);
             fillPaint.setAlpha(Math.round(255f * alpha * (spec.enabled ? 1f : 0.35f)));
+            borderPaint.setColor(spec.borderColor);
+            borderPaint.setStrokeWidth(Math.max(1f, dp(spec.borderWidthDp)) * scale);
+            borderPaint.setAlpha(Math.round(255f * (spec.enabled ? 1f : 0.5f)));
             drawShape(canvas, spec, scale);
+            drawLabel(canvas, spec, scale);
             if (selected) {
-                borderPaint.setColor(accentColor);
-                borderPaint.setStrokeWidth(dp(3f));
-                borderPaint.setAlpha(255);
-                drawShape(canvas, spec, scale);
+                // Selection is shown OUTSIDE the button, never by repainting it: an accent
+                // dashed frame around its box, the resize handle, and the position badge.
+                drawSelectionFrame(canvas);
+                editor.resizeHandle(handleRect);
+                drawResizeHandle(canvas);
+                drawPositionBadge(canvas, spec);
             } else {
                 outlinePaint.setColor(0xFF39D0D8);
                 outlinePaint.setStrokeWidth(dp(1.5f));
                 outlinePaint.setAlpha(spec.enabled ? 200 : 90);
                 TouchButtonShape.buildPath(dashPath, rect, spec.shape, spec.polygonType,
-                    spec.cornerDp * density() * scale);
+                    spec.cornerDp * density * scale);
                 canvas.drawPath(dashPath, outlinePaint);
-            }
-            drawLabel(canvas, spec, scale);
-            if (selected) {
-                editor.resizeHandle(handleRect);
-                badgePaint.setColor(accentColor);
-                badgePaint.setAlpha(230);
-                canvas.drawCircle(handleRect.centerX(), handleRect.centerY(),
-                    handleRect.width() * 0.5f, badgePaint);
-                drawPositionBadge(canvas, spec);
             }
         }
     }
 
-    private float density() {
-        return context.getResources().getDisplayMetrics().density;
+    /** An accent dashed frame around the selected button's box -- the selection indicator. */
+    private void drawSelectionFrame(Canvas canvas) {
+        float pad = dp(6f);
+        frameRect.set(rect.left - pad, rect.top - pad, rect.right + pad, rect.bottom + pad);
+        handlePaint.setColor(accentColor);
+        handlePaint.setStrokeWidth(dp(2.5f));
+        handlePaint.setAlpha(255);
+        handlePaint.setPathEffect(outlinePaint.getPathEffect());
+        canvas.drawRoundRect(frameRect, dp(6f), dp(6f), handlePaint);
+    }
+
+    /** The grab handle at the bottom-right corner of the selection frame. */
+    private void drawResizeHandle(Canvas canvas) {
+        handlePaint.setColor(accentColor);
+        handlePaint.setStrokeWidth(dp(2f));
+        handlePaint.setAlpha(255);
+        handlePaint.setPathEffect(null);
+        canvas.drawCircle(handleRect.centerX(), handleRect.centerY(),
+            handleRect.width() * 0.5f, handlePaint);
+        handlePaint.setStyle(Paint.Style.FILL);
+        handlePaint.setColor(0xFFFFFFFF);
+        handlePaint.setAlpha(230);
+        canvas.drawCircle(handleRect.centerX(), handleRect.centerY(),
+            Math.max(1f, handleRect.width() * 0.16f), handlePaint);
+        handlePaint.setStyle(Paint.Style.STROKE);
     }
 
     private void drawShape(Canvas canvas, TouchControlConfig.ButtonSpec spec, float scale) {
         TouchButtonShape.buildPath(shapePath, rect, spec.shape, spec.polygonType,
-            spec.cornerDp * density() * scale);
+            spec.cornerDp * density * scale);
         canvas.drawPath(shapePath, fillPaint);
         if (borderPaint.getStrokeWidth() > 0f && borderPaint.getAlpha() > 0) {
             canvas.drawPath(shapePath, borderPaint);

@@ -548,6 +548,7 @@
     <string name="touch_shape_square">Quadrado</string>
     <string name="touch_shape_circle">Círculo</string>
     <string name="touch_shape_oval">Elipse</string>
+    <string name="touch_border_color">Cor da borda do botão</string>
     <string name="touch_text_color">Cor do texto do botão</string>
     <string name="touch_text_color_picker">Escolher cor do texto</string>
     <string name="touch_fill_color">Cor de preenchimento do botão</string>
@@ -606,4 +607,9 @@
     <string name="setup_touch_reset_title">Redefinir os botões na tela?</string>
     <string name="setup_touch_reset_message">Os botões voltam ao layout fornecido. Seu layout padrão salvo é mantido.</string>
     <string name="setup_touch_reset_confirm">Redefinir</string>
+    <string name="toolbox_tool_add_button">Adicionar botão</string>
+    <string name="toolbox_tool_hide_toolbox">Ocultar caixa de ferramentas</string>
+    <string name="toolbox_toast_hidden">Caixa de ferramentas oculta. O ícone permanece na tela; toque nele para abrir o painel novamente.</string>
+    <string name="touch_toast_button_added">Botão adicionado. Arraste-o para posicioná-lo.</string>
+    <string name="setup_icon_credit">Ícone da caixa de ferramentas: “Control” por Creatype, do Flaticon — usado sob a Licença Gratuita do Flaticon.</string>
 </resources>

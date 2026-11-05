@@ -294,6 +294,9 @@ work that this repo inherits everywhere:
   touch controls, in-app launcher, language packs, device
   bring-up), plus engine fixes throughout, offered upstream
 - **DXVK, SDL, OpenAL Soft, FFmpeg, GameNetworkingSockets, Liberation Fonts** — the load-bearing walls
+- **[Flaticon](https://www.flaticon.com)** — the floating toolbox icon: "[Control](https://www.flaticon.com/free-icon/control_6841795)"
+  by **Creatype**, used under the [Flaticon Free License](https://www.flaticon.com/legal) with
+  attribution; see [`CREDITS.md`](CREDITS.md)
 
 Not part of that chain: **[tarek369/GeneralsZH-Android](https://github.com/tarek369/GeneralsZH-Android)**
 is a separate, independent Android port — this one is not built on it. Problems its users

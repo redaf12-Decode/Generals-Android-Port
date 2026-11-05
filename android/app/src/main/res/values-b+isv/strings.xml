@@ -548,6 +548,7 @@
     <string name="touch_shape_square">Kvadrat</string>
     <string name="touch_shape_circle">Krug</string>
     <string name="touch_shape_oval">Oval</string>
+    <string name="touch_border_color">Boja ivice dugmeta</string>
     <string name="touch_text_color">Boja teksta dugmeta</string>
     <string name="touch_text_color_picker">Izberi boju teksta</string>
     <string name="touch_fill_color">Boja ispunjenja dugmeta</string>
@@ -606,4 +607,9 @@
     <string name="setup_touch_reset_title">Zbrositi knopky na ekranu?</string>
     <string name="setup_touch_reset_message">Knopky se vratjut k priloženomu razkladu. Vash zachovany razklad po umolčanju ostaje.</string>
     <string name="setup_touch_reset_confirm">Zbrositi</string>
+    <string name="toolbox_tool_add_button">Dodati dugmo</string>
+    <string name="toolbox_tool_hide_toolbox">Skryti orudijny skrinju</string>
+    <string name="toolbox_toast_hidden">Orudijny skrinja skryta. Znak ostaje na ekranu; klikniti za otkrivanje paneli.</string>
+    <string name="touch_toast_button_added">Dugma dodana. Peretahnuti za postavljenje.</string>
+    <string name="setup_icon_credit">Ikona orudjarnje: «Control» od Creatype, iz Flaticon — pod Flaticon Free License.</string>
 </resources>

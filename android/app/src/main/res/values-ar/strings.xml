@@ -548,6 +548,7 @@
     <string name="touch_shape_square">مربع</string>
     <string name="touch_shape_circle">دائرة</string>
     <string name="touch_shape_oval">بيضاوي</string>
+    <string name="touch_border_color">لون حدود الزر</string>
     <string name="touch_text_color">لون نص الزر</string>
     <string name="touch_text_color_picker">اختيار لون النص</string>
     <string name="touch_fill_color">لون تعبئة الزر</string>
@@ -606,4 +607,9 @@
     <string name="setup_touch_reset_title">إعادة ضبط أزرار الشاشة؟</string>
     <string name="setup_touch_reset_message">تعود الأزرار إلى التخطيط المرفق. يبقى التخطيط الافتراضي المحفوظ لديك.</string>
     <string name="setup_touch_reset_confirm">إعادة الضبط</string>
+    <string name="toolbox_tool_add_button">إضافة زر</string>
+    <string name="toolbox_tool_hide_toolbox">إخفاء صندوق الأدوات</string>
+    <string name="toolbox_toast_hidden">تم إخفاء صندوق الأدوات. تبقى الأيقونة على الشاشة؛ انقر عليها لفتح اللوحة مرة أخرى.</string>
+    <string name="touch_toast_button_added">تمت إضافة الزر. اسحبه لوضعه.</string>
+    <string name="setup_icon_credit">أيقونة صندوق الأدوات: «Control» من Creatype، من Flaticon — مستخدمة بموجب رخصة Flaticon المجانية.</string>
 </resources>

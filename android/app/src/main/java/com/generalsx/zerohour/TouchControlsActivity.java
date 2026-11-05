@@ -402,6 +402,12 @@ public class TouchControlsActivity extends Activity {
             editor.setSelectedFillColor(color);
             refresh();
         }));
+        // Each of the three colours is set on the selected button alone; the app accent is never
+        // written into any of them.
+        column.addView(colorRow(R.string.touch_border_color, spec.borderColor, color -> {
+            editor.setSelectedBorderColor(color);
+            refresh();
+        }));
         column.addView(colorRow(R.string.touch_text_color, spec.textColor, color -> {
             editor.setSelectedTextColor(color);
             refresh();

@@ -548,6 +548,7 @@
     <string name="touch_shape_square">Carré</string>
     <string name="touch_shape_circle">Cercle</string>
     <string name="touch_shape_oval">Ovale</string>
+    <string name="touch_border_color">Couleur de la bordure du bouton</string>
     <string name="touch_text_color">Couleur du texte du bouton</string>
     <string name="touch_text_color_picker">Choisir la couleur du texte</string>
     <string name="touch_fill_color">Couleur de remplissage du bouton</string>
@@ -606,4 +607,9 @@
     <string name="setup_touch_reset_title">Réinitialiser les boutons à l\'écran ?</string>
     <string name="setup_touch_reset_message">Les boutons reviennent à la disposition fournie. Votre disposition par défaut enregistrée est conservée.</string>
     <string name="setup_touch_reset_confirm">Réinitialiser</string>
+    <string name="toolbox_tool_add_button">Ajouter un bouton</string>
+    <string name="toolbox_tool_hide_toolbox">Masquer la boîte à outils</string>
+    <string name="toolbox_toast_hidden">Boîte à outils masquée. L’icône reste à l’écran ; touchez-la pour rouvrir le panneau.</string>
+    <string name="touch_toast_button_added">Bouton ajouté. Faites-le glisser pour le placer.</string>
+    <string name="setup_icon_credit">Icône de la boîte à outils : « Control » par Creatype, de Flaticon — utilisée sous la licence gratuite Flaticon.</string>
 </resources>

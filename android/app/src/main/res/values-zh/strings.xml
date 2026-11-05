@@ -548,6 +548,7 @@
     <string name="touch_shape_square">正方形</string>
     <string name="touch_shape_circle">圆形</string>
     <string name="touch_shape_oval">椭圆形</string>
+    <string name="touch_border_color">按钮边框颜色</string>
     <string name="touch_text_color">按钮文字颜色</string>
     <string name="touch_text_color_picker">选择文字颜色</string>
     <string name="touch_fill_color">按钮填充颜色</string>
@@ -606,4 +607,9 @@
     <string name="setup_touch_reset_title">重置屏幕按钮？</string>
     <string name="setup_touch_reset_message">按钮将恢复为随附布局。你保存的默认布局会保留。</string>
     <string name="setup_touch_reset_confirm">重置</string>
+    <string name="toolbox_tool_add_button">添加按钮</string>
+    <string name="toolbox_tool_hide_toolbox">隐藏工具箱</string>
+    <string name="toolbox_toast_hidden">工具箱已隐藏。图标仍保留在屏幕上，点击即可再次打开面板。</string>
+    <string name="touch_toast_button_added">已添加按钮。拖动以放置。</string>
+    <string name="setup_icon_credit">工具箱图标：“Control”，作者 Creatype，来自 Flaticon — 依据 Flaticon 免费许可使用。</string>
 </resources>

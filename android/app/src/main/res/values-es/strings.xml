@@ -548,6 +548,7 @@
     <string name="touch_shape_square">Cuadrado</string>
     <string name="touch_shape_circle">Círculo</string>
     <string name="touch_shape_oval">Óvalo</string>
+    <string name="touch_border_color">Color del borde del botón</string>
     <string name="touch_text_color">Color del texto del botón</string>
     <string name="touch_text_color_picker">Elegir color del texto</string>
     <string name="touch_fill_color">Color de relleno del botón</string>
@@ -606,4 +607,9 @@
     <string name="setup_touch_reset_title">¿Restablecer los botones en pantalla?</string>
     <string name="setup_touch_reset_message">Los botones vuelven a la disposición incluida. Tu disposición predeterminada guardada se conserva.</string>
     <string name="setup_touch_reset_confirm">Restablecer</string>
+    <string name="toolbox_tool_add_button">Añadir botón</string>
+    <string name="toolbox_tool_hide_toolbox">Ocultar caja de herramientas</string>
+    <string name="toolbox_toast_hidden">Caja de herramientas oculta. El icono permanece en pantalla; tócalo para abrir el panel de nuevo.</string>
+    <string name="touch_toast_button_added">Botón añadido. Arrástralo para colocarlo.</string>
+    <string name="setup_icon_credit">Icono de la caja de herramientas: «Control» de Creatype, de Flaticon — usado bajo la Licencia Gratuita de Flaticon.</string>
 </resources>
