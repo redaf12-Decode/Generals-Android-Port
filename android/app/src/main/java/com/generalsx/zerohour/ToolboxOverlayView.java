@@ -70,6 +70,8 @@ final class ToolboxOverlayView extends View {
     private static final int TOOL_COUNT = 9;
 
     private static final float ROW_HEIGHT_DP = 40f;
+    /** The shortest a row may be squeezed to before the panel is allowed to scroll. */
+    private static final float MIN_ROW_HEIGHT_DP = 26f;
     private static final float PANEL_PADDING_DP = 10f;
     private static final float PANEL_WIDTH_DP = 220f;
     private static final float EDGE_GUTTER_DP = 10f;
@@ -89,6 +91,10 @@ final class ToolboxOverlayView extends View {
     private float iconDownX;
     private float iconDownY;
     private final float touchSlop;
+    /** How far the panel is scrolled when it is taller than the window, and its scroll range. */
+    private float panelScroll;
+    private float panelScrollPx;
+    private boolean scrollingPanel;
 
     private final RectF iconRect = new RectF();
     private final RectF panelRect = new RectF();
@@ -235,7 +241,15 @@ final class ToolboxOverlayView extends View {
 
     private void layoutPanel() {
         float width = dp(PANEL_WIDTH_DP);
-        float height = dp(PANEL_PADDING_DP) * 2f + TOOL_COUNT * dp(ROW_HEIGHT_DP);
+        // The panel's nine rows at their full height are taller than a phone held in landscape,
+        // so the row height gives way to the window before the panel does: every row, including
+        // Hide and Close, stays reachable. Below MIN_ROW_HEIGHT_DP the panel is allowed to be
+        // taller than the window and is scrolled instead, which is the smaller evil.
+        float available = getHeight() - insetTop - insetBottom - dp(EDGE_GUTTER_DP) * 2f
+            - dp(PANEL_PADDING_DP) * 2f;
+        float rowHeight = Math.max(dp(MIN_ROW_HEIGHT_DP),
+            Math.min(dp(ROW_HEIGHT_DP), available / TOOL_COUNT));
+        float height = dp(PANEL_PADDING_DP) * 2f + TOOL_COUNT * rowHeight;
         float left;
         if (iconRect.centerX() > getWidth() * 0.5f) {
             left = iconRect.left - dp(10f) - width;
@@ -244,15 +258,22 @@ final class ToolboxOverlayView extends View {
         }
         left = TouchControlConfig.clamp(left, insetLeft + dp(EDGE_GUTTER_DP),
             getWidth() - insetRight - dp(EDGE_GUTTER_DP) - width);
-        float top = iconRect.centerY() - height * 0.5f;
-        top = TouchControlConfig.clamp(top, insetTop + dp(EDGE_GUTTER_DP),
-            getHeight() - insetBottom - dp(EDGE_GUTTER_DP) - height);
+        float top = TouchControlConfig.clamp(iconRect.centerY() - height * 0.5f,
+            insetTop + dp(EDGE_GUTTER_DP),
+            Math.max(insetTop + dp(EDGE_GUTTER_DP),
+                getHeight() - insetBottom - dp(EDGE_GUTTER_DP) - height));
         panelRect.set(left, top, left + width, top + height);
+        // How far the panel's bottom overhangs the lowest edge it may reach: that is the scroll
+        // range, so at full scroll the last row sits on the bottom edge instead of past it.
+        panelScrollPx = Math.max(0f, panelRect.bottom
+            - (getHeight() - insetBottom - dp(EDGE_GUTTER_DP)));
+        panelScroll = TouchControlConfig.clamp(panelScroll, 0f, panelScrollPx);
+        float rowTop = panelRect.top + dp(PANEL_PADDING_DP) - panelScroll;
         for (int i = 0; i < TOOL_COUNT; ++i) {
             rowRects[i].set(panelRect.left + dp(PANEL_PADDING_DP),
-                panelRect.top + dp(PANEL_PADDING_DP) + i * dp(ROW_HEIGHT_DP),
+                rowTop + i * rowHeight,
                 panelRect.right - dp(PANEL_PADDING_DP),
-                panelRect.top + dp(PANEL_PADDING_DP) + (i + 1) * dp(ROW_HEIGHT_DP));
+                rowTop + (i + 1) * rowHeight);
         }
     }
 
@@ -335,6 +356,10 @@ final class ToolboxOverlayView extends View {
     }
 
     private void drawPanel(Canvas canvas) {
+        // A scrolled panel is taller than the window: its rows are clipped to the panel's own
+        // box so a row never paints over the battlefield above or below it.
+        canvas.save();
+        canvas.clipRect(panelRect);
         panelPaint.setColor(panelBackground);
         panelPaint.setAlpha(0xF0);
         canvas.drawRoundRect(panelRect, dp(10f), dp(10f), panelPaint);
@@ -363,6 +388,7 @@ final class ToolboxOverlayView extends View {
             }
         }
         textPaint.setTextAlign(Paint.Align.CENTER);
+        canvas.restore();
     }
 
     // ------------------------------------------------------------------ test hooks
@@ -397,6 +423,27 @@ final class ToolboxOverlayView extends View {
         return new android.graphics.PointF(row.centerX(), row.centerY());
     }
 
+    /** The panel's own box, as laid out at this size and density. */
+    android.graphics.RectF panelRectForTest() {
+        layoutIcon();
+        layoutPanel();
+        return new android.graphics.RectF(panelRect);
+    }
+
+    /** How far the panel can be scrolled: zero when every row already fits the window. */
+    float panelScrollRangeForTest() {
+        layoutIcon();
+        layoutPanel();
+        return panelScrollPx;
+    }
+
+    /** The rows' own boxes, as laid out and scrolled, for a test that checks they stay on screen. */
+    android.graphics.RectF rowRectForTest(int index) {
+        layoutIcon();
+        layoutPanel();
+        return new android.graphics.RectF(rowRects[index]);
+    }
+
     /** True when the bundled VectorDrawable rasterised to a bitmap with any opaque pixel. */
     boolean iconBitmapHasContentForTest() {
         if (iconBitmap == null || iconBitmap.isRecycled()) {
@@ -429,6 +476,7 @@ final class ToolboxOverlayView extends View {
                 }
                 downX = event.getX();
                 downY = event.getY();
+                scrollingPanel = false;
                 if (iconRect.contains(downX, downY)) {
                     activePointer = event.getPointerId(0);
                     draggingIcon = false;
@@ -467,6 +515,18 @@ final class ToolboxOverlayView extends View {
                 float dx = x - downX;
                 float dy = y - downY;
                 if (dx * dx + dy * dy >= touchSlop * touchSlop) {
+                    // A finger inside the panel scrolls it when it overflows; anywhere else it
+                    // drags the icon. Decided once, at the moment the finger leaves the slop.
+                    if (scrollingPanel
+                            || (panelScrollPx > 0f && !iconRect.contains(downX, downY))) {
+                        scrollingPanel = true;
+                        panelScroll = TouchControlConfig.clamp(panelScroll - (y - downY),
+                            0f, panelScrollPx);
+                        downX = x;
+                        downY = y;
+                        invalidate();
+                        return true;
+                    }
                     draggingIcon = true;
                     downX = x;
                     downY = y;
@@ -489,8 +549,15 @@ final class ToolboxOverlayView extends View {
                     invalidate();
                     return true;
                 }
+                if (scrollingPanel) {
+                    // The gesture scrolled the panel; it is not a tap on a row.
+                    scrollingPanel = false;
+                    invalidate();
+                    return true;
+                }
                 if (iconRect.contains(x, y)) {
                     panelOpen = !panelOpen;
+                    panelScroll = 0f;
                     persistPanelState();
                     performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
                     rebuildRows();
@@ -498,7 +565,7 @@ final class ToolboxOverlayView extends View {
                     return true;
                 }
                 for (int i = 0; i < TOOL_COUNT; ++i) {
-                    if (rowRects[i].contains(x, y)) {
+                    if (panelRect.contains(x, y) && rowRects[i].contains(x, y)) {
                         runTool(i);
                         return true;
                     }
@@ -512,6 +579,7 @@ final class ToolboxOverlayView extends View {
                     config.y = iconDownY;
                 }
                 draggingIcon = false;
+                scrollingPanel = false;
                 activePointer = MotionEvent.INVALID_POINTER_ID;
                 invalidate();
                 return true;

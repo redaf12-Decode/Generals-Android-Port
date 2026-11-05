@@ -395,6 +395,23 @@ public class TouchEditorAppearanceTest {
         view.onTouchEvent(up(x, y));
     }
 
+    private static MotionEvent move(float x, float y) {
+        long now = SystemClock.uptimeMillis();
+        return MotionEvent.obtain(now, now, MotionEvent.ACTION_MOVE, x, y, 0);
+    }
+
+    /**
+     * Drags: down, a move past the touch slop, the rest of the way, up. The intermediate move is
+     * not decoration -- a drag that leaves the slop only anchors (the icon) or starts the scroll
+     * (the panel), so a single-step drag would not move anything.
+     */
+    private static void drag(View view, float x0, float y0, float x1, float y1) {
+        view.onTouchEvent(down(x0, y0));
+        view.onTouchEvent(move(x0 + (x1 - x0) * 0.2f, y0 + (y1 - y0) * 0.2f));
+        view.onTouchEvent(move(x1, y1));
+        view.onTouchEvent(up(x1, y1));
+    }
+
     /** The toolbar cell centres, as the view lays them out at this size and density. */
     private float toolX(int tool) {
         return (tool + 0.5f) * (WIDTH / 10f);
@@ -534,5 +551,88 @@ public class TouchEditorAppearanceTest {
         android.graphics.PointF icon = toolbox.iconCenterForTest();
         tap(toolbox, icon.x, icon.y);
         assertTrue("the icon reopens the panel", toolbox.isPanelOpenForTest());
+    }
+
+    /** A toolbox at the window's own size, panel open: the size a phone actually gives it. */
+    private ToolboxOverlayView laidOutToolbox() {
+        HotkeyOverlayView hotkeys = laidOutOverlay();
+        ToolboxOverlayView toolbox = ToolboxOverlayView.attach(activity, hotkeys);
+        assertNotNull(toolbox);
+        toolbox.measure(View.MeasureSpec.makeMeasureSpec(WIDTH, View.MeasureSpec.EXACTLY),
+            View.MeasureSpec.makeMeasureSpec(HEIGHT, View.MeasureSpec.EXACTLY));
+        toolbox.layout(0, 0, WIDTH, HEIGHT);
+        toolbox.ensurePanelOpenForTest();
+        return toolbox;
+    }
+
+    /**
+     * The panel's nine rows must all be reachable. A landscape phone gives the overlay roughly
+     * this many pixels of height, and nine rows at their full height do not fit: the rows give
+     * way, and every row -- Close last -- stays inside the window.
+     */
+    @Test
+    public void everyToolboxRowFitsInsideTheWindow() {
+        ToolboxOverlayView toolbox = laidOutToolbox();
+        android.graphics.RectF panel = toolbox.panelRectForTest();
+        assertTrue("the panel's top is on screen", panel.top >= 0f);
+        for (int i = 0; i < 9; ++i) {
+            android.graphics.RectF row = toolbox.rowRectForTest(i);
+            assertTrue("row " + i + " starts at or below the window's top", row.top >= 0f);
+            assertTrue("row " + i + " ends at or above the window's bottom (" + row.bottom + ")",
+                row.bottom <= HEIGHT);
+            assertTrue("row " + i + " has a usable height", row.height() >= 24f);
+            assertTrue("row " + i + " is inside the panel", row.top >= panel.top
+                && row.bottom <= panel.bottom);
+        }
+        assertEquals("nothing is hidden, so nothing scrolls",
+            0f, toolbox.panelScrollRangeForTest(), 0.5f);
+    }
+
+    /** A tap on the Close row, found by its own geometry, closes the panel and the editor. */
+    @Test
+    public void theCloseRowIsReachableByItsOwnGeometry() {
+        ToolboxOverlayView toolbox = laidOutToolbox();
+        android.graphics.RectF close = toolbox.rowRectForTest(8); // TOOL_CLOSE
+        assertTrue("the Close row is inside the window", close.bottom <= HEIGHT);
+        tap(toolbox, close.centerX(), close.centerY());
+        assertFalse("Close closed the panel", toolbox.isPanelOpenForTest());
+    }
+
+    /**
+     * When the rows cannot fit even at their minimum height -- a very short window -- the panel
+     * is taller than the window and a finger drag inside it scrolls, so the rows past the bottom
+     * edge can still be brought into view. A drag on the icon still moves the icon.
+     */
+    @Test
+    public void aShortWindowScrollsThePanelAndStillDragsTheIcon() {
+        HotkeyOverlayView hotkeys = laidOutOverlay();
+        ToolboxOverlayView toolbox = ToolboxOverlayView.attach(activity, hotkeys);
+        assertNotNull(toolbox);
+        int shortHeight = 200;
+        toolbox.measure(View.MeasureSpec.makeMeasureSpec(WIDTH, View.MeasureSpec.EXACTLY),
+            View.MeasureSpec.makeMeasureSpec(shortHeight, View.MeasureSpec.EXACTLY));
+        toolbox.layout(0, 0, WIDTH, shortHeight);
+        toolbox.ensurePanelOpenForTest();
+        float range = toolbox.panelScrollRangeForTest();
+        assertTrue("a short window leaves something to scroll", range > 0f);
+
+        // A drag upwards inside the panel scrolls it: the last row comes into view.
+        android.graphics.RectF panel = toolbox.panelRectForTest();
+        android.graphics.RectF closeBefore = toolbox.rowRectForTest(8);
+        assertTrue("the Close row starts below the window", closeBefore.bottom > shortHeight);
+        drag(toolbox, panel.centerX(), panel.top + 40f, panel.centerX(), panel.top + 40f - range);
+        android.graphics.RectF closeAfter = toolbox.rowRectForTest(8);
+        assertTrue("the Close row was scrolled into view (" + closeAfter.bottom + ")",
+            closeAfter.bottom <= shortHeight + 1f);
+        // Dragging further does not scroll past the range: the last row stays on the bottom edge.
+        drag(toolbox, panel.centerX(), panel.top + 40f, panel.centerX(), panel.top + 40f - range);
+        assertEquals("the scroll is clamped to the range", closeAfter.bottom,
+            toolbox.rowRectForTest(8).bottom, 0.5f);
+
+        // The icon is not the panel: dragging it still moves it and does not scroll.
+        android.graphics.PointF iconBefore = toolbox.iconCenterForTest();
+        drag(toolbox, iconBefore.x, iconBefore.y, iconBefore.x - 120f, iconBefore.y);
+        android.graphics.PointF iconAfter = toolbox.iconCenterForTest();
+        assertTrue("the icon moved", Math.abs(iconAfter.x - iconBefore.x) > 40f);
     }
 }
