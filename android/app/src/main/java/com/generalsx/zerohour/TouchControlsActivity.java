@@ -97,7 +97,14 @@ public class TouchControlsActivity extends Activity {
         canvas = new FrameLayout(this);
         canvas.setLayoutParams(new LinearLayout.LayoutParams(0,
             ViewGroup.LayoutParams.MATCH_PARENT, 1f));
-        canvas.addView(new EditorCanvas(this));
+        // GeneralsX @bugfix Android touch editor 05/11/2026 The editing surface is the whole
+        // FrameLayout: it must be attached MATCH_PARENT, or a plain View measures to nothing
+        // (WRAP_CONTENT) and the editor draws on a 0-pixel-high canvas -- the layout loads, but
+        // no button appears. The reference attached it with weight, so do the same.
+        EditorCanvas surface = new EditorCanvas(this);
+        surface.setLayoutParams(new FrameLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        canvas.addView(surface);
         body.addView(canvas);
 
         inspector = new LinearLayout(this);
@@ -159,9 +166,14 @@ public class TouchControlsActivity extends Activity {
         footer.addView(footerButton(R.string.touch_import_button, v -> importLayout()));
         footer.addView(footerButton(R.string.touch_export_button, v -> exportLayout()));
 
+        // GeneralsX @bugfix Android touch editor 05/11/2026 A horizontal spacer must not be a
+        // weighted WRAP_CONTENT child: a weighted WRAP_CONTENT view stretches to the whole
+        // available height, which made the footer 600px tall and squeezed the body -- the editing
+        // canvas -- to 0 height. That is why the launcher editor opened on a blank surface. A
+        // MATCH_PARENT spacer only fills the row it sits in.
         View spacer = new View(this);
         spacer.setLayoutParams(new LinearLayout.LayoutParams(0,
-            ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+            ViewGroup.LayoutParams.MATCH_PARENT, 1f));
         footer.addView(spacer);
 
         footer.addView(footerButton(R.string.touch_save_button, v -> save()));
@@ -520,6 +532,17 @@ public class TouchControlsActivity extends Activity {
         EditorCanvas(Activity activity) {
             super(activity);
             setFocusable(true);
+        }
+
+        @Override
+        protected void onSizeChanged(int width, int height, int oldWidth, int oldHeight) {
+            super.onSizeChanged(width, height, oldWidth, oldHeight);
+            // GeneralsX @bugfix Android touch editor 05/11/2026 The viewport is the canvas' real
+            // size, so it is applied the moment that size is known. Relying on the single post()
+            // in onCreate left the first frame -- and any rotation -- editing against a stale or
+            // zero size, which is the other half of the empty-editor defect.
+            editor.applyViewportTo(width, height, getResources().getDisplayMetrics().density);
+            invalidate();
         }
 
         @Override

@@ -600,18 +600,16 @@
     <string name="setup_switch_touch_buttons">Knopky na ekranu</string>
     <string name="setup_switch_touch_buttons_desc">Pokazuje knopky skraćenic, ktore postavjate v redaktoru. Dotyk kdekoli inamo ide do igry, tak kamera, izbor i postavljanje ne trpjut.</string>
     <string name="setup_switch_touch_toolbox">Plavajuči pribor</string>
-    <string name="setup_switch_touch_toolbox_desc">Pokazuje v matču maly preměstljiv znak. Dotknite jego, da by vključiti ili izključiti knopky, izměniti jih veličinu i otvoriti redaktor.</string>
+    <string name="setup_switch_touch_toolbox_desc">Pokazuje v matču maly preměstljiv znak. Izključite, da by skryti znak; vključite, da by jego vratiti na poslednje město. Dotknite znak, da by vključiti ili izključiti knopky, izměniti jih veličinu i otvoriti redaktor.</string>
     <string name="setup_touch_controls_help">Knopka natyka pravy klaviš klaviatury, tak vsaka knopka jest vlastna skraćenica igry. Knopky dělajut pri natyku, pri držanju ili jako prěključnik i mogut nesti Ctrl, Shift ili Alt. Ta igra drži svoj razklad, i zbros nastavjenj launčera jego ne trpje.</string>
     <string name="setup_button_touch_editor">Otvoriti redaktor</string>
     <string name="setup_button_touch_reset">Zbrositi knopky</string>
-    <string name="setup_button_touch_show_toolbox">Pokazati orudijny skrinju</string>
-    <string name="setup_toast_toolbox_shown">Plavajuči orudijny skrinja vratjena. Ona jest na poslednjem městu, ktoro vy postavili.</string>
     <string name="setup_touch_reset_title">Zbrositi knopky na ekranu?</string>
     <string name="setup_touch_reset_message">Knopky se vratjut k priloženomu razkladu. Vash zachovany razklad po umolčanju ostaje.</string>
     <string name="setup_touch_reset_confirm">Zbrositi</string>
     <string name="toolbox_tool_add_button">Dodati dugmo</string>
     <string name="toolbox_tool_hide_toolbox">Skryti orudijny skrinju</string>
-    <string name="toolbox_toast_hidden">Orudijny skrinja skryta. Znak je odšel; vratite jego s «Pokazati orudijny skrinju» v nastavjenjah ekrannogo upravljanja.</string>
+    <string name="toolbox_toast_hidden">Orudijny skrinja skryta. Znak je odšel; vključite «Plavajuči orudijny skrinja» v nastavjenjah ekrannogo upravljanja, da by jego vratiti.</string>
     <string name="touch_toast_button_added">Dugma dodana. Peretahnuti za postavljenje.</string>
     <string name="setup_icon_credit">Ikona orudjarnje: «Control» od Creatype, iz Flaticon — pod Flaticon Free License.</string>
 </resources>

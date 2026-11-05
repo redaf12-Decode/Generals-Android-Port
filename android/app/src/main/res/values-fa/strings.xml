@@ -600,18 +600,16 @@
     <string name="setup_switch_touch_buttons">دکمه‌های روی صفحه</string>
     <string name="setup_switch_touch_buttons_desc">دکمه‌های میان‌بری را که در ویرایشگر می‌گذارید نشان می‌دهد. لمس هر جای دیگر همچنان به بازی می‌رسد، پس دوربین، انتخاب و جای‌گذاری تحت تأثیر نیستند.</string>
     <string name="setup_switch_touch_toolbox">جعبه‌ابزار شناور</string>
-    <string name="setup_switch_touch_toolbox_desc">در مسابقه یک نماد کوچک جابه‌جاشدنی نشان می‌دهد. برای روشن یا خاموش کردن دکمه‌ها، تغییر اندازه و باز کردن ویرایشگر روی آن بزنید.</string>
+    <string name="setup_switch_touch_toolbox_desc">در مسابقه یک نماد کوچک جابه‌جاشدنی نشان می‌دهد. خاموش کردن آن نماد را پنهان می‌کند و روشن کردن آن نماد را به آخرین موقعیت بازمی‌گرداند. برای روشن یا خاموش کردن دکمه‌ها، تغییر اندازه و باز کردن ویرایشگر روی نماد بزنید.</string>
     <string name="setup_touch_controls_help">هر دکمه یک کلید واقعی صفحه‌کلید را می‌فشارد، پس هر دکمه یکی از میان‌برهای خود بازی است. دکمه‌ها با فشردن، با نگه‌داشتن یا به‌صورت کلید تغییر عمل می‌کنند و می‌توانند Ctrl، Shift یا Alt داشته باشند. این بازی چیدمان خودش را نگه می‌دارد و بازنشانی تنظیمات لانچر آن را تغییر نمی‌دهد.</string>
     <string name="setup_button_touch_editor">باز کردن ویرایشگر</string>
     <string name="setup_button_touch_reset">بازنشانی دکمه‌ها</string>
-    <string name="setup_button_touch_show_toolbox">نمایش جعبه‌ابزار</string>
-    <string name="setup_toast_toolbox_shown">جعبه‌ابزار شناور بازگردانده شد. به آخرین موقعیتی که تنظیم کردید بازگشت.</string>
     <string name="setup_touch_reset_title">دکمه‌های روی صفحه بازنشانی شوند؟</string>
     <string name="setup_touch_reset_message">دکمه‌ها به چیدمان همراه بازی برمی‌گردند. چیدمان پیش‌فرض ذخیره‌شده شما باقی می‌ماند.</string>
     <string name="setup_touch_reset_confirm">بازنشانی</string>
     <string name="toolbox_tool_add_button">افزودن دکمه</string>
     <string name="toolbox_tool_hide_toolbox">پنهان کردن جعبه‌ابزار</string>
-    <string name="toolbox_toast_hidden">جعبه‌ابزار پنهان شد. نماد از صفحه رفت؛ آن را با «نمایش جعبه‌ابزار» در تنظیمات کنترل صفحه بازگردانید.</string>
+    <string name="toolbox_toast_hidden">جعبه‌ابزار پنهان شد. نماد از صفحه رفت؛ برای بازگرداندن آن «جعبه‌ابزار شناور» را در تنظیمات کنترل صفحه دوباره روشن کنید.</string>
     <string name="touch_toast_button_added">دکمه افزوده شد. برای جای‌گذاری آن را بکشید.</string>
     <string name="setup_icon_credit">نماد جعبه‌ابزار: «Control» از Creatype، از Flaticon — تحت مجوز رایگان Flaticon.</string>
 </resources>

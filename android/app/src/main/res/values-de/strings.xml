@@ -600,18 +600,16 @@
     <string name="setup_switch_touch_buttons">Bildschirmknöpfe</string>
     <string name="setup_switch_touch_buttons_desc">Zeigt die Kurzbefehlsknöpfe, die Sie im Editor platzieren. Eine Berührung anderswo geht weiterhin ans Spiel, Kamera, Auswahl und Platzierung bleiben also unberührt.</string>
     <string name="setup_switch_touch_toolbox">Schwebende Werkzeugleiste</string>
-    <string name="setup_switch_touch_toolbox_desc">Zeigt im Match ein kleines verschiebbares Symbol. Tippen Sie es an, um die Knöpfe ein- oder auszuschalten, ihre Größe zu ändern und den Editor zu öffnen.</string>
+    <string name="setup_switch_touch_toolbox_desc">Zeigt im Match ein kleines verschiebbares Symbol. Ausschalten blendet das Symbol aus, Einschalten bringt es an die letzte Position zurück. Tippen Sie es an, um die Knöpfe ein- oder auszuschalten, ihre Größe zu ändern und den Editor zu öffnen.</string>
     <string name="setup_touch_controls_help">Ein Knopf drückt eine echte Tastaturtaste, jeder Knopf ist also eine der eigenen Tastenkürzel des Spiels. Knöpfe wirken beim Drücken, beim Halten oder als Umschalter und können Ctrl, Shift oder Alt tragen. Dieses Spiel behält sein eigenes Layout, und ein Zurücksetzen der Launcher-Einstellungen berührt es nicht.</string>
     <string name="setup_button_touch_editor">Editor öffnen</string>
     <string name="setup_button_touch_reset">Knöpfe zurücksetzen</string>
-    <string name="setup_button_touch_show_toolbox">Werkzeugkasten anzeigen</string>
-    <string name="setup_toast_toolbox_shown">Schwebender Werkzeugkasten wiederhergestellt. Er ist an der zuletzt festgelegten Position.</string>
     <string name="setup_touch_reset_title">Bildschirmknöpfe zurücksetzen?</string>
     <string name="setup_touch_reset_message">Die Knöpfe kehren zum mitgelieferten Layout zurück. Ihr gespeichertes Standardlayout bleibt erhalten.</string>
     <string name="setup_touch_reset_confirm">Zurücksetzen</string>
     <string name="toolbox_tool_add_button">Schaltfläche hinzufügen</string>
     <string name="toolbox_tool_hide_toolbox">Werkzeugkasten ausblenden</string>
-    <string name="toolbox_toast_hidden">Werkzeugkasten ausgeblendet. Das Symbol ist weg; holen Sie es mit „Werkzeugkasten anzeigen“ in den Bildschirmsteuerungen zurück.</string>
+    <string name="toolbox_toast_hidden">Werkzeugkasten ausgeblendet. Das Symbol ist weg; schalten Sie „Schwebender Werkzeugkasten“ in den Bildschirmsteuerungen wieder ein.</string>
     <string name="touch_toast_button_added">Schaltfläche hinzugefügt. Ziehen Sie sie an die gewünschte Stelle.</string>
     <string name="setup_icon_credit">Werkzeugkasten-Symbol: „Control“ von Creatype, von Flaticon – genutzt unter der Flaticon Free License.</string>
 </resources>

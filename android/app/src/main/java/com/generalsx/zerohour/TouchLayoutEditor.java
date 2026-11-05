@@ -660,10 +660,17 @@ final class TouchLayoutEditor {
      * Applies a viewport the host measured itself. The launcher's editor has no HotkeyOverlayView
      * to read a size from, so it passes its canvas' size here; the in-game editor's viewport is
      * already the live window and does not need this.
+     *
+     * GeneralsX @bugfix Android touch editor 05/11/2026 A call with no size yet (a host that
+     * applies the viewport before its first layout) is ignored rather than applied as 1x1: a 1x1
+     * viewport collapses every button onto the same pixel and is what made the editor look empty.
+     * The last known-good size stays until the host reports a real one.
      */
     void applyViewportTo(int width, int height, float density) {
-        viewport.set(width > 0 ? width : 1, height > 0 ? height : 1, density,
-            working.buttonScale);
+        if (width <= 0 || height <= 0) {
+            return;
+        }
+        viewport.set(width, height, density, working.buttonScale);
         android.graphics.RectF rect = new android.graphics.RectF();
         for (TouchControlConfig.ButtonSpec spec : working.buttons) {
             bounds(spec, rect);

@@ -607,18 +607,16 @@
     <string name="setup_switch_touch_buttons">On-screen buttons</string>
     <string name="setup_switch_touch_buttons_desc">Shows the shortcut buttons you place in the editor. A touch that lands anywhere else still goes to the game, so the camera, selection and placement are unaffected.</string>
     <string name="setup_switch_touch_toolbox">Floating toolbox</string>
-    <string name="setup_switch_touch_toolbox_desc">Shows a small moveable icon in the match. Tap it to switch the buttons on or off, change their size, and open the editor.</string>
+    <string name="setup_switch_touch_toolbox_desc">Shows a small moveable icon in the match. Turn it off to hide the icon, on to bring it back at its last position. Tap the icon to switch the buttons on or off, change their size, and open the editor.</string>
     <string name="setup_touch_controls_help">A button presses a real keyboard key, so every button is one of the game\'s own shortcuts. Buttons act on press, on hold or as a toggle, and can carry Ctrl, Shift or Alt. This game keeps its own layout, and a launcher settings reset does not touch it.</string>
     <string name="setup_button_touch_editor">Open the editor</string>
     <string name="setup_button_touch_reset">Reset buttons</string>
-    <string name="setup_button_touch_show_toolbox">Show toolbox</string>
-    <string name="setup_toast_toolbox_shown">Floating toolbox restored. It is back at the last position you set.</string>
     <string name="setup_touch_reset_title">Reset the on-screen buttons?</string>
     <string name="setup_touch_reset_message">The buttons go back to the shipped layout. Your saved default layout is kept.</string>
     <string name="setup_touch_reset_confirm">Reset</string>
     <string name="toolbox_tool_add_button">Add button</string>
     <string name="toolbox_tool_hide_toolbox">Hide toolbox</string>
-    <string name="toolbox_toast_hidden">Toolbox hidden. The icon is gone; bring it back with Show toolbox in the launcher\'s on-screen controls.</string>
+    <string name="toolbox_toast_hidden">Toolbox hidden. The icon is gone; turn Floating toolbox back on in the launcher\'s on-screen controls to bring it back.</string>
     <string name="touch_toast_button_added">Button added. Drag it to place it.</string>
     <string name="setup_icon_credit">Toolbox icon: “Control” by Creatype, from Flaticon — used under the Flaticon Free License.</string>
 </resources>

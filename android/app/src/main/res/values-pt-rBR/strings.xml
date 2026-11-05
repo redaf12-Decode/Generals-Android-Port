@@ -600,18 +600,16 @@
     <string name="setup_switch_touch_buttons">Botões na tela</string>
     <string name="setup_switch_touch_buttons_desc">Mostra os botões de atalho que você coloca no editor. Um toque em qualquer outro lugar continua indo para o jogo, então câmera, seleção e posicionamento não são afetados.</string>
     <string name="setup_switch_touch_toolbox">Caixa de ferramentas flutuante</string>
-    <string name="setup_switch_touch_toolbox_desc">Mostra na partida um pequeno ícone móvel. Toque nele para ligar ou desligar os botões, mudar o tamanho deles e abrir o editor.</string>
+    <string name="setup_switch_touch_toolbox_desc">Mostra na partida um pequeno ícone móvel. Desligue para ocultar o ícone, ligue para trazê-lo de volta à última posição. Toque nele para ligar ou desligar os botões, mudar o tamanho deles e abrir o editor.</string>
     <string name="setup_touch_controls_help">Um botão pressiona uma tecla real do teclado, então cada botão é um atalho do próprio jogo. Os botões agem ao pressionar, ao manter ou como alternador, e podem carregar Ctrl, Shift ou Alt. Este jogo mantém o próprio layout, e redefinir os ajustes do launcher não o afeta.</string>
     <string name="setup_button_touch_editor">Abrir o editor</string>
     <string name="setup_button_touch_reset">Redefinir botões</string>
-    <string name="setup_button_touch_show_toolbox">Mostrar caixa de ferramentas</string>
-    <string name="setup_toast_toolbox_shown">Caixa de ferramentas flutuante restaurada. Voltou à última posição que você definiu.</string>
     <string name="setup_touch_reset_title">Redefinir os botões na tela?</string>
     <string name="setup_touch_reset_message">Os botões voltam ao layout fornecido. Seu layout padrão salvo é mantido.</string>
     <string name="setup_touch_reset_confirm">Redefinir</string>
     <string name="toolbox_tool_add_button">Adicionar botão</string>
     <string name="toolbox_tool_hide_toolbox">Ocultar caixa de ferramentas</string>
-    <string name="toolbox_toast_hidden">Caixa de ferramentas oculta. O ícone sumiu; traga-o de volta com «Mostrar caixa de ferramentas» nos controles na tela.</string>
+    <string name="toolbox_toast_hidden">Caixa de ferramentas oculta. O ícone sumiu; ligue «Caixa de ferramentas flutuante» de novo nos controles na tela.</string>
     <string name="touch_toast_button_added">Botão adicionado. Arraste-o para posicioná-lo.</string>
     <string name="setup_icon_credit">Ícone da caixa de ferramentas: “Control” por Creatype, do Flaticon — usado sob a Licença Gratuita do Flaticon.</string>
 </resources>

@@ -600,18 +600,16 @@
     <string name="setup_switch_touch_buttons">屏幕按钮</string>
     <string name="setup_switch_touch_buttons_desc">显示你在编辑器中放置的快捷按钮。落在其他位置的触摸仍会传给游戏，因此镜头、选择和放置不受影响。</string>
     <string name="setup_switch_touch_toolbox">浮动工具箱</string>
-    <string name="setup_switch_touch_toolbox_desc">在对局中显示一个可移动的小图标。点击它可开启或关闭按钮、更改其大小并打开编辑器。</string>
+    <string name="setup_switch_touch_toolbox_desc">在对局中显示一个可移动的小图标。关闭可隐藏图标，开启可让图标回到上次的位置。点击图标可开启或关闭按钮、更改其大小并打开编辑器。</string>
     <string name="setup_touch_controls_help">按钮会按下真实的键盘按键，因此每个按钮都是游戏自带的快捷键。按钮可按一下、按住或切换生效，并可携带 Ctrl、Shift 或 Alt。本游戏保留自己的布局，重置启动器设置不会影响它。</string>
     <string name="setup_button_touch_editor">打开编辑器</string>
     <string name="setup_button_touch_reset">重置按钮</string>
-    <string name="setup_button_touch_show_toolbox">显示工具箱</string>
-    <string name="setup_toast_toolbox_shown">浮动工具箱已恢复，回到您上次设置的位置。</string>
     <string name="setup_touch_reset_title">重置屏幕按钮？</string>
     <string name="setup_touch_reset_message">按钮将恢复为随附布局。你保存的默认布局会保留。</string>
     <string name="setup_touch_reset_confirm">重置</string>
     <string name="toolbox_tool_add_button">添加按钮</string>
     <string name="toolbox_tool_hide_toolbox">隐藏工具箱</string>
-    <string name="toolbox_toast_hidden">工具箱已隐藏。图标已移除；请在屏幕控制设置中用「显示工具箱」将其恢复。</string>
+    <string name="toolbox_toast_hidden">工具箱已隐藏。图标已移除；请在屏幕控制设置中重新开启「浮动工具箱」将其恢复。</string>
     <string name="touch_toast_button_added">已添加按钮。拖动以放置。</string>
     <string name="setup_icon_credit">工具箱图标：“Control”，作者 Creatype，来自 Flaticon — 依据 Flaticon 免费许可使用。</string>
 </resources>

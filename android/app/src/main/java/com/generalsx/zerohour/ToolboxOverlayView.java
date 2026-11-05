@@ -84,6 +84,13 @@ final class ToolboxOverlayView extends View {
     private ToolboxConfig config;
 
     private boolean panelOpen;
+    /**
+     * GeneralsX @bugfix Android touch editor 05/11/2026 Whether the floating icon is on screen.
+     * This is a runtime view of {@link ToolboxConfig#enabled}: the single stored flag is what the
+     * launcher switch and the in-game Hide row both write, and the overlay mirrors it here so a
+     * change made in the launcher takes effect the next time the match regains focus.
+     */
+    private boolean iconVisible;
     private int activePointer = MotionEvent.INVALID_POINTER_ID;
     private boolean draggingIcon;
     private float downX;
@@ -132,6 +139,7 @@ final class ToolboxOverlayView extends View {
         this.hotkeyOverlay = hotkeyOverlay;
         this.game = game;
         this.config = ToolboxConfig.load(activity, game);
+        this.iconVisible = config.enabled;
         this.touchSlop = ViewConfiguration.get(activity).getScaledTouchSlop();
         this.accentColor = resolveAccent();
         this.panelOpen = config.panelOpen;
@@ -303,7 +311,7 @@ final class ToolboxOverlayView extends View {
         super.onDraw(canvas);
         // The icon is drawn only while it is visible: "Hide toolbox" removes it from the screen
         // entirely, rather than leaving an invisible tappable box behind.
-        if (config.iconVisible) {
+        if (iconVisible) {
             layoutIcon();
             drawIcon(canvas);
         }
@@ -411,13 +419,13 @@ final class ToolboxOverlayView extends View {
     /** True while the toolbox icon is on screen and tappable: the reopen affordance. */
     boolean iconIsVisibleForTest() {
         layoutIcon();
-        return config.iconVisible && !iconRect.isEmpty()
+        return iconVisible && !iconRect.isEmpty()
             && iconRect.width() > 0f && iconRect.height() > 0f;
     }
 
-    /** The stored icon-visibility flag, independent of layout. */
+    /** The icon-visibility flag the overlay draws and hit-tests with. */
     boolean iconVisibleFlagForTest() {
-        return config.iconVisible;
+        return iconVisible;
     }
 
     android.graphics.PointF iconCenterForTest() {
@@ -487,7 +495,7 @@ final class ToolboxOverlayView extends View {
                 downX = event.getX();
                 downY = event.getY();
                 scrollingPanel = false;
-                if (config.iconVisible && iconRect.contains(downX, downY)) {
+                if (iconVisible && iconRect.contains(downX, downY)) {
                     activePointer = event.getPointerId(0);
                     draggingIcon = false;
                     iconDownX = config.x;
@@ -565,7 +573,7 @@ final class ToolboxOverlayView extends View {
                     invalidate();
                     return true;
                 }
-                if (config.iconVisible && iconRect.contains(x, y)) {
+                if (iconVisible && iconRect.contains(x, y)) {
                     panelOpen = !panelOpen;
                     panelScroll = 0f;
                     persistPanelState();
@@ -666,19 +674,20 @@ final class ToolboxOverlayView extends View {
     /**
      * GeneralsX @bugfix Android touch editor 05/11/2026 "Hide toolbox" now removes the floating
      * icon as well as closing the panel, which is what the row says. It writes only the toolbox's
-     * own icon state (ToolboxConfig.iconVisible) and the panel's open state; it never touches
-     * TouchControlConfig, so every game button stays visible, keeps its key, and the button layer
-     * stays on. The two states are independent by construction, not by a check.
+     * own flag (ToolboxConfig.enabled, the same flag the launcher's "Floating toolbox" switch
+     * reads and writes); it never touches TouchControlConfig, so every game button stays visible,
+     * keeps its key, and the button layer stays on.
      *
      * The icon is off the screen rather than transparent, so its tap and drag areas are gone too
-     * (onTouchEvent and onDraw both consult iconVisible). Reopening is the launcher's Show toolbox
-     * action, which restores this same stored position.
+     * (onTouchEvent and onDraw both consult iconVisible). The icon's last dragged position is left
+     * untouched, so the launcher switch brings it back exactly where it was.
      */
     private void hideToolbox() {
         panelOpen = false;
         config.panelOpen = false;
-        config.iconVisible = false;
+        config.enabled = false;
         config.save(activity, game);
+        iconVisible = false;
         draggingIcon = false;
         scrollingPanel = false;
         activePointer = MotionEvent.INVALID_POINTER_ID;
@@ -687,17 +696,20 @@ final class ToolboxOverlayView extends View {
     }
 
     /**
-     * GeneralsX @feature Android touch editor 05/11/2026 Restores the floating icon at its stored
-     * position. The launcher's "Show toolbox" action calls this on the live overlay when the match
-     * is running; the stored flag alone brings it back on the next launch. The panel is left
-     * closed, so the icon appears and a tap opens the panel -- the same state as a fresh install.
+     * GeneralsX @feature Android touch editor 05/11/2026 Mirrors the launcher's "Floating toolbox"
+     * switch onto the live overlay. The launcher writes the stored flag; the running match re-reads
+     * it when it regains focus, so a hide in the launcher takes the icon off the battlefield and a
+     * show brings it back at its stored position. The game buttons are never touched.
      */
-    void showIcon() {
-        if (config.iconVisible) {
+    void syncIconVisibility() {
+        boolean stored = ToolboxConfig.load(activity, game).enabled;
+        if (stored == iconVisible) {
             return;
         }
-        config.iconVisible = true;
-        config.save(activity, game);
+        iconVisible = stored;
+        if (!stored) {
+            panelOpen = false;
+        }
         rebuildRows();
         invalidate();
     }

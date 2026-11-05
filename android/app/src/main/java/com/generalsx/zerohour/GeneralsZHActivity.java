@@ -480,9 +480,34 @@ public class GeneralsZHActivity extends SDLActivity {
             return;
         }
         hotkeyOverlay = HotkeyOverlayView.attach(this);
-        // Returns null when the toolbox is off for this game, which is the default: nothing of
-        // the toolbox then exists over the battlefield.
+        attachToolboxIfEnabled();
+    }
+
+    /**
+     * GeneralsX @bugfix Android touch editor 05/11/2026 Builds the floating toolbox when the
+     * launcher has it on for this game. It is a separate step from the button layer so that the
+     * launcher's "Floating toolbox" switch can turn it on later: the switch is written by the
+     * launcher while this match keeps running, and this runs again the next time the match regains
+     * focus. An off toolbox is still not a hidden view -- nothing is attached while it is off.
+     */
+    private void attachToolboxIfEnabled() {
+        if (toolboxOverlay != null || hotkeyOverlay == null) {
+            return;
+        }
         toolboxOverlay = ToolboxOverlayView.attach(this, hotkeyOverlay);
+    }
+
+    /**
+     * GeneralsX @bugfix Android touch editor 05/11/2026 Re-reads the toolbox flag. A switch flipped
+     * in the launcher is honoured here when the match regains focus: the icon is removed if it was
+     * turned off, restored at its stored position if it was turned on.
+     */
+    private void refreshToolbox() {
+        if (toolboxOverlay == null) {
+            attachToolboxIfEnabled();
+        } else {
+            toolboxOverlay.syncIconVisibility();
+        }
     }
 
     /**
@@ -529,6 +554,9 @@ public class GeneralsZHActivity extends SDLActivity {
         }
         if (hasFocus) {
             applyGestureNavBackBehavior();
+            // The launcher may have flipped the "Floating toolbox" switch while this match was in
+            // the background; re-read it now that we are back on screen.
+            refreshToolbox();
             // GeneralsX @bugfix Android port 25/10/2026 Hide the bars again when the window gets its
             // focus back. With BEHAVIOR_DEFAULT (kept for the back gesture, below) bars the system
             // showed stay shown until the app hides them: after the notification shade was pulled

@@ -621,7 +621,7 @@ public class TouchEditorAppearanceTest {
 
         assertFalse("the panel is hidden", toolbox.isPanelOpenForTest());
         assertFalse("the floating icon is gone", toolbox.iconIsVisibleForTest());
-        assertFalse("the stored icon flag is false", toolbox.iconVisibleFlagForTest());
+        assertFalse("the icon flag is false", toolbox.iconVisibleFlagForTest());
         assertTrue("the buttons are still enabled", TouchControlConfig.load(activity).enabled);
         assertEquals("every button is still in the layout",
             beforeCount, TouchControlConfig.load(activity).buttons.size());
@@ -629,9 +629,9 @@ public class TouchEditorAppearanceTest {
             beforeX, TouchControlConfig.load(activity).buttons.get(0).x, 0.0001f);
         assertFalse("the hidden state is stored",
             ToolboxConfig.load(activity, SetupActivity.GAME_ZERO_HOUR).panelOpen);
-        assertFalse("the stored icon flag survives a reload",
-            ToolboxConfig.load(activity, SetupActivity.GAME_ZERO_HOUR).iconVisible);
-        assertTrue("the launcher switch is NOT flipped by hiding",
+        // Hide writes the SAME flag the launcher's "Floating toolbox" switch reads, so the two
+        // controls never disagree: hiding in the match turns the switch off.
+        assertFalse("the stored toolbox flag is off after hiding",
             ToolboxConfig.load(activity, SetupActivity.GAME_ZERO_HOUR).enabled);
 
         // The icon is not merely invisible: a tap where it used to be runs nothing and the
@@ -641,13 +641,43 @@ public class TouchEditorAppearanceTest {
             toolbox.onTouchEvent(down(icon.x, icon.y)));
         assertFalse("the panel stayed closed", toolbox.isPanelOpenForTest());
 
-        // The launcher's Show toolbox action restores it at the stored position.
-        toolbox.showIcon();
+        // Turning the launcher's "Floating toolbox" switch back on restores it at the stored
+        // position -- the overlay re-reads the flag and the icon reappears.
+        ToolboxConfig restored = ToolboxConfig.load(activity, SetupActivity.GAME_ZERO_HOUR);
+        restored.enabled = true;
+        restored.save(activity, SetupActivity.GAME_ZERO_HOUR);
+        toolbox.syncIconVisibility();
         assertTrue("the icon came back", toolbox.iconIsVisibleForTest());
         assertTrue("and it is tappable again",
             toolbox.onTouchEvent(down(icon.x, icon.y)));
         toolbox.onTouchEvent(up(icon.x, icon.y));
         assertTrue("the restored icon reopens the panel", toolbox.isPanelOpenForTest());
+    }
+
+    /**
+     * GeneralsX @bugfix Android touch editor 05/11/2026 The launcher's "Floating toolbox" switch
+     * is the single control: turning it off takes the icon off a running match, turning it on
+     * brings it back, and neither ever touches the game buttons.
+     */
+    @Test
+    public void theLauncherSwitchHidesAndShowsTheIconInAMatch() {
+        ToolboxOverlayView toolbox = laidOutToolbox();
+        assertTrue("the icon starts on screen", toolbox.iconIsVisibleForTest());
+        int beforeCount = TouchControlConfig.load(activity).buttons.size();
+
+        ToolboxConfig off = ToolboxConfig.load(activity, SetupActivity.GAME_ZERO_HOUR);
+        off.enabled = false;
+        off.save(activity, SetupActivity.GAME_ZERO_HOUR);
+        toolbox.syncIconVisibility();
+        assertFalse("the switch off removes the icon", toolbox.iconIsVisibleForTest());
+        assertTrue("and leaves the buttons alone", TouchControlConfig.load(activity).enabled);
+        assertEquals(beforeCount, TouchControlConfig.load(activity).buttons.size());
+
+        ToolboxConfig on = ToolboxConfig.load(activity, SetupActivity.GAME_ZERO_HOUR);
+        on.enabled = true;
+        on.save(activity, SetupActivity.GAME_ZERO_HOUR);
+        toolbox.syncIconVisibility();
+        assertTrue("the switch on brings the icon back", toolbox.iconIsVisibleForTest());
     }
 
     /** A toolbox at the window's own size, panel open: the size a phone actually gives it. */

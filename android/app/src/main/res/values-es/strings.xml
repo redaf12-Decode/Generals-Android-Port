@@ -600,18 +600,16 @@
     <string name="setup_switch_touch_buttons">Botones en pantalla</string>
     <string name="setup_switch_touch_buttons_desc">Muestra los botones de atajo que colocas en el editor. Un toque en cualquier otro sitio sigue llegando al juego, así que la cámara, la selección y la colocación no se ven afectadas.</string>
     <string name="setup_switch_touch_toolbox">Caja de herramientas flotante</string>
-    <string name="setup_switch_touch_toolbox_desc">Muestra en la partida un pequeño icono movible. Tócalo para activar o desactivar los botones, cambiar su tamaño y abrir el editor.</string>
+    <string name="setup_switch_touch_toolbox_desc">Muestra en la partida un pequeño icono movible. Desactívalo para ocultar el icono, actívalo para devolverlo a su última posición. Tócalo para activar o desactivar los botones, cambiar su tamaño y abrir el editor.</string>
     <string name="setup_touch_controls_help">Un botón pulsa una tecla real del teclado, así que cada botón es un atajo propio del juego. Los botones actúan al pulsar, al mantener o como alternador, y pueden llevar Ctrl, Shift o Alt. Este juego conserva su propia disposición, y restablecer los ajustes del lanzador no la toca.</string>
     <string name="setup_button_touch_editor">Abrir el editor</string>
     <string name="setup_button_touch_reset">Restablecer botones</string>
-    <string name="setup_button_touch_show_toolbox">Mostrar caja de herramientas</string>
-    <string name="setup_toast_toolbox_shown">Caja de herramientas flotante restaurada. Vuelve a la última posición que fijaste.</string>
     <string name="setup_touch_reset_title">¿Restablecer los botones en pantalla?</string>
     <string name="setup_touch_reset_message">Los botones vuelven a la disposición incluida. Tu disposición predeterminada guardada se conserva.</string>
     <string name="setup_touch_reset_confirm">Restablecer</string>
     <string name="toolbox_tool_add_button">Añadir botón</string>
     <string name="toolbox_tool_hide_toolbox">Ocultar caja de herramientas</string>
-    <string name="toolbox_toast_hidden">Caja de herramientas oculta. El icono ha desaparecido; recupéralo con «Mostrar caja de herramientas» en los controles en pantalla.</string>
+    <string name="toolbox_toast_hidden">Caja de herramientas oculta. El icono ha desaparecido; vuelve a activar «Caja de herramientas flotante» en los controles en pantalla.</string>
     <string name="touch_toast_button_added">Botón añadido. Arrástralo para colocarlo.</string>
     <string name="setup_icon_credit">Icono de la caja de herramientas: «Control» de Creatype, de Flaticon — usado bajo la Licencia Gratuita de Flaticon.</string>
 </resources>

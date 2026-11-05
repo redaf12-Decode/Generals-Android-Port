@@ -600,18 +600,16 @@
     <string name="setup_switch_touch_buttons">Przyciski ekranowe</string>
     <string name="setup_switch_touch_buttons_desc">Pokazuje przyciski skrótów umieszczone w edytorze. Dotknięcie gdziekolwiek indziej nadal trafia do gry, więc kamera, wybór i rozmieszczanie nie są naruszane.</string>
     <string name="setup_switch_touch_toolbox">Pływający panel</string>
-    <string name="setup_switch_touch_toolbox_desc">Pokazuje w meczu małą, przesuwaną ikonę. Dotknij jej, aby włączyć lub wyłączyć przyciski, zmienić ich rozmiar i otworzyć edytor.</string>
+    <string name="setup_switch_touch_toolbox_desc">Pokazuje w meczu małą, przesuwaną ikonę. Wyłączenie ukrywa ikonę, włączenie przywraca ją na ostatnią pozycję. Dotknij jej, aby włączyć lub wyłączyć przyciski, zmienić ich rozmiar i otworzyć edytor.</string>
     <string name="setup_touch_controls_help">Przycisk naciska prawdziwy klawisz klawiatury, więc każdy przycisk jest własnym skrótem gry. Przyciski działają przy naciśnięciu, przy przytrzymaniu lub jako przełącznik i mogą nieść Ctrl, Shift lub Alt. Ta gra zachowuje własny układ, a reset ustawień launchera go nie narusza.</string>
     <string name="setup_button_touch_editor">Otwórz edytor</string>
     <string name="setup_button_touch_reset">Zresetuj przyciski</string>
-    <string name="setup_button_touch_show_toolbox">Pokaż pasek narzędzi</string>
-    <string name="setup_toast_toolbox_shown">Pływający pasek narzędzi przywrócony. Wrócił na ostatnio ustawioną pozycję.</string>
     <string name="setup_touch_reset_title">Zresetować przyciski ekranowe?</string>
     <string name="setup_touch_reset_message">Przyciski wrócą do dołączonego układu. Zapisany układ domyślny zostanie zachowany.</string>
     <string name="setup_touch_reset_confirm">Resetuj</string>
     <string name="toolbox_tool_add_button">Dodaj przycisk</string>
     <string name="toolbox_tool_hide_toolbox">Ukryj pasek narzędzi</string>
-    <string name="toolbox_toast_hidden">Pasek narzędzi ukryty. Ikona zniknęła — przywróć ją opcją „Pokaż pasek narzędzi” w ustawieniach sterowania ekranowego.</string>
+    <string name="toolbox_toast_hidden">Pasek narzędzi ukryty. Ikona zniknęła — włącz ponownie „Pływający pasek narzędzi” w ustawieniach sterowania ekranowego.</string>
     <string name="touch_toast_button_added">Dodano przycisk. Przeciągnij go, aby go umieścić.</string>
     <string name="setup_icon_credit">Ikona skrzynki narzędzi: „Control” autorstwa Creatype, z Flaticon — używana na licencji Flaticon Free License.</string>
 </resources>

@@ -1388,35 +1388,6 @@ public class SetupActivity extends Activity {
         UiKit.share(UiKit.button(row, UiKit.BTN_OUTLINE, R.drawable.ic_gzh_play,
             getString(R.string.setup_button_touch_reset),
             () -> confirmResetTouchLayout()), false);
-        // GeneralsX @feature Android touch editor 05/11/2026 The way back from "Hide toolbox".
-        // Hiding the icon is deliberate and there is nothing on the battlefield left to tap, so
-        // the reopen action lives here, next to the switch that creates the toolbox. It restores
-        // the icon at the position the player last dragged it to (ToolboxConfig keeps it), and it
-        // is available whether or not a match is running: the stored flag is what the next launch
-        // reads, and a live overlay picks the change up at once.
-        UiKit.share(UiKit.button(row, UiKit.BTN_TONAL, R.drawable.ic_gzh_toolbox,
-            getString(R.string.setup_button_touch_show_toolbox),
-            this::showTouchToolbox), false);
-    }
-
-    /**
-     * Restores the floating toolbox icon. The launcher has no handle on the running match, so the
-     * flag is written here and the overlay -- which re-reads it on the next attach -- shows the
-     * icon at its stored position. A match already on screen is left alone: the icon returns the
-     * next time one starts, which is what a launcher action can promise without reaching into
-     * another process' view tree.
-     */
-    private void showTouchToolbox() {
-        String game = getSelectedGame(this);
-        ToolboxConfig config = ToolboxConfig.load(this, game);
-        config.iconVisible = true;
-        // Showing the toolbox through the launcher is also an explicit "I want it": turning the
-        // switch on here means the icon has somewhere to come back to, so a player who hid the
-        // icon and then taps this does not get a silent no-op.
-        config.enabled = true;
-        config.save(this, game);
-        toast(getString(R.string.setup_toast_toolbox_shown));
-        showTab(currentTab);
     }
 
     private void confirmResetTouchLayout() {

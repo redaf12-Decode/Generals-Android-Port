@@ -602,18 +602,16 @@
     <string name="setup_switch_touch_buttons">Экранные кнопки</string>
     <string name="setup_switch_touch_buttons_desc">Показывает кнопки быстрого доступа, которые вы разместили в редакторе. Касание в любом другом месте по-прежнему уходит в игру, поэтому камера, выбор и размещение не затрагиваются.</string>
     <string name="setup_switch_touch_toolbox">Плавающая панель</string>
-    <string name="setup_switch_touch_toolbox_desc">Показывает в матче небольшой перемещаемый значок. Нажмите его, чтобы включить или выключить кнопки, изменить их размер и открыть редактор.</string>
+    <string name="setup_switch_touch_toolbox_desc">Показывает в матче небольшой перемещаемый значок. Выключение скрывает значок, включение возвращает его на последнее место. Нажмите значок, чтобы включить или выключить кнопки, изменить их размер и открыть редактор.</string>
     <string name="setup_touch_controls_help">Кнопка нажимает настоящую клавишу клавиатуры, поэтому каждая кнопка — это собственное сочетание игры. Кнопки срабатывают по нажатию, по удержанию или как переключатель и могут нести Ctrl, Shift или Alt. У этой игры своя раскладка, и сброс настроек лаунчера её не затрагивает.</string>
     <string name="setup_button_touch_editor">Открыть редактор</string>
     <string name="setup_button_touch_reset">Сбросить кнопки</string>
-    <string name="setup_button_touch_show_toolbox">Показать панель</string>
-    <string name="setup_toast_toolbox_shown">Плавающая панель восстановлена. Она вернулась на последнее заданное место.</string>
     <string name="setup_touch_reset_title">Сбросить экранные кнопки?</string>
     <string name="setup_touch_reset_message">Кнопки вернутся к исходной раскладке. Сохранённая раскладка по умолчанию останется.</string>
     <string name="setup_touch_reset_confirm">Сбросить</string>
     <string name="toolbox_tool_add_button">Добавить кнопку</string>
     <string name="toolbox_tool_hide_toolbox">Скрыть панель</string>
-    <string name="toolbox_toast_hidden">Панель скрыта. Значок убран — верните его кнопкой «Показать панель» в настройках экранного управления.</string>
+    <string name="toolbox_toast_hidden">Панель скрыта. Значок убран — снова включите «Плавающая панель» в настройках экранного управления.</string>
     <string name="touch_toast_button_added">Кнопка добавлена. Перетащите её на нужное место.</string>
     <string name="setup_icon_credit">Значок панели инструментов: «Control» от Creatype, с Flaticon — используется по бесплатной лицензии Flaticon.</string>
 </resources>
