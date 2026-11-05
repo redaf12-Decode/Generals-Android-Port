@@ -154,5 +154,13 @@ dependencies {
     // WindowInsetsCompat (InsetUtil.java) -- pulled in transitively by
     // Material already, but declared directly since we call its APIs.
     implementation 'androidx.core:core:1.13.1'
+
+    // GeneralsX @build Android touch editor 05/11/2026 Unit tests for the touch-button model,
+    // the shape geometry, the edit session and the key state machine. These are plain JVM tests
+    // (Robolectric only where an Android class is unavoidable), so the editor's arithmetic is
+    // checked without a device.
+    testImplementation 'junit:junit:4.13.2'
+    testImplementation 'org.robolectric:robolectric:4.14.1'
+    testImplementation 'androidx.test:core:1.6.1'
 }
 

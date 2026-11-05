@@ -152,6 +152,16 @@
             android:theme="@style/Theme.GeneralsZHSettings"
             android:configChanges="orientation|screenSize|keyboardHidden" />
 
+        <!-- GeneralsX @feature Android touch editor 05/11/2026 The full-screen layout editor.
+             Landscape-locked, like the game surface it previews, so the layout a player builds
+             here is the layout the game shows. Not exported: it is only reached from Setup. -->
+        <activity
+            android:name=".TouchControlsActivity"
+            android:exported="false"
+            android:screenOrientation="landscape"
+            android:theme="@style/Theme.GeneralsZHSettings"
+            android:configChanges="orientation|screenSize|keyboardHidden" />
+
         <activity
             android:name=".LogViewerActivity"
             android:exported="false"

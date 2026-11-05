@@ -449,6 +449,7 @@ public class SetupActivity extends Activity {
                 buildUiScaleSection(page);
                 buildInterfaceScaleSection(page);
                 buildControlSchemeSection(page);
+                buildTouchControlsSection(page);
                 break;
             case TAB_TOOLS:
                 buildLogsSection(page);
@@ -1336,6 +1337,66 @@ public class SetupActivity extends Activity {
     // font point size* is a genuinely bigger asset, not just a stretched
     // rect). Removed rather than ship a slider that visibly does nothing;
     // "Menu Text Size" below is the one scaling option that actually works.
+
+    // GeneralsX @feature Android touch editor 05/11/2026 The two touch-control switches and the
+    // way into the full-screen editor. Both settings live in their own preferences files, not in
+    // the launcher's, so a launcher settings reset does not throw a player's layout away.
+    //
+    // The help text under the switches is the honest description of each: the button layer is the
+    // on-screen shortcuts, and the floating toolbox is the icon that opens the editor in the
+    // match. Neither is a renderer or graphics setting.
+    private void buildTouchControlsSection(LinearLayout root) {
+        LinearLayout card = UiKit.card(root);
+        UiKit.sectionHeader(card, R.drawable.ic_gzh_play,
+            getString(R.string.setup_card_touch_controls), false);
+        UiKit.body(card, getString(R.string.setup_touch_controls_body));
+
+        final String game = getSelectedGame(this);
+
+        TouchControlConfig layout = TouchControlConfig.load(this);
+        com.google.android.material.materialswitch.MaterialSwitch buttons = UiKit.switchRow(card,
+            getString(R.string.setup_switch_touch_buttons),
+            getString(R.string.setup_switch_touch_buttons_desc));
+        buttons.setChecked(layout.enabled);
+        buttons.setOnCheckedChangeListener((view, checked) -> {
+            TouchControlConfig stored = TouchControlConfig.load(this);
+            stored.enabled = checked;
+            stored.save(this);
+        });
+
+        ToolboxConfig toolbox = ToolboxConfig.load(this, game);
+        com.google.android.material.materialswitch.MaterialSwitch floating = UiKit.switchRow(card,
+            getString(R.string.setup_switch_touch_toolbox),
+            getString(R.string.setup_switch_touch_toolbox_desc));
+        floating.setChecked(toolbox.enabled);
+        floating.setOnCheckedChangeListener((view, checked) -> {
+            ToolboxConfig stored = ToolboxConfig.load(this, game);
+            stored.enabled = checked;
+            stored.save(this, game);
+        });
+
+        UiKit.helpText(card, getString(R.string.setup_touch_controls_help));
+
+        LinearLayout row = UiKit.buttonRow(card);
+        UiKit.button(row, UiKit.BTN_PRIMARY, R.drawable.ic_gzh_sliders,
+            getString(R.string.setup_button_touch_editor),
+            () -> startActivity(new Intent(this, TouchControlsActivity.class)));
+        UiKit.button(row, UiKit.BTN_OUTLINE, R.drawable.ic_gzh_play,
+            getString(R.string.setup_button_touch_reset),
+            () -> confirmResetTouchLayout());
+    }
+
+    private void confirmResetTouchLayout() {
+        new com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.setup_touch_reset_title)
+            .setMessage(R.string.setup_touch_reset_message)
+            .setNegativeButton(android.R.string.cancel, null)
+            .setPositiveButton(R.string.setup_touch_reset_confirm, (dialog, which) -> {
+                TouchControlConfig.reset(this);
+                showTab(currentTab);
+            })
+            .show();
+    }
 
     private void buildUiScaleSection(LinearLayout root) {
         LinearLayout content = UiKit.card(root);
