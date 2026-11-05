@@ -101,6 +101,16 @@ public class GeneralsZHActivity extends SDLActivity {
     // back through the two native methods, which only queue for the engine's next frame.
     private TextEditorBar textEditorBar;
 
+    // GeneralsX @feature Android touch editor 05/11/2026 The two overlay layers. Both are built
+    // after super.onCreate, once SDL has created its own view hierarchy, and both add themselves
+    // on top of SDL's surface with addContentView -- the same way TextEditorBar does.
+    //
+    // They are the only two things in this activity that can hold a key down, so both are released
+    // on pause and on focus loss. A key left down would outlive the activity that pressed it and
+    // hold a game binding for the rest of the process.
+    private HotkeyOverlayView hotkeyOverlay;
+    private ToolboxOverlayView toolboxOverlay;
+
     private static native void nativeTextEditorChanged(String text, int serial);
     private static native void nativeTextEditorDone(String text, boolean submit, int serial);
 
@@ -141,6 +151,13 @@ public class GeneralsZHActivity extends SDLActivity {
     // is up, the keyboard takes the first Back itself.
     @Override
     public boolean dispatchKeyEvent(KeyEvent event) {
+        // The toolbox panel is the innermost thing on screen: Back closes it rather than letting
+        // the game open its own menu behind it. The editor itself is left with its own Cancel,
+        // which is a visible control, so Back is never the only way out of an edit.
+        if (event.getKeyCode() == KeyEvent.KEYCODE_BACK && toolboxOverlay != null
+                && toolboxOverlay.handleBack()) {
+            return true;
+        }
         if (event.getKeyCode() == KeyEvent.KEYCODE_BACK && textEditorBar != null && textEditorBar.isShown()) {
             if (event.getAction() == KeyEvent.ACTION_UP) {
                 textEditorBar.finish(false);
@@ -165,6 +182,7 @@ public class GeneralsZHActivity extends SDLActivity {
     // as the process lives. Nothing else releases it: there was no onDestroy here at all.
     @Override
     protected void onDestroy() {
+        releaseTouchKeys();
         releaseLanMulticastLock();
         super.onDestroy();
     }
@@ -449,6 +467,39 @@ public class GeneralsZHActivity extends SDLActivity {
         }
 
         super.onCreate(savedInstanceState);
+        attachTouchOverlays();
+    }
+
+    /**
+     * Builds the touch-button layer, and the floating toolbox icon above it when the launcher has
+     * that on for this game. Called once SDL has built its view hierarchy, so there is something
+     * to add a content view to.
+     */
+    private void attachTouchOverlays() {
+        if (mLayout == null) {
+            return;
+        }
+        hotkeyOverlay = HotkeyOverlayView.attach(this);
+        // Returns null when the toolbox is off for this game, which is the default: nothing of
+        // the toolbox then exists over the battlefield.
+        toolboxOverlay = ToolboxOverlayView.attach(this, hotkeyOverlay);
+    }
+
+    /**
+     * GeneralsX @bugfix Android touch editor 05/11/2026 Release every key the touch layer holds.
+     * A pause, a focus loss or the activity being torn down can all interrupt a Hold or a Toggle
+     * mid-press; without this the key would stay down for the rest of the process.
+     */
+    @Override
+    protected void onPause() {
+        releaseTouchKeys();
+        super.onPause();
+    }
+
+    private void releaseTouchKeys() {
+        if (hotkeyOverlay != null) {
+            hotkeyOverlay.releaseAllKeys();
+        }
     }
 
     // GeneralsX @bugfix Android port 02/08/2026 A tester reported the camera
@@ -471,6 +522,11 @@ public class GeneralsZHActivity extends SDLActivity {
     @Override
     public void onWindowFocusChanged(boolean hasFocus) {
         super.onWindowFocusChanged(hasFocus);
+        if (!hasFocus) {
+            // A notification shade or a system dialog took the window: the finger that was on a
+            // Hold button will never send its ACTION_UP here, so release it now.
+            releaseTouchKeys();
+        }
         if (hasFocus) {
             applyGestureNavBackBehavior();
             // GeneralsX @bugfix Android port 25/10/2026 Hide the bars again when the window gets its
