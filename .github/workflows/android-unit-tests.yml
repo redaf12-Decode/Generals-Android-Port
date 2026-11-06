@@ -87,10 +87,17 @@ jobs:
           sudo unzip -q /tmp/cmdline-tools.zip -d /opt/android-sdk/cmdline-tools
           # sdkmanager requires the "<sdk>/cmdline-tools/latest" layout to locate its SDK root.
           sudo mv /opt/android-sdk/cmdline-tools/cmdline-tools /opt/android-sdk/cmdline-tools/latest
+          # sdkmanager and the later Gradle run write into the SDK, so hand it to this user rather
+          # than leave it root-owned (build-android.yml does the same).
+          sudo chown -R "$(id -u):$(id -g)" /opt/android-sdk
           rm /tmp/cmdline-tools.zip
           SDKMANAGER=/opt/android-sdk/cmdline-tools/latest/bin/sdkmanager
-          yes | "$SDKMANAGER" --licenses >/dev/null
-          "$SDKMANAGER" "platforms;android-${COMPILE_SDK}" "build-tools;${BUILD_TOOLS}" "platform-tools"
+          # `|| true` is load-bearing, not decoration: sdkmanager exits as soon as it has read the
+          # answers it needs, and `yes` then dies of SIGPIPE (141). Under `set -o pipefail` that
+          # non-zero status becomes the pipeline's, and with `set -e` it aborts the step -- which
+          # is exactly how this job first failed. build-android.yml carries the same `|| true`.
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" --install "platforms;android-${COMPILE_SDK}" "build-tools;${BUILD_TOOLS}" "platform-tools"
           echo "ANDROID_HOME=/opt/android-sdk" >> "$GITHUB_ENV"
           echo "ANDROID_SDK_ROOT=/opt/android-sdk" >> "$GITHUB_ENV"
 
