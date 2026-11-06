@@ -586,6 +586,12 @@
     <string name="toolbox_toast_layer_changed">Touch-Knöpfe geändert. Das eigene Panel des Spiels ändert sich beim nächsten Start.</string>
     <string name="toolbox_toast_layout_loaded">Gespeichertes Layout geladen.</string>
     <string name="touch_alt_tab_warning">Das Spiel ignoriert Tab, solange Alt gehalten wird; diese Kombination erreicht es also nicht.</string>
+    <string name="touch_clear_key">Taste löschen</string>
+    <string name="touch_editor_background_dim">Hintergrundabdunkelung: %1$d%%</string>
+    <string name="touch_section_appearance">Form und Aussehen</string>
+    <string name="touch_section_layout">Position und Größe</string>
+    <string name="touch_key_unassigned">Nicht zugewiesen</string>
+    <string name="touch_key_cleared">Tastenzuordnung gelöscht</string>
     <string name="touch_bring_to_front">Nach vorne</string>
     <string name="touch_mode_hold">Halten</string>
     <string name="touch_mode_label">Auslösung</string>

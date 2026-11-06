@@ -27,21 +27,40 @@
 //
 // Saving writes TouchControlConfig, the single store both the game and the toolbox read, so a
 // layout saved here is in the match on the next launch and can also be opened in the match.
+//
+// GeneralsX @bugfix Android touch editor 06/11/2026 The page is built in four bands -- header,
+// preview, inspector, footer -- and the structure was reworked so nothing can overlap:
+//
+//  * The body is a side-by-side split only while the window is WIDER than it is tall; in portrait
+//    the preview sits above the inspector. The choice is re-made whenever the window's size
+//    changes, so a rotation or a fold re-arranges instead of squashing.
+//  * Every group of cells (the six shapes, the four polygons, the three modes, the colour
+//    swatches, the key grid, the footer actions) is a FlowLayout, so it wraps onto another line on
+//    a narrow screen instead of running off the edge and drawing over its neighbour. Cells keep
+//    their size; nothing is shrunk and no option is hidden.
+//  * The inspector's whole content is one ScrollView and the preview canvas keeps its own weight,
+//    so a long inspector scrolls under its own header rather than pushing the preview away.
+//  * The footer is a wrapping FlowLayout too, so Cancel/Save/Apply can never be pushed off the
+//    bottom edge, and the root is padded by the system-bar and cutout insets so the header and the
+//    footer are never drawn under the status bar, the gesture bar or a camera cutout.
+//  * A bundled battlefield picture sits behind everything with a configurable dark scrim, and it
+//    takes no touch, so the controls stay readable and fully interactive over it.
 
 package com.generalsx.zerohour;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.content.res.Configuration;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
-import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewConfiguration;
 import android.view.ViewGroup;
+
 import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
@@ -57,10 +76,20 @@ public class TouchControlsActivity extends Activity {
     private static final int REQUEST_IMPORT = 4001;
     private static final int REQUEST_EXPORT = 4002;
 
+    /** The background scrim's stored opacity, in the launcher's own preferences. */
+    private static final String PREF_BACKGROUND_DIM = "touch_editor_background_dim";
+
+    private FrameLayout root;
+    private TouchEditorBackgroundView background;
+    private LinearLayout body;
     private FrameLayout canvas;
     private LinearLayout inspector;
+    private LinearLayout inspectorColumn;
     private TextView inspectorTitle;
     private TextView helpText;
+    private FlowLayout footer;
+    /** The body as the concrete split container, so its orientation callback can be installed. */
+    private SplitBody splitBody;
 
     private TouchLayoutEditor editor;
     private TouchEditorRenderer renderer;
@@ -94,6 +123,13 @@ public class TouchControlsActivity extends Activity {
     private boolean resizing;
     private final float[] touchSlop = new float[1];
 
+    /** Guards the deferred refresh so a burst of edits coalesces into one pass. */
+    private boolean refreshPosted;
+    /** The last arrangement the body was given, so a re-arrangement is a no-op when unchanged. */
+    private boolean bodyIsSideBySide;
+    private int bodyArrangedWidth;
+    private boolean bodyArranged;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -103,24 +139,46 @@ public class TouchControlsActivity extends Activity {
         keyPicker = new TouchKeyPicker();
         touchSlop[0] = ViewConfiguration.get(this).getScaledTouchSlop();
         setContentView(buildLayout());
-        editorSurface.post(this::refresh);
+        // The inspector is built synchronously so the page is complete on the first frame; the
+        // deferred pass then fixes the preview transform once the canvas has a real size.
+        refreshNow();
+        editorSurface.post(this::refreshNow);
+    }
+
+    @Override
+    public void onConfigurationChanged(Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+        // The manifest keeps this Activity across a rotation, so the arrangement is re-made here
+        // rather than by a fresh onCreate: the preview and the inspector swap places, and the
+        // preview transform is recomputed for the new canvas size.
+        arrangeBody();
+        refreshNow();
     }
 
     private View buildLayout() {
-        LinearLayout root = new LinearLayout(this);
-        root.setOrientation(LinearLayout.VERTICAL);
+        root = new FrameLayout(this);
         root.setBackgroundColor(Color.rgb(12, 16, 20));
 
-        root.addView(buildHeader());
+        // The battlefield picture first, so it is behind every control, and non-touchable so a
+        // press on empty space still reaches the preview canvas and the buttons.
+        background = new TouchEditorBackgroundView(this);
+        background.setDimPercent(loadBackgroundDim());
+        root.addView(background, new FrameLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
 
-        LinearLayout body = new LinearLayout(this);
-        body.setOrientation(LinearLayout.HORIZONTAL);
-        body.setLayoutParams(new LinearLayout.LayoutParams(
+        LinearLayout content = new LinearLayout(this);
+        content.setOrientation(LinearLayout.VERTICAL);
+        root.addView(content, new FrameLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+
+        content.addView(buildHeader());
+
+        splitBody = new SplitBody(this);
+        splitBody.setLayoutParams(new LinearLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
+        body = splitBody;
 
         canvas = new FrameLayout(this);
-        canvas.setLayoutParams(new LinearLayout.LayoutParams(0,
-            ViewGroup.LayoutParams.MATCH_PARENT, 1f));
         // GeneralsX @bugfix Android touch editor 05/11/2026 The editing surface is the whole
         // FrameLayout: it must be attached MATCH_PARENT, or a plain View measures to nothing
         // (WRAP_CONTENT) and the editor draws on a 0-pixel-high canvas -- the layout loads, but
@@ -134,50 +192,145 @@ public class TouchControlsActivity extends Activity {
 
         inspector = new LinearLayout(this);
         inspector.setOrientation(LinearLayout.VERTICAL);
-        inspector.setBackgroundColor(Color.rgb(20, 26, 32));
-        int pad = (int) (12 * getResources().getDisplayMetrics().density);
+        int pad = dp(12);
         inspector.setPadding(pad, pad, pad, pad);
-        inspector.setLayoutParams(new LinearLayout.LayoutParams(
-            (int) (300 * getResources().getDisplayMetrics().density),
-            ViewGroup.LayoutParams.MATCH_PARENT));
         body.addView(inspector);
 
-        root.addView(body);
-        root.addView(buildFooter());
+        content.addView(body);
+
+        footer = new FlowLayout(this);
+        footer.setGaps(dp(8), dp(8));
+        footer.setPadding(dp(8), dp(8), dp(8), dp(8));
+        content.addView(footer, new LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+
+        buildFooter();
+        arrangeBody();
+        InsetUtil.applySafeInsets(root);
         return root;
+    }
+
+    /**
+     * Places the preview and the inspector: side by side while the body is wider than it is tall,
+     * stacked in portrait. The inspector takes a fraction of a wide body and the whole width of a
+     * narrow one, and the preview always keeps a usable minimum, so neither can squeeze the other
+     * out -- which is what made the old fixed 300dp panel clip on small phones and waste space on
+     * tablets.
+     */
+    private void arrangeBody() {
+        if (splitBody == null) {
+            return;
+        }
+        int width = splitBody.getWidth();
+        int height = splitBody.getHeight();
+        if (width <= 0 || height <= 0) {
+            // Before the first layout, fall back to the configuration's own idea of orientation so
+            // the very first pass is already the right shape and no reflow is visible.
+            boolean portrait = getResources().getConfiguration().orientation
+                == Configuration.ORIENTATION_PORTRAIT;
+            applyBodyArrangement(!portrait, getResources().getDisplayMetrics().widthPixels);
+            return;
+        }
+        applyBodyArrangement(width >= height, width);
+    }
+
+    private void applyBodyArrangement(boolean sideBySide, int availableWidth) {
+        // The width matters as well as the orientation: the side panel is a fraction of it, so a
+        // resize (a fold, a multi-window drag) has to re-split even when the orientation is the
+        // same. Without the width in the guard, the very first pass -- which runs before the real
+        // width is known -- would freeze the panel at the fallback width forever.
+        if (bodyArranged && sideBySide == bodyIsSideBySide
+                && availableWidth == bodyArrangedWidth) {
+            return;
+        }
+        bodyArranged = true;
+        bodyIsSideBySide = sideBySide;
+        bodyArrangedWidth = availableWidth;
+        body.setOrientation(sideBySide ? LinearLayout.HORIZONTAL : LinearLayout.VERTICAL);
+
+        if (sideBySide) {
+            // A side panel: a fraction of the body, clamped so it is never too narrow to hold a
+            // control and never wide enough to starve the preview.
+            int preferred = Math.round(availableWidth * 0.42f);
+            int panel = Math.max(dp(220), Math.min(preferred, dp(400)));
+            panel = Math.min(panel, Math.max(dp(180), availableWidth - dp(200)));
+            canvas.setLayoutParams(new LinearLayout.LayoutParams(
+                0, ViewGroup.LayoutParams.MATCH_PARENT, 1f));
+            inspector.setLayoutParams(new LinearLayout.LayoutParams(
+                panel, ViewGroup.LayoutParams.MATCH_PARENT));
+        } else {
+            canvas.setLayoutParams(new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
+            inspector.setLayoutParams(new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
+        }
+        body.requestLayout();
+    }
+
+    /**
+     * GeneralsX @feature Android touch editor 06/11/2026 The body, which re-decides its own
+     * orientation from the size it is actually given. A window-size listener cannot be relied on:
+     * it never fires for a view tree measured and laid out by hand (a test, a preview render) and
+     * it arrives after the first layout in any case. Deciding here means the split is right on the
+     * first frame and after a rotation, without a recreate.
+     */
+    private final class SplitBody extends LinearLayout {
+        SplitBody(Activity activity) {
+            super(activity);
+        }
+
+        @Override
+        protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+            int width = MeasureSpec.getSize(widthMeasureSpec);
+            int height = MeasureSpec.getSize(heightMeasureSpec);
+            if (MeasureSpec.getMode(widthMeasureSpec) != MeasureSpec.UNSPECIFIED
+                    && MeasureSpec.getMode(heightMeasureSpec) != MeasureSpec.UNSPECIFIED
+                    && width > 0 && height > 0) {
+                applyBodyArrangement(width >= height, width);
+            }
+            super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+        }
+
+        @Override
+        protected void onSizeChanged(int width, int height, int oldWidth, int oldHeight) {
+            super.onSizeChanged(width, height, oldWidth, oldHeight);
+            applyBodyArrangement(width >= height, width);
+        }
     }
 
     private View buildHeader() {
         LinearLayout header = new LinearLayout(this);
-        header.setOrientation(LinearLayout.HORIZONTAL);
-        header.setGravity(Gravity.CENTER_VERTICAL);
-        header.setBackgroundColor(Color.rgb(20, 26, 32));
-        int pad = (int) (10 * getResources().getDisplayMetrics().density);
+        header.setOrientation(LinearLayout.VERTICAL);
+        int pad = dp(10);
         header.setPadding(pad, pad, pad, pad);
 
         TextView title = new TextView(this);
         title.setText(R.string.touch_editor_title);
         title.setTextColor(Color.WHITE);
         title.setTextSize(18f);
-        title.setLayoutParams(new LinearLayout.LayoutParams(0,
-            ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
         header.addView(title);
 
         helpText = new TextView(this);
         helpText.setText(R.string.touch_drag_help_short);
         helpText.setTextColor(0xFF9FD4D8);
         helpText.setTextSize(12f);
+        // The help is a sentence, not a label: it wraps onto as many lines as it needs instead of
+        // being clipped at the header's edge.
+        helpText.setLayoutParams(new LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
         header.addView(helpText);
         return header;
     }
 
-    private View buildFooter() {
-        LinearLayout footer = new LinearLayout(this);
-        footer.setOrientation(LinearLayout.HORIZONTAL);
-        footer.setBackgroundColor(Color.rgb(20, 26, 32));
-        int pad = (int) (8 * getResources().getDisplayMetrics().density);
-        footer.setPadding(pad, pad, pad, pad);
-
+    /**
+     * The action bar. It is a wrapping FlowLayout rather than a row with a weighted spacer, so the
+     * actions stay reachable on a narrow screen: they move onto a second line instead of being
+     * squeezed to zero or pushed past the edge. The spacer that used to sit here was also the cause
+     * of the editor opening blank -- a weighted WRAP_CONTENT view stretches to the whole available
+     * height, which made the footer 600px tall and squeezed the editing canvas to nothing.
+     */
+    private void buildFooter() {
+        footer.removeAllViews();
         footer.addView(footerButton(R.string.touch_add_button, v -> showKeyPicker()));
         footer.addView(footerButton(R.string.touch_reset_button, v -> {
             editor.restoreDefaults();
@@ -185,17 +338,6 @@ public class TouchControlsActivity extends Activity {
         }));
         footer.addView(footerButton(R.string.touch_import_button, v -> importLayout()));
         footer.addView(footerButton(R.string.touch_export_button, v -> exportLayout()));
-
-        // GeneralsX @bugfix Android touch editor 05/11/2026 A horizontal spacer must not be a
-        // weighted WRAP_CONTENT child: a weighted WRAP_CONTENT view stretches to the whole
-        // available height, which made the footer 600px tall and squeezed the body -- the editing
-        // canvas -- to 0 height. That is why the launcher editor opened on a blank surface. A
-        // MATCH_PARENT spacer only fills the row it sits in.
-        View spacer = new View(this);
-        spacer.setLayoutParams(new LinearLayout.LayoutParams(0,
-            ViewGroup.LayoutParams.MATCH_PARENT, 1f));
-        footer.addView(spacer);
-
         footer.addView(footerButton(R.string.touch_save_button, v -> save()));
         footer.addView(footerButton(R.string.touch_apply_button, v -> {
             if (editor.save(this)) {
@@ -203,14 +345,22 @@ public class TouchControlsActivity extends Activity {
             }
             finish();
         }));
-        return footer;
     }
 
     private Button footerButton(int textRes, View.OnClickListener listener) {
         Button button = new Button(this);
         button.setText(textRes);
         button.setOnClickListener(listener);
+        // A finger-sized target, and a floor on the width so two short labels do not end up as
+        // two tiny boxes.
+        button.setMinimumHeight(dp(48));
+        button.setMinimumWidth(dp(96));
+        button.setPadding(dp(12), 0, dp(12), 0);
         return button;
+    }
+
+    private int dp(float value) {
+        return Math.round(value * getResources().getDisplayMetrics().density);
     }
 
     // ------------------------------------------------------------------ inspector
@@ -223,11 +373,36 @@ public class TouchControlsActivity extends Activity {
      * edit changed the model and left the picture stale. The surface is invalidated directly, and
      * the editor's viewport is the game screen the preview stands for rather than the narrow canvas,
      * so a stored position is the same here as in the match.
+     *
+     * GeneralsX @bugfix Android touch editor 06/11/2026 The rebuild is deferred to the next layout
+     * pass. Rebuilding the inspector removes and re-adds its views, which changes the inspector's
+     * height; doing that synchronously from a SeekBar callback while the inspector was laying out
+     * re-entered the layout and could leave a control measured against a stale size. Posting the
+     * whole refresh makes every rebuild happen between frames, and the guard collapses a burst of
+     * slider callbacks into one pass.
      */
     private void refresh() {
+        if (refreshPosted) {
+            return;
+        }
+        refreshPosted = true;
+        View anchor = editorSurface != null ? editorSurface : root;
+        anchor.post(() -> {
+            refreshPosted = false;
+            if (isFinishing()) {
+                return;
+            }
+            refreshNow();
+        });
+    }
+
+    /** Applies a refresh immediately, for the first pass, a rotation and a test with no looper. */
+    private void refreshNow() {
         applyPreviewTransform();
         rebuildInspector();
-        editorSurface.invalidate();
+        if (editorSurface != null) {
+            editorSurface.invalidate();
+        }
     }
 
     /**
@@ -293,6 +468,26 @@ public class TouchControlsActivity extends Activity {
         return keyDialog;
     }
 
+    /** The inspector panel, for a test that checks the page's structure. */
+    View inspectorForTest() {
+        return inspector;
+    }
+
+    /** The action bar, for a test that checks its actions stay on screen. */
+    View footerForTest() {
+        return footer;
+    }
+
+    /** The background picture, for a test of its scaling and scrim. */
+    TouchEditorBackgroundView backgroundForTest() {
+        return background;
+    }
+
+    /** Rebuilds the inspector without a layout pass, for a test that has no looper. */
+    void rebuildInspectorForTest() {
+        rebuildInspector();
+    }
+
     /** A canvas point in game-screen pixels: the inverse of the preview's transform. */
     private float toGameX(float previewX) {
         return preview.toGameX(previewX);
@@ -305,61 +500,64 @@ public class TouchControlsActivity extends Activity {
     private void rebuildInspector() {
         inspector.removeAllViews();
         TouchControlConfig.ButtonSpec spec = editor.selectedButton();
+
+        inspectorTitle = new TextView(this);
+        inspectorTitle.setText(spec == null
+            ? getString(R.string.touch_drag_help_short)
+            : getString(R.string.touch_selected_button,
+                TouchKeyCatalog.combinationName(this, spec.keyCode, spec.modifiers)));
+        inspectorTitle.setTextColor(spec == null ? 0xFFCCCCCC : Color.WHITE);
+        inspectorTitle.setTextSize(spec == null ? 14f : 15f);
+        inspector.addView(inspectorTitle);
+
+        ScrollView scroll = new ScrollView(this);
+        scroll.setLayoutParams(new LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
+        // The panel scrolls as one column, so a section can never be clipped by the one below it
+        // and the preview keeps its own weight regardless of how long the inspector gets.
+        inspectorColumn = new LinearLayout(this);
+        inspectorColumn.setOrientation(LinearLayout.VERTICAL);
+        scroll.addView(inspectorColumn);
+        inspector.addView(scroll);
+
+        addBackgroundSection(inspectorColumn);
+
         if (spec == null) {
-            inspectorTitle = new TextView(this);
-            inspectorTitle.setText(R.string.touch_drag_help_short);
-            inspectorTitle.setTextColor(0xFFCCCCCC);
-            inspector.addView(inspectorTitle);
             TextView hint = new TextView(this);
             hint.setText(R.string.touch_select_button_first);
             hint.setTextColor(0xFF9FD4D8);
             hint.setTextSize(12f);
-            inspector.addView(hint);
+            hint.setPadding(0, dp(8), 0, 0);
+            inspectorColumn.addView(hint);
             return;
         }
-        inspectorTitle = new TextView(this);
-        inspectorTitle.setText(getString(R.string.touch_selected_button,
-            TouchKeyCatalog.combinationName(spec.keyCode, spec.modifiers)));
-        inspectorTitle.setTextColor(Color.WHITE);
-        inspector.addView(inspectorTitle);
 
-        ScrollView scroll = new ScrollView(this);
-        LinearLayout column = new LinearLayout(this);
-        column.setOrientation(LinearLayout.VERTICAL);
-        scroll.addView(column);
+        addKeyPicker(inspectorColumn, spec);
+        addShapePicker(inspectorColumn, spec);
+        addAppearanceSection(inspectorColumn, spec);
+        addLayoutSection(inspectorColumn, spec);
+        addToggleRows(inspectorColumn, spec);
+    }
 
-        addKeyPicker(column, spec);
-        addShapePicker(column, spec);
-        addSlider(column, R.string.touch_width_dp, spec.widthDp,
-            TouchControlConfig.MIN_SIZE_DP, TouchControlConfig.MAX_SIZE_DP, value -> {
-                spec.setSize(value, spec.heightDp);
-                editor.applyViewportTo(gameWidth(), gameHeight(),
-                    getResources().getDisplayMetrics().density);
-                editorSurface.invalidate();
-            });
-        addSlider(column, R.string.touch_height_dp, spec.heightDp,
-            TouchControlConfig.MIN_SIZE_DP, TouchControlConfig.MAX_SIZE_DP, value -> {
-                spec.setSize(spec.widthDp, value);
-                editor.applyViewportTo(gameWidth(), gameHeight(),
-                    getResources().getDisplayMetrics().density);
-                editorSurface.invalidate();
-            });
-        addSlider(column, R.string.touch_button_opacity, spec.opacity * 100f, 0f, 100f,
+    /**
+     * The scrim control. It applies to the whole page, so it is shown whether or not a button is
+     * selected, and it is the first thing in the column so it is reachable without scrolling past
+     * the button sections.
+     */
+    private void addBackgroundSection(LinearLayout column) {
+        addSlider(column, R.string.touch_editor_background_dim, background.dimPercent(),
+            TouchEditorBackgroundView.MIN_DIM_PERCENT, TouchEditorBackgroundView.MAX_DIM_PERCENT,
             value -> {
-                spec.opacity = value / 100f;
-                editorSurface.invalidate();
+                background.setDimPercent(Math.round(value));
+                saveBackgroundDim(background.dimPercent());
             });
-        addModePicker(column, spec);
-        addColorRows(column, spec);
-        addToggleRows(column, spec);
-
-        inspector.addView(scroll);
     }
 
     private void addKeyPicker(LinearLayout column, TouchControlConfig.ButtonSpec spec) {
-        column.addView(sectionLabel(R.string.touch_edit_dialog_title));
-        LinearLayout modifiers = new LinearLayout(this);
-        modifiers.setOrientation(LinearLayout.HORIZONTAL);
+        column.addView(sectionHeader(R.string.touch_edit_dialog_title));
+
+        FlowLayout modifiers = new FlowLayout(this);
+        modifiers.setGaps(dp(6), dp(6));
         modifiers.addView(modifierToggle(R.string.touch_modifier_ctrl,
             TouchKeyCatalog.MOD_CTRL, spec));
         modifiers.addView(modifierToggle(R.string.touch_modifier_shift,
@@ -368,7 +566,26 @@ public class TouchControlsActivity extends Activity {
             TouchKeyCatalog.MOD_ALT, spec));
         column.addView(modifiers);
 
-        if (TouchKeyCatalog.isSwallowedByEngine(spec.keyCode, spec.modifiers)) {
+        // Clear Key: it removes the mapping and keeps the button. It sits next to the key grid,
+        // because it is the alternative to choosing a key, and is separated from Delete (which
+        // removes the button itself) by the whole appearance section.
+        Button clear = new Button(this);
+        clear.setText(R.string.touch_clear_key);
+        clear.setOnClickListener(v -> {
+            if (editor.clearSelectedKey()) {
+                toast(getString(R.string.touch_key_cleared));
+            }
+            refresh();
+        });
+        clear.setEnabled(spec.isAssigned());
+        clear.setMinimumHeight(dp(48));
+        LinearLayout.LayoutParams clearParams = new LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        clearParams.topMargin = dp(6);
+        clear.setLayoutParams(clearParams);
+        column.addView(clear);
+
+        if (spec.isAssigned() && TouchKeyCatalog.isSwallowedByEngine(spec.keyCode, spec.modifiers)) {
             TextView warn = new TextView(this);
             warn.setText(R.string.touch_alt_tab_warning);
             warn.setTextColor(0xFFFFB74D);
@@ -376,28 +593,23 @@ public class TouchControlsActivity extends Activity {
             column.addView(warn);
         }
 
-        ScrollView keys = new ScrollView(this);
-        LinearLayout grid = new LinearLayout(this);
-        grid.setOrientation(LinearLayout.VERTICAL);
+        // The key grid: each group is a wrapping FlowLayout inside the panel's own ScrollView, so
+        // no key is clipped and there is no second, nested scroll area fighting the panel's.
         for (int group = 0; group < TouchKeyCatalog.GROUP_COUNT; ++group) {
-            LinearLayout row = new LinearLayout(this);
-            row.setOrientation(LinearLayout.HORIZONTAL);
+            TextView caption = new TextView(this);
+            caption.setText(groupName(group));
+            caption.setTextColor(0x99FFB74D);
+            caption.setTextSize(11f);
+            caption.setPadding(0, dp(6), 0, dp(2));
+            column.addView(caption);
             List<TouchKeyCatalog.Entry> entries = TouchKeyCatalog.group(group);
-            for (int i = 0; i < entries.size(); ++i) {
-                if (i > 0 && i % 5 == 0) {
-                    grid.addView(row);
-                    row = new LinearLayout(this);
-                    row.setOrientation(LinearLayout.HORIZONTAL);
-                }
-                row.addView(keyChip(entries.get(i), spec));
+            FlowLayout row = new FlowLayout(this);
+            row.setGaps(dp(4), dp(4));
+            for (TouchKeyCatalog.Entry entry : entries) {
+                row.addView(keyChip(entry, spec));
             }
-            grid.addView(row);
+            column.addView(row);
         }
-        keys.addView(grid);
-        keys.setLayoutParams(new LinearLayout.LayoutParams(
-            ViewGroup.LayoutParams.MATCH_PARENT,
-            (int) (140 * getResources().getDisplayMetrics().density)));
-        column.addView(keys);
     }
 
     private View keyChip(TouchKeyCatalog.Entry entry, TouchControlConfig.ButtonSpec spec) {
@@ -407,7 +619,9 @@ public class TouchControlsActivity extends Activity {
         boolean selected = entry.keyCode == spec.keyCode;
         button.setBackgroundColor(selected ? renderer.accentColor() : 0xFF2A323A);
         button.setTextColor(Color.WHITE);
-        button.setPadding(4, 0, 4, 0);
+        button.setPadding(dp(6), 0, dp(6), 0);
+        button.setMinimumWidth(dp(48));
+        button.setMinimumHeight(dp(40));
         button.setOnClickListener(v -> {
             editor.setSelectedKey(entry.keyCode);
             refresh();
@@ -422,6 +636,8 @@ public class TouchControlsActivity extends Activity {
         boolean on = (spec.modifiers & flag) != 0;
         button.setBackgroundColor(on ? renderer.accentColor() : 0xFF2A323A);
         button.setTextColor(Color.WHITE);
+        button.setMinimumWidth(dp(64));
+        button.setMinimumHeight(dp(44));
         button.setOnClickListener(v -> {
             editor.toggleSelectedModifier(flag);
             refresh();
@@ -430,9 +646,9 @@ public class TouchControlsActivity extends Activity {
     }
 
     private void addShapePicker(LinearLayout column, TouchControlConfig.ButtonSpec spec) {
-        column.addView(sectionLabel(R.string.touch_shape_label));
-        LinearLayout row = new LinearLayout(this);
-        row.setOrientation(LinearLayout.HORIZONTAL);
+        column.addView(sectionHeader(R.string.touch_shape_label));
+        FlowLayout row = new FlowLayout(this);
+        row.setGaps(dp(4), dp(4));
         int[] shapes = {TouchButtonShape.RECTANGLE, TouchButtonShape.ROUNDED,
             TouchButtonShape.SQUARE, TouchButtonShape.CIRCLE, TouchButtonShape.OVAL,
             TouchButtonShape.POLYGON};
@@ -444,9 +660,11 @@ public class TouchControlsActivity extends Activity {
             Button button = new Button(this);
             button.setText(names[i]);
             button.setTextSize(11f);
-            boolean selected = spec != null && spec.shape == shape;
+            boolean selected = spec.shape == shape;
             button.setBackgroundColor(selected ? renderer.accentColor() : 0xFF2A323A);
             button.setTextColor(Color.WHITE);
+            button.setPadding(dp(6), 0, dp(6), 0);
+            button.setMinimumHeight(dp(44));
             button.setOnClickListener(v -> {
                 if (editor.setSelectedShape(shape)) {
                     refresh();
@@ -458,9 +676,9 @@ public class TouchControlsActivity extends Activity {
         }
         column.addView(row);
 
-        if (spec != null && spec.shape == TouchButtonShape.POLYGON) {
-            LinearLayout polygons = new LinearLayout(this);
-            polygons.setOrientation(LinearLayout.HORIZONTAL);
+        if (spec.shape == TouchButtonShape.POLYGON) {
+            FlowLayout polygons = new FlowLayout(this);
+            polygons.setGaps(dp(4), dp(4));
             int[] types = {TouchButtonShape.POLY_TRIANGLE, TouchButtonShape.POLY_PENTAGON,
                 TouchButtonShape.POLY_HEXAGON, TouchButtonShape.POLY_OCTAGON};
             int[] polyNames = {R.string.touch_polygon_triangle, R.string.touch_polygon_pentagon,
@@ -473,6 +691,8 @@ public class TouchControlsActivity extends Activity {
                 button.setBackgroundColor(spec.polygonType == type
                     ? renderer.accentColor() : 0xFF2A323A);
                 button.setTextColor(Color.WHITE);
+                button.setPadding(dp(6), 0, dp(6), 0);
+                button.setMinimumHeight(dp(40));
                 button.setOnClickListener(v -> {
                     editor.setSelectedPolygonType(type);
                     refresh();
@@ -483,10 +703,41 @@ public class TouchControlsActivity extends Activity {
         }
     }
 
+    /** Shape and appearance: opacity, the activation mode and the three colours. */
+    private void addAppearanceSection(LinearLayout column, TouchControlConfig.ButtonSpec spec) {
+        column.addView(sectionHeader(R.string.touch_section_appearance));
+        addSlider(column, R.string.touch_button_opacity, spec.opacity * 100f, 0f, 100f,
+            value -> {
+                spec.opacity = value / 100f;
+                editorSurface.invalidate();
+            });
+        addModePicker(column, spec);
+        addColorRows(column, spec);
+    }
+
+    /** Position and size: the two dimension sliders, which are the numeric half of a drag/resize. */
+    private void addLayoutSection(LinearLayout column, TouchControlConfig.ButtonSpec spec) {
+        column.addView(sectionHeader(R.string.touch_section_layout));
+        addSlider(column, R.string.touch_width_dp, spec.widthDp,
+            TouchControlConfig.MIN_SIZE_DP, TouchControlConfig.MAX_SIZE_DP, value -> {
+                spec.setSize(value, spec.heightDp);
+                editor.applyViewportTo(gameWidth(), gameHeight(),
+                    getResources().getDisplayMetrics().density);
+                editorSurface.invalidate();
+            });
+        addSlider(column, R.string.touch_height_dp, spec.heightDp,
+            TouchControlConfig.MIN_SIZE_DP, TouchControlConfig.MAX_SIZE_DP, value -> {
+                spec.setSize(spec.widthDp, value);
+                editor.applyViewportTo(gameWidth(), gameHeight(),
+                    getResources().getDisplayMetrics().density);
+                editorSurface.invalidate();
+            });
+    }
+
     private void addModePicker(LinearLayout column, TouchControlConfig.ButtonSpec spec) {
         column.addView(sectionLabel(R.string.touch_mode_label));
-        LinearLayout row = new LinearLayout(this);
-        row.setOrientation(LinearLayout.HORIZONTAL);
+        FlowLayout row = new FlowLayout(this);
+        row.setGaps(dp(4), dp(4));
         int[] modes = {TouchControlConfig.MODE_TAP, TouchControlConfig.MODE_HOLD,
             TouchControlConfig.MODE_TOGGLE};
         int[] names = {R.string.touch_mode_tap, R.string.touch_mode_hold,
@@ -499,6 +750,8 @@ public class TouchControlsActivity extends Activity {
             button.setBackgroundColor(spec.activationMode == mode
                 ? renderer.accentColor() : 0xFF2A323A);
             button.setTextColor(Color.WHITE);
+            button.setMinimumWidth(dp(72));
+            button.setMinimumHeight(dp(44));
             button.setOnClickListener(v -> {
                 editor.setSelectedActivationMode(mode);
                 refresh();
@@ -526,10 +779,11 @@ public class TouchControlsActivity extends Activity {
         }));
     }
 
-    /** A row of swatches, read from the theme's own palette so nothing is a hardcoded hex here. */
+    /** A wrapping row of swatches, read from the theme's own palette so nothing is a hardcoded hex. */
     private View colorRow(int labelRes, int current, ColorSink sink) {
-        LinearLayout row = new LinearLayout(this);
-        row.setOrientation(LinearLayout.HORIZONTAL);
+        FlowLayout row = new FlowLayout(this);
+        row.setGaps(dp(8), dp(8));
+        row.setPadding(0, dp(4), 0, dp(4));
         int[] palette = {Color.rgb(22, 33, 44), Color.rgb(220, 181, 86), Color.WHITE,
             Color.BLACK, Color.rgb(198, 40, 40), Color.rgb(46, 125, 50),
             Color.rgb(21, 101, 192), Color.rgb(120, 90, 200)};
@@ -542,40 +796,51 @@ public class TouchControlsActivity extends Activity {
             dot.setStroke(current == color ? 4 : 1,
                 current == color ? renderer.accentColor() : 0xFF556070);
             swatch.setBackground(dot);
-            int size = (int) (28 * getResources().getDisplayMetrics().density);
-            LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(size, size);
-            params.setMargins(4, 4, 4, 4);
-            swatch.setLayoutParams(params);
+            // A finger-sized target: the visible dot fills it, and the touch area is at least 44dp.
+            int size = dp(44);
+            swatch.setLayoutParams(new ViewGroup.LayoutParams(size, size));
             swatch.setOnClickListener(v -> sink.accept(value));
             row.addView(swatch);
         }
         return row;
     }
 
+    /**
+     * The button-level actions, kept apart from Clear Key and from the profile actions: Toggle,
+     * Delete and Bring to front act on the button, Clear Key acts on its mapping, and the footer's
+     * Defaults acts on the whole profile.
+     */
     private void addToggleRows(LinearLayout column, TouchControlConfig.ButtonSpec spec) {
+        column.addView(sectionLabel(R.string.touch_delete_button));
+        FlowLayout row = new FlowLayout(this);
+        row.setGaps(dp(6), dp(6));
         Button toggle = new Button(this);
         toggle.setText(R.string.toolbox_edit_toggle);
+        toggle.setMinimumHeight(dp(48));
         toggle.setOnClickListener(v -> {
             editor.toggleSelectedEnabled();
             refresh();
         });
-        column.addView(toggle);
+        row.addView(toggle);
 
         Button delete = new Button(this);
         delete.setText(R.string.touch_delete_button);
+        delete.setMinimumHeight(dp(48));
         delete.setOnClickListener(v -> {
             editor.deleteSelected();
             refresh();
         });
-        column.addView(delete);
+        row.addView(delete);
 
         Button front = new Button(this);
         front.setText(R.string.touch_bring_to_front);
+        front.setMinimumHeight(dp(48));
         front.setOnClickListener(v -> {
             editor.bringSelectedToFront();
             refresh();
         });
-        column.addView(front);
+        row.addView(front);
+        column.addView(row);
     }
 
     private TextView sectionLabel(int textRes) {
@@ -583,7 +848,17 @@ public class TouchControlsActivity extends Activity {
         label.setText(textRes);
         label.setTextColor(0xFF9FD4D8);
         label.setTextSize(12f);
-        label.setPadding(0, 10, 0, 4);
+        label.setPadding(0, dp(10), 0, dp(4));
+        return label;
+    }
+
+    /** A section's own caption: larger and brighter, so the sections read as sections. */
+    private TextView sectionHeader(int textRes) {
+        TextView label = new TextView(this);
+        label.setText(textRes);
+        label.setTextColor(0xFFE8F6F7);
+        label.setTextSize(14f);
+        label.setPadding(0, dp(16), 0, dp(6));
         return label;
     }
 
@@ -603,6 +878,7 @@ public class TouchControlsActivity extends Activity {
         int span = Math.max(1, Math.round(max - min));
         bar.setMax(span);
         bar.setProgress(Math.round(value - min));
+        bar.setMinimumHeight(dp(48));
         bar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
                 label.setText(getString(labelRes, Math.round(min + progress)));
@@ -656,15 +932,16 @@ public class TouchControlsActivity extends Activity {
         /**
          * GeneralsX @feature Android touch editor 05/11/2026 The letterboxed game screen and its
          * command-bar guide, drawn in game-screen pixels through the preview transform so it lines
-         * up with the buttons the renderer draws. The area outside the game screen is left dark, so
-         * the preview never pretends the narrower canvas is the battlefield.
+         * up with the buttons the renderer draws. The area outside the game screen is left
+         * translucent, so the background picture still shows through while the preview itself stays
+         * visually distinct from it.
          */
         private void drawGameFrame(Canvas canvas2) {
             Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
             canvas2.save();
             canvas2.translate(preview.offsetX(), preview.offsetY());
             canvas2.scale(preview.scale(), preview.scale());
-            paint.setColor(0xFF121A22);
+            paint.setColor(0x99121A22);
             canvas2.drawRect(0, 0, gameWidth(), gameHeight(), paint);
             float strip = gameHeight() * 0.24f;
             paint.setColor(0x33FFB74D);
@@ -743,8 +1020,6 @@ public class TouchControlsActivity extends Activity {
         }
     }
 
-    // ------------------------------------------------------------------ transfer and save
-
     // ------------------------------------------------------------------ key selection
 
     /**
@@ -769,7 +1044,7 @@ public class TouchControlsActivity extends Activity {
     android.app.AlertDialog buildKeyPickerDialog() {
         LinearLayout column = new LinearLayout(this);
         column.setOrientation(LinearLayout.VERTICAL);
-        int pad = (int) (12 * getResources().getDisplayMetrics().density);
+        int pad = dp(12);
         column.setPadding(pad, pad, pad, pad);
 
         ScrollView scroll = new ScrollView(this);
@@ -780,19 +1055,17 @@ public class TouchControlsActivity extends Activity {
             caption.setText(groupName(group));
             caption.setTextColor(0xFF9FD4D8);
             caption.setTextSize(12f);
-            caption.setPadding(0, 10, 0, 4);
+            caption.setPadding(0, dp(10), 0, dp(4));
             column.addView(caption);
 
             List<TouchKeyCatalog.Entry> entries = TouchKeyCatalog.group(group);
-            LinearLayout row = null;
-            for (int i = 0; i < entries.size(); ++i) {
-                if (i % TouchKeyPicker.COLUMNS == 0) {
-                    row = new LinearLayout(this);
-                    row.setOrientation(LinearLayout.HORIZONTAL);
-                    column.addView(row);
-                }
-                row.addView(keyChip(entries.get(i)));
+            // A wrapping row, so a narrow dialog reflows the keys instead of clipping them.
+            FlowLayout row = new FlowLayout(this);
+            row.setGaps(dp(4), dp(4));
+            for (TouchKeyCatalog.Entry entry : entries) {
+                row.addView(keyChipForAdd(entry));
             }
+            column.addView(row);
         }
 
         return new android.app.AlertDialog.Builder(this)
@@ -808,17 +1081,15 @@ public class TouchControlsActivity extends Activity {
     }
 
     /** One key in the launcher's menu: tapping it creates the button and selects it. */
-    private View keyChip(TouchKeyCatalog.Entry entry) {
+    private View keyChipForAdd(TouchKeyCatalog.Entry entry) {
         Button button = new Button(this);
         button.setText(entry.name);
         button.setTextSize(11f);
         button.setTextColor(Color.WHITE);
         button.setBackgroundColor(0xFF2A323A);
-        button.setPadding(4, 0, 4, 0);
-        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(0,
-            ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
-        params.setMargins(2, 2, 2, 2);
-        button.setLayoutParams(params);
+        button.setPadding(dp(6), 0, dp(6), 0);
+        button.setMinimumWidth(dp(52));
+        button.setMinimumHeight(dp(44));
         button.setOnClickListener(v -> {
             if (editor.addButton(entry.keyCode, 0)) {
                 dismissDialog();
@@ -893,6 +1164,17 @@ public class TouchControlsActivity extends Activity {
         if (editor.save(this)) {
             toast(getString(R.string.touch_saved));
         }
+    }
+
+    /** The background scrim's saved opacity, or the view's own default on a fresh install. */
+    private int loadBackgroundDim() {
+        return getSharedPreferences(LocaleHelper.PREFS_NAME, MODE_PRIVATE)
+            .getInt(PREF_BACKGROUND_DIM, TouchEditorBackgroundView.DEFAULT_DIM_PERCENT);
+    }
+
+    private void saveBackgroundDim(int percent) {
+        getSharedPreferences(LocaleHelper.PREFS_NAME, MODE_PRIVATE).edit()
+            .putInt(PREF_BACKGROUND_DIM, percent).apply();
     }
 
     private void toast(String message) {

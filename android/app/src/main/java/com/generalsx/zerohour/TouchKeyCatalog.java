@@ -178,6 +178,26 @@ final class TouchKeyCatalog {
     }
 
     /**
+     * GeneralsX @feature Android touch editor 06/11/2026 True when a button presses no key. This is
+     * the one place the "cleared" state is defined: it is KeyEvent.KEYCODE_UNKNOWN, which is what
+     * SDLActivity.onNativeKeyDown never receives and what TouchKeyPresser skips, so an unassigned
+     * button cannot send input and cannot fall back to a default key.
+     */
+    static boolean isUnassigned(int keyCode) {
+        return keyCode == KeyEvent.KEYCODE_UNKNOWN;
+    }
+
+    /**
+     * GeneralsX @feature Android touch editor 06/11/2026 The label shown for a button whose key was
+     * cleared, read from the app's own resources so it is translated like every other label. It is
+     * resolved at draw time rather than stored, so a layout cleared in one language still reads
+     * correctly after the language is changed.
+     */
+    static String unassignedName(android.content.Context context) {
+        return context.getString(R.string.touch_key_unassigned);
+    }
+
+    /**
      * GeneralsX @bugfix Android touch editor 05/11/2026 A stored layout is untrusted input: it
      * may have been hand-edited, or written by a build whose key list differed. A code that is
      * not in the catalog is replaced by the caller's fallback rather than injected, so a corrupt
@@ -232,6 +252,16 @@ final class TouchKeyCatalog {
             text.append("Alt+");
         }
         return text.append(displayName(keyCode)).toString();
+    }
+
+    /**
+     * GeneralsX @feature Android touch editor 06/11/2026 The combination as shown to the player,
+     * with an unassigned button named by its translated caption rather than the "?" placeholder
+     * displayName() falls back to. Both editors use this so a cleared button reads the same in
+     * either one.
+     */
+    static String combinationName(android.content.Context context, int keyCode, int modifiers) {
+        return isUnassigned(keyCode) ? unassignedName(context) : combinationName(keyCode, modifiers);
     }
 
     /**

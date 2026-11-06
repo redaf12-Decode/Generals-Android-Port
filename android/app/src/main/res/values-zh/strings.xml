@@ -586,6 +586,12 @@
     <string name="toolbox_toast_layer_changed">触控按钮已更改。游戏自带面板将在下次启动时更改。</string>
     <string name="toolbox_toast_layout_loaded">已加载保存的布局。</string>
     <string name="touch_alt_tab_warning">按住 Alt 时游戏会忽略 Tab，因此该组合不会生效。</string>
+    <string name="touch_clear_key">清除按键</string>
+    <string name="touch_editor_background_dim">背景变暗：%1$d%%</string>
+    <string name="touch_section_appearance">形状与外观</string>
+    <string name="touch_section_layout">位置与大小</string>
+    <string name="touch_key_unassigned">未分配</string>
+    <string name="touch_key_cleared">按键映射已清除</string>
     <string name="touch_bring_to_front">置于顶层</string>
     <string name="touch_mode_hold">长按</string>
     <string name="touch_mode_label">触发方式</string>

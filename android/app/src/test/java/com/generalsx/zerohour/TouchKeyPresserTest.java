@@ -245,4 +245,33 @@ public class TouchKeyPresserTest {
                 local.downs(KeyEvent.KEYCODE_A), local.ups(KeyEvent.KEYCODE_A));
         }
     }
+
+    /**
+     * GeneralsX @feature Android touch editor 06/11/2026 A cleared button presses nothing at all:
+     * no primary key, no modifiers, and no substitute. keysFor() is empty, so pressKeys() sends no
+     * keyDown however the button is driven -- which is what "does not send unintended keyboard
+     * input and does not trigger a default key" means at the only place that matters.
+     */
+    @Test
+    public void aClearedButtonPressesNothing() {
+        TouchControlConfig.ButtonSpec spec = button(KeyEvent.KEYCODE_UNKNOWN, TouchControlConfig.MODE_TAP);
+        assertEquals(0, TouchKeyPresser.keysFor(spec).length);
+
+        Recorder local = new Recorder();
+        TouchKeyPresser localPresser = new TouchKeyPresser(local, local);
+        localPresser.press(0, spec);
+        local.runPending();
+        localPresser.release(0, spec);
+        local.runPending();
+        localPresser.releaseAll();
+        assertTrue("nothing was ever sent: " + local.events, local.events.isEmpty());
+    }
+
+    /** A cleared button that kept stale modifier bits from a hand-edited file is still inert. */
+    @Test
+    public void aClearedButtonWithStaleModifiersIsStillInert() {
+        TouchControlConfig.ButtonSpec spec = button(KeyEvent.KEYCODE_UNKNOWN, TouchControlConfig.MODE_HOLD);
+        spec.modifiers = TouchKeyCatalog.MOD_CTRL | TouchKeyCatalog.MOD_ALT;
+        assertEquals("no modifier leaks through", 0, TouchKeyPresser.keysFor(spec).length);
+    }
 }

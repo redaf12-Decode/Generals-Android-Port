@@ -588,6 +588,12 @@
     <string name="toolbox_toast_layer_changed">Экранные кнопки изменены. Собственная панель игры изменится при следующем запуске.</string>
     <string name="toolbox_toast_layout_loaded">Сохранённая раскладка загружена.</string>
     <string name="touch_alt_tab_warning">Игра игнорирует Tab при нажатом Alt, поэтому это сочетание до неё не дойдёт.</string>
+    <string name="touch_clear_key">Очистить клавишу</string>
+    <string name="touch_editor_background_dim">Затемнение фона: %1$d%%</string>
+    <string name="touch_section_appearance">Форма и вид</string>
+    <string name="touch_section_layout">Положение и размер</string>
+    <string name="touch_key_unassigned">Не назначено</string>
+    <string name="touch_key_cleared">Назначение клавиши очищено</string>
     <string name="touch_bring_to_front">На передний план</string>
     <string name="touch_mode_hold">Удержание</string>
     <string name="touch_mode_label">Активация</string>

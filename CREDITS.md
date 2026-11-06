@@ -23,3 +23,18 @@ Attribution as required by the license:
 The icon is traced to an Android `VectorDrawable` so it renders sharply at every
 screen density. It is bundled in the APK — nothing is fetched at runtime — and its
 aspect ratio and transparency are preserved.
+
+## Images
+
+### Touch Controls Editor background
+
+- **Asset**: `android/app/src/main/res/drawable-nodpi/touch_editor_background.jpg`
+- **Source**: <https://media.moddb.com/cache/images/games/1/1/184/thumb_620x2000/gen-3.jpg>
+- **Subject**: Command & Conquer: Generals — Zero Hour key art, from the game's
+  [ModDB profile](https://www.moddb.com/games/cc-generals-zero-hour)
+
+The picture is bundled in the APK and decoded locally; nothing is downloaded at
+runtime. It is drawn centre-cropped behind the editor's controls (aspect ratio
+preserved, never stretched) under a translucent dark scrim, and it takes no touch.
+It is a screenshot of the game this port reimplements, so no separate attribution is
+required beyond the game's own.

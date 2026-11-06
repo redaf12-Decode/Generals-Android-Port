@@ -98,6 +98,14 @@ final class TouchKeyPresser {
 
     /** The keycodes a button presses, modifiers first. */
     static int[] keysFor(TouchControlConfig.ButtonSpec spec) {
+        // GeneralsX @feature Android touch editor 06/11/2026 An unassigned button (Clear Key)
+        // presses nothing at all: not its primary key, not its modifiers. Returning an empty array
+        // means pressKeys() sends no keyDown, so a cleared button cannot send input and cannot fall
+        // back to a default key. This holds even for a hand-edited layout that left modifier bits
+        // set on an unknown key, because "no primary key" makes the whole combination meaningless.
+        if (spec.keyCode == KeyEvent.KEYCODE_UNKNOWN) {
+            return new int[0];
+        }
         List<Integer> keys = new ArrayList<>(4);
         for (int flag : MODIFIER_ORDER) {
             if ((spec.modifiers & flag) != 0) {
@@ -106,9 +114,7 @@ final class TouchKeyPresser {
         }
         // A button whose primary key IS a modifier presses that key on its own; the flags above
         // are a separate thing, so a standalone "R-Ctrl" button needs no special case here.
-        if (spec.keyCode != KeyEvent.KEYCODE_UNKNOWN) {
-            keys.add(spec.keyCode);
-        }
+        keys.add(spec.keyCode);
         int[] result = new int[keys.size()];
         for (int i = 0; i < result.length; ++i) {
             result[i] = keys.get(i);

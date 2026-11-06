@@ -206,11 +206,16 @@ final class TouchEditorRenderer {
     }
 
     private void drawLabel(Canvas canvas, TouchControlConfig.ButtonSpec spec, float scale) {
+        // GeneralsX @feature Android touch editor 06/11/2026 A cleared button shows the localised
+        // "Unassigned" caption instead of a stored label, so the state is legible on the button
+        // itself. It is read from resources at draw time, so changing the app language relabels a
+        // cleared button without touching the saved layout.
+        String text = spec.isAssigned() ? spec.label : TouchKeyCatalog.unassignedName(context);
         textPaint.setColor(spec.textColor);
-        textPaint.setAlpha(spec.enabled ? 255 : 120);
-        textPaint.setTextSize(dp(spec.label.length() > 5 ? 12f : 15f) * scale);
+        textPaint.setAlpha(spec.enabled ? (spec.isAssigned() ? 255 : 190) : 120);
+        textPaint.setTextSize(dp(text.length() > 5 ? 12f : 15f) * scale);
         Paint.FontMetrics metrics = textPaint.getFontMetrics();
-        canvas.drawText(spec.label, rect.centerX(),
+        canvas.drawText(text, rect.centerX(),
             rect.centerY() - (metrics.ascent + metrics.descent) * 0.5f, textPaint);
     }
 

@@ -586,6 +586,12 @@
     <string name="toolbox_toast_layer_changed">دکمه‌های لمسی تغییر کرد. پنل خود بازی در اجرای بعدی تغییر می‌کند.</string>
     <string name="toolbox_toast_layout_loaded">چیدمان ذخیره‌شده بارگذاری شد.</string>
     <string name="touch_alt_tab_warning">بازی تا وقتی Alt نگه داشته شده Tab را نادیده می‌گیرد، پس این ترکیب به آن نمی‌رسد.</string>
+    <string name="touch_clear_key">پاک کردن کلید</string>
+    <string name="touch_editor_background_dim">تیرگی پس‌زمینه: %1$d%%</string>
+    <string name="touch_section_appearance">شکل و ظاهر</string>
+    <string name="touch_section_layout">موقعیت و اندازه</string>
+    <string name="touch_key_unassigned">بدون تخصیص</string>
+    <string name="touch_key_cleared">تخصیص کلید پاک شد</string>
     <string name="touch_bring_to_front">آوردن به جلو</string>
     <string name="touch_mode_hold">نگه‌داشتن</string>
     <string name="touch_mode_label">فعال‌سازی</string>

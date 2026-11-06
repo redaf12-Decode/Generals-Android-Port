@@ -63,8 +63,8 @@ final class TouchControlConfig {
 
     /** The document this writes and accepts. The reference wrote the same name at version 1/2. */
     static final String FORMAT = "GeneralsZHTouchControls";
-    /** Bumped when the button document gains fields; see migrate(). v4 = the 40-button ceiling. */
-    static final int SCHEMA = 4;
+    /** Bumped when the button document gains fields; see migrate(). v5 = an unassigned key. */
+    static final int SCHEMA = 5;
     private static final int SCHEMA_MIN = 1;
 
     /** The number of buttons one layout may carry. A v3 document holds at most 20, so raising
@@ -110,6 +110,14 @@ final class TouchControlConfig {
     /** One overlay button. Every property is independent of every other button's. */
     static final class ButtonSpec {
         String label;
+        /**
+         * GeneralsX @feature Android touch editor 06/11/2026 The key this button presses, or
+         * KeyEvent.KEYCODE_UNKNOWN when the player has cleared it. An unassigned button keeps its
+         * position, size, shape and colours -- it is still drawn, still selectable and still
+         * draggable in both editors -- but sends nothing: TouchKeyPresser.keysFor() skips it, so
+         * no key goes down and no default is substituted. It is a distinct state from the button
+         * being deleted (deleteSelected) and from the whole profile being reset (restoreDefaults).
+         */
         int keyCode;
         int modifiers;
         boolean enabled = true;
@@ -204,6 +212,15 @@ final class TouchControlConfig {
             }
             widthDp = width;
             heightDp = height;
+        }
+
+        /**
+         * GeneralsX @feature Android touch editor 06/11/2026 True when the button presses a key.
+         * The single test every caller uses, so "unassigned" is never spelled as a raw keycode
+         * comparison in more than one place.
+         */
+        boolean isAssigned() {
+            return keyCode != KeyEvent.KEYCODE_UNKNOWN;
         }
     }
 
@@ -349,10 +366,16 @@ final class TouchControlConfig {
     /**
      * One button, with every field validated. Returns null when the entry carries no usable key:
      * an entry that cannot press anything is not a button, and keeping it would only take a slot.
+     *
+     * GeneralsX @feature Android touch editor 06/11/2026 A key the catalog refuses (Home, Power,
+     * the volume rocker, ...) is still dropped, because such a key is never a legitimate mapping.
+     * KEYCODE_UNKNOWN is different: it is the documented representation of "no key assigned", which
+     * Clear Key writes, so it is kept -- that is what makes a cleared button survive a save and a
+     * reload. Everything else about the entry is read exactly as before.
      */
     static ButtonSpec readButton(JSONObject item) {
         int rawKey = item.optInt("key", KeyEvent.KEYCODE_UNKNOWN);
-        if (!TouchKeyCatalog.isSelectable(rawKey)) {
+        if (rawKey != KeyEvent.KEYCODE_UNKNOWN && !TouchKeyCatalog.isSelectable(rawKey)) {
             return null;
         }
         String label = item.optString("label", TouchKeyCatalog.displayName(rawKey));

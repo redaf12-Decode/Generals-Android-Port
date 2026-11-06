@@ -127,6 +127,43 @@ public class TouchControlConfigTest {
         }
     }
 
+    /**
+     * GeneralsX @feature Android touch editor 06/11/2026 An unassigned key is a legitimate state,
+     * not a corrupt entry: a button the player cleared is written, read back and kept -- dropped
+     * only if its key is one the catalog actively refuses. This is what makes a cleared mapping
+     * survive Save and a later reopen instead of the button vanishing or re-defaulting.
+     */
+    @Test
+    public void anUnassignedKeyIsKeptAcrossTheRoundTrip() throws Exception {
+        String json = "{\"format\":\"GeneralsZHTouchControls\",\"version\":5,\"buttons\":["
+            + "{\"label\":\"Cleared\",\"key\":" + KeyEvent.KEYCODE_UNKNOWN + ",\"x\":0.3,\"y\":0.4,"
+            + "\"widthDp\":70,\"heightDp\":50,\"shape\":0}]}";
+        TouchControlConfig config = TouchControlConfig.fromJsonString(json);
+        assertEquals("the cleared button was kept", 1, config.buttons.size());
+        TouchControlConfig.ButtonSpec spec = config.buttons.get(0);
+        assertFalse(spec.isAssigned());
+        assertEquals(KeyEvent.KEYCODE_UNKNOWN, spec.keyCode);
+        assertEquals(0.3f, spec.x, 0.0001f);
+        assertEquals(70f, spec.widthDp, 0.001f);
+        assertEquals("the label it was saved with is kept too", "Cleared", spec.label);
+
+        TouchControlConfig reloaded = TouchControlConfig.fromJsonString(config.toJsonString());
+        assertFalse("and it survives a write and a read", reloaded.buttons.get(0).isAssigned());
+        assertEquals(1, reloaded.buttons.size());
+    }
+
+    /** A refused key is still refused, and a document of only refused keys is still refused. */
+    @Test
+    public void aRefusedKeyIsStillNotAnUnassignedKey() throws Exception {
+        String json = "{\"format\":\"GeneralsZHTouchControls\",\"version\":5,\"buttons\":["
+            + "{\"label\":\"Home\",\"key\":" + KeyEvent.KEYCODE_HOME + ",\"x\":0.5,\"y\":0.5},"
+            + "{\"label\":\"-\",\"key\":" + KeyEvent.KEYCODE_UNKNOWN + ",\"x\":0.2,\"y\":0.2}]}";
+        TouchControlConfig config = TouchControlConfig.fromJsonString(json);
+        assertEquals("the Home entry is dropped, the cleared one is kept",
+            1, config.buttons.size());
+        assertFalse(config.buttons.get(0).isAssigned());
+    }
+
     @Test
     public void aForeignDocumentIsRefused() {
         try {

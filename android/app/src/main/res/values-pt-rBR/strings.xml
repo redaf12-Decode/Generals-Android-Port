@@ -586,6 +586,12 @@
     <string name="toolbox_toast_layer_changed">Botões de toque alterados. O painel do próprio jogo muda no próximo início.</string>
     <string name="toolbox_toast_layout_loaded">Layout salvo carregado.</string>
     <string name="touch_alt_tab_warning">O jogo ignora Tab enquanto Alt estiver pressionado, então esta combinação não chegará a ele.</string>
+    <string name="touch_clear_key">Limpar tecla</string>
+    <string name="touch_editor_background_dim">Escurecimento do fundo: %1$d%%</string>
+    <string name="touch_section_appearance">Forma e aparência</string>
+    <string name="touch_section_layout">Posição e tamanho</string>
+    <string name="touch_key_unassigned">Não atribuída</string>
+    <string name="touch_key_cleared">Mapeamento de tecla limpo</string>
     <string name="touch_bring_to_front">Trazer para frente</string>
     <string name="touch_mode_hold">Manter</string>
     <string name="touch_mode_label">Ativação</string>

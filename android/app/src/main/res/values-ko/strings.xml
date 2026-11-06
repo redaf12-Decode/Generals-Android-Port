@@ -586,6 +586,12 @@
     <string name="toolbox_toast_layer_changed">터치 버튼이 변경되었습니다. 게임 자체 패널은 다음 실행 시 변경됩니다.</string>
     <string name="toolbox_toast_layout_loaded">저장된 레이아웃을 불러왔습니다.</string>
     <string name="touch_alt_tab_warning">Alt를 누른 동안 게임은 Tab을 무시하므로 이 조합은 적용되지 않습니다.</string>
+    <string name="touch_clear_key">키 지우기</string>
+    <string name="touch_editor_background_dim">배경 어둡게: %1$d%%</string>
+    <string name="touch_section_appearance">모양 및 겉모습</string>
+    <string name="touch_section_layout">위치 및 크기</string>
+    <string name="touch_key_unassigned">미할당</string>
+    <string name="touch_key_cleared">키 매핑이 지워졌습니다</string>
     <string name="touch_bring_to_front">맨 앞으로</string>
     <string name="touch_mode_hold">길게 누르기</string>
     <string name="touch_mode_label">작동 방식</string>

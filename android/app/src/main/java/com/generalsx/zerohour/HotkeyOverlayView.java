@@ -75,15 +75,16 @@ final class HotkeyOverlayView extends View {
     /** The toolbar's cells, left to right. */
     private static final int TOOL_ADD = 0;
     private static final int TOOL_SHAPE = 1;
-    private static final int TOOL_SIZE_DOWN = 2;
-    private static final int TOOL_SIZE_VALUE = 3;
-    private static final int TOOL_SIZE_UP = 4;
-    private static final int TOOL_ALPHA_DOWN = 5;
-    private static final int TOOL_ALPHA_VALUE = 6;
-    private static final int TOOL_ALPHA_UP = 7;
-    private static final int TOOL_CANCEL = 8;
-    private static final int TOOL_SAVE = 9;
-    private static final int TOOL_COUNT = 10;
+    private static final int TOOL_CLEAR_KEY = 2;
+    private static final int TOOL_SIZE_DOWN = 3;
+    private static final int TOOL_SIZE_VALUE = 4;
+    private static final int TOOL_SIZE_UP = 5;
+    private static final int TOOL_ALPHA_DOWN = 6;
+    private static final int TOOL_ALPHA_VALUE = 7;
+    private static final int TOOL_ALPHA_UP = 8;
+    private static final int TOOL_CANCEL = 9;
+    private static final int TOOL_SAVE = 10;
+    private static final int TOOL_COUNT = 11;
 
     /** The shape menu's cells, in two rows: the six shapes, then the four polygon types. */
     private static final int SHAPE_COUNT = 6;
@@ -425,6 +426,18 @@ final class HotkeyOverlayView extends View {
         return new android.graphics.PointF(cell.centerX(), cell.centerY());
     }
 
+    /** A toolbar cell's centre, for a test that drives the real touch path. */
+    android.graphics.PointF toolCellCenterForTest(int tool) {
+        layoutToolbar();
+        RectF cell = toolbarCells[tool];
+        return new android.graphics.PointF(cell.centerX(), cell.centerY());
+    }
+
+    /** The toolbar cell index of the Clear Key action, for a test that taps it by name. */
+    static int clearKeyToolIndexForTest() {
+        return TOOL_CLEAR_KEY;
+    }
+
     TouchLayoutEditor editorModel() {
         return editor;
     }
@@ -672,7 +685,7 @@ final class HotkeyOverlayView extends View {
     }
 
     private String modeText(TouchControlConfig.ButtonSpec spec) {
-        String combination = TouchKeyCatalog.combinationName(spec.keyCode, spec.modifiers);
+        String combination = TouchKeyCatalog.combinationName(activity, spec.keyCode, spec.modifiers);
         String base = TouchControlConfig.modeName(spec.activationMode) + " \u2022 " + combination;
         if (TouchKeyCatalog.isSwallowedByEngine(spec.keyCode, spec.modifiers)) {
             return base + "  (Alt+Tab is ignored by the game)";
@@ -685,12 +698,18 @@ final class HotkeyOverlayView extends View {
         switch (tool) {
             case TOOL_ADD: return "+";
             case TOOL_SHAPE: return shapeShortName(spec);
+            case TOOL_CLEAR_KEY:
+                // GeneralsX @feature Android touch editor 06/11/2026 The cell reads "Clear" while
+                // the button has a key and is dimmed to "-" once it does not, so the toolbar shows
+                // at a glance that there is nothing left to clear.
+                return spec == null || !spec.isAssigned()
+                    ? "\u2013" : activity.getString(R.string.touch_clear_key);
             case TOOL_SIZE_DOWN: return "\u2212";
             case TOOL_SIZE_UP: return "+";
             case TOOL_ALPHA_DOWN: return "A\u2212";
             case TOOL_ALPHA_UP: return "A+";
-            case TOOL_CANCEL: return "Cancel";
-            case TOOL_SAVE: return "Save";
+            case TOOL_CANCEL: return activity.getString(android.R.string.cancel);
+            case TOOL_SAVE: return activity.getString(R.string.touch_save_button);
             case TOOL_SIZE_VALUE:
                 // GeneralsX @tweak Android touch editor 05/11/2026 The size cell shows the number
                 // alone. The unit is dp -- the same unit the launcher's Width/Height sliders are
@@ -894,11 +913,15 @@ final class HotkeyOverlayView extends View {
 
     private void drawLabel(Canvas canvas, RectF rect, TouchControlConfig.ButtonSpec spec,
                            float scale) {
-        float size = dp(spec.label.length() > 5 ? 12f : 15f) * scale;
+        // GeneralsX @feature Android touch editor 06/11/2026 A cleared button is drawn with the
+        // localised "Unassigned" caption instead of a stored label, so the state reads on the button
+        // itself in the match as well as in the editors. Read from resources at draw time.
+        String text = spec.isAssigned() ? spec.label : TouchKeyCatalog.unassignedName(activity);
+        float size = dp(text.length() > 5 ? 12f : 15f) * scale;
         textPaint.setTextSize(size);
         Paint.FontMetrics metrics = textPaint.getFontMetrics();
         float baseline = rect.centerY() - (metrics.ascent + metrics.descent) * 0.5f;
-        canvas.drawText(spec.label, rect.centerX(), baseline, textPaint);
+        canvas.drawText(text, rect.centerX(), baseline, textPaint);
     }
 
     private static int lighten(int color, float amount) {
@@ -1243,6 +1266,17 @@ final class HotkeyOverlayView extends View {
                 } else {
                     shapeMenuOpen = !shapeMenuOpen;
                     keyMenuOpen = false;
+                }
+                break;
+            case TOOL_CLEAR_KEY:
+                // GeneralsX @feature Android touch editor 06/11/2026 Clears the mapping and keeps
+                // the button. It is the model's clearSelectedKey(), the same call the launcher page
+                // makes, so "clear" has one implementation; Delete and the profile reset are
+                // different calls and stay different operations.
+                if (spec == null) {
+                    toast(activity.getString(R.string.touch_select_button_first));
+                } else if (editor.clearSelectedKey()) {
+                    toast(activity.getString(R.string.touch_key_cleared));
                 }
                 break;
             case TOOL_SIZE_DOWN:

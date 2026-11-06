@@ -586,6 +586,12 @@
     <string name="toolbox_toast_layer_changed">Przyciski dotykowe zmienione. Własny panel gry zmieni się przy następnym uruchomieniu.</string>
     <string name="toolbox_toast_layout_loaded">Wczytano zapisany układ.</string>
     <string name="touch_alt_tab_warning">Gra ignoruje Tab, gdy Alt jest wciśnięty, więc ta kombinacja do niej nie dotrze.</string>
+    <string name="touch_clear_key">Wyczyść klawisz</string>
+    <string name="touch_editor_background_dim">Przyciemnienie tła: %1$d%%</string>
+    <string name="touch_section_appearance">Kształt i wygląd</string>
+    <string name="touch_section_layout">Pozycja i rozmiar</string>
+    <string name="touch_key_unassigned">Nieprzypisany</string>
+    <string name="touch_key_cleared">Przypisanie klawisza wyczyszczone</string>
     <string name="touch_bring_to_front">Na wierzch</string>
     <string name="touch_mode_hold">Przytrzymanie</string>
     <string name="touch_mode_label">Aktywacja</string>

@@ -437,8 +437,16 @@ final class TouchLayoutEditor {
         if (spec == null) {
             return false;
         }
-        spec.label = (label == null || label.trim().isEmpty())
-            ? TouchKeyCatalog.displayName(spec.keyCode) : label.trim();
+        if (label == null || label.trim().isEmpty()) {
+            // An unassigned button has no key name to fall back to, so its label is left alone
+            // rather than replaced by the "?" placeholder displayName() returns.
+            if (!spec.isAssigned()) {
+                return false;
+            }
+            spec.label = TouchKeyCatalog.displayName(spec.keyCode);
+        } else {
+            spec.label = label.trim();
+        }
         return true;
     }
 
@@ -452,6 +460,29 @@ final class TouchLayoutEditor {
             return false;
         }
         spec.keyCode = keyCode;
+        return true;
+    }
+
+    /**
+     * GeneralsX @feature Android touch editor 06/11/2026 Clears the selected button's keyboard
+     * mapping without removing the button. The button keeps its position, size, shape, colours,
+     * opacity, activation mode and label -- only the key goes, and the modifiers with it, since a
+     * modifier with no primary key would otherwise still press Ctrl on a press. The button stays in
+     * the list, so it is still drawn, still hit-tested and still draggable in both editors, and it
+     * can be given a new key later through setSelectedKey().
+     *
+     * This is deliberately NOT deleteSelected(): clearing is a property change, deleting removes
+     * the button, and resetting the profile (restoreDefaults) replaces the whole layout. Returns
+     * false when nothing is selected, or when the button is already unassigned so a second Clear
+     * does not mark an unchanged session dirty.
+     */
+    boolean clearSelectedKey() {
+        TouchControlConfig.ButtonSpec spec = selectedButton();
+        if (spec == null || !spec.isAssigned()) {
+            return false;
+        }
+        spec.keyCode = KeyEvent.KEYCODE_UNKNOWN;
+        spec.modifiers = 0;
         return true;
     }
 

@@ -595,6 +595,12 @@
     <string name="toolbox_toast_layer_changed">Touch buttons changed. The game\'s own panel changes on the next launch.</string>
     <string name="toolbox_toast_layout_loaded">Saved layout loaded.</string>
     <string name="touch_alt_tab_warning">The game ignores Tab while Alt is held, so this combination will not reach it.</string>
+    <string name="touch_clear_key">Clear Key</string>
+    <string name="touch_editor_background_dim">Background dim: %1$d%%</string>
+    <string name="touch_section_appearance">Shape &amp; appearance</string>
+    <string name="touch_section_layout">Position &amp; size</string>
+    <string name="touch_key_unassigned">Unassigned</string>
+    <string name="touch_key_cleared">Key mapping cleared</string>
     <string name="touch_bring_to_front">Bring to front</string>
     <string name="touch_mode_hold">Hold</string>
     <string name="touch_mode_label">Activation</string>

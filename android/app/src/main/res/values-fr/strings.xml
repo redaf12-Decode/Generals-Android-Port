@@ -586,6 +586,12 @@
     <string name="toolbox_toast_layer_changed">Boutons tactiles modifiés. Le panneau propre au jeu changera au prochain lancement.</string>
     <string name="toolbox_toast_layout_loaded">Disposition enregistrée chargée.</string>
     <string name="touch_alt_tab_warning">Le jeu ignore Tab tant qu\'Alt est maintenu ; cette combinaison ne l\'atteindra pas.</string>
+    <string name="touch_clear_key">Effacer la touche</string>
+    <string name="touch_editor_background_dim">Assombrissement de l\'arrière-plan : %1$d%%</string>
+    <string name="touch_section_appearance">Forme et apparence</string>
+    <string name="touch_section_layout">Position et taille</string>
+    <string name="touch_key_unassigned">Non attribuée</string>
+    <string name="touch_key_cleared">Affectation de touche effacée</string>
     <string name="touch_bring_to_front">Mettre au premier plan</string>
     <string name="touch_mode_hold">Maintien</string>
     <string name="touch_mode_label">Activation</string>

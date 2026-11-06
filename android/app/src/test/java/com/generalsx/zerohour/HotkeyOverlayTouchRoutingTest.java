@@ -245,4 +245,88 @@ public class HotkeyOverlayTouchRoutingTest {
         float[] centre = buttonCentre(0);
         assertFalse(overlay.onTouchEvent(down(centre[0], centre[1])));
     }
+
+    // ---------------------------------------------------------------- Clear Key
+
+    /**
+     * GeneralsX @feature Android touch editor 06/11/2026 The in-game toolbar's Clear Key removes the
+     * selected button's mapping and leaves the button itself alone -- driven through the real touch
+     * path, so this is the gesture a player makes, not a direct model call.
+     */
+    @Test
+    public void clearKeyOnTheToolbarClearsTheSelectedMappingOnly() {
+        overlay.enterEditor();
+        TouchLayoutEditor editor = overlay.editorModel();
+        editor.select(0);
+        int count = editor.buttons().size();
+        int secondKey = editor.buttons().get(1).keyCode;
+
+        android.graphics.PointF cell =
+            overlay.toolCellCenterForTest(HotkeyOverlayView.clearKeyToolIndexForTest());
+        overlay.onTouchEvent(down(cell.x, cell.y));
+        overlay.onTouchEvent(up(cell.x, cell.y));
+
+        assertEquals("the button is still in the layout", count, editor.buttons().size());
+        assertFalse("its mapping is gone", editor.buttons().get(0).isAssigned());
+        assertEquals("no other mapping was touched", secondKey, editor.buttons().get(1).keyCode);
+    }
+
+    /** The cleared button is still drawn, still hit-tested and still draggable. */
+    @Test
+    public void aClearedButtonStaysEditableAndDraggable() {
+        overlay.enterEditor();
+        TouchLayoutEditor editor = overlay.editorModel();
+        editor.select(0);
+        editor.clearSelectedKey();
+        float originalX = editor.buttons().get(0).x;
+        int count = editor.buttons().size();
+
+        android.graphics.PointF cell =
+            overlay.toolCellCenterForTest(HotkeyOverlayView.clearKeyToolIndexForTest());
+        // Nothing to clear a second time, so the tap is a no-op -- and must not delete the button.
+        overlay.onTouchEvent(down(cell.x, cell.y));
+        overlay.onTouchEvent(up(cell.x, cell.y));
+        assertEquals("a second Clear does not remove the button", count, editor.buttons().size());
+
+        float[] centre = buttonCentre(0);
+        assertTrue("the cleared button is still selectable", editor.selectAt(centre[0], centre[1]));
+        editor.beginDrag(centre[0], centre[1]);
+        editor.dragTo(centre[0] + 150f, centre[1]);
+        assertTrue("and still draggable", editor.buttons().get(0).x > originalX);
+    }
+
+    /**
+     * A cleared button sends no key when pressed in the match: the press is accepted by the
+     * overlay's hit test (the button is still there) but the key sink records nothing.
+     */
+    @Test
+    public void pressingAClearedButtonInTheMatchSendsNoKey() {
+        TouchControlConfig stored = TouchControlConfig.load(activity);
+        stored.buttons.get(0).keyCode = KeyEvent.KEYCODE_UNKNOWN;
+        stored.save(activity);
+        overlay.reload();
+        float[] centre = buttonCentre(0);
+        int before = presser.downs.size();
+        overlay.onTouchEvent(down(centre[0], centre[1]));
+        overlay.onTouchEvent(up(centre[0], centre[1]));
+        assertEquals("no key went down", before, presser.downs.size());
+    }
+
+    /** Clearing is saved with the layout and survives a reload as cleared. */
+    @Test
+    public void aClearedMappingIsSavedAndReloaded() {
+        overlay.enterEditor();
+        TouchLayoutEditor editor = overlay.editorModel();
+        editor.select(0);
+        android.graphics.PointF cell =
+            overlay.toolCellCenterForTest(HotkeyOverlayView.clearKeyToolIndexForTest());
+        overlay.onTouchEvent(down(cell.x, cell.y));
+        overlay.onTouchEvent(up(cell.x, cell.y));
+        int count = editor.buttons().size();
+        overlay.saveEditor();
+
+        TouchControlConfig reloaded = TouchControlConfig.load(activity);
+        assertEquals("the button is still stored", count, reloaded.buttons.size());
+        assertFalse("and its mapping is still cleared", reloaded.buttons.get(0).isAssigned());
+    }
 }

@@ -586,6 +586,12 @@
     <string name="toolbox_toast_layer_changed">Dotykove knopky izměnjene. Vlastny panel igry izměni se pri slědujučem startu.</string>
     <string name="toolbox_toast_layout_loaded">Zachovany razklad založeny.</string>
     <string name="touch_alt_tab_warning">Igra ignoruje Tab dokolě Alt jest držany, tak tuto kombinaciju ne dostane.</string>
+    <string name="touch_clear_key">Očistiti ključ</string>
+    <string name="touch_editor_background_dim">Zatmnjenje podlogy: %1$d%%</string>
+    <string name="touch_section_appearance">Forma i izgled</string>
+    <string name="touch_section_layout">Pozicija i velikost</string>
+    <string name="touch_key_unassigned">Ne priděljeno</string>
+    <string name="touch_key_cleared">Pridělenje ključa očišćeno</string>
     <string name="touch_bring_to_front">Na prědny plan</string>
     <string name="touch_mode_hold">Držanje</string>
     <string name="touch_mode_label">Aktivacija</string>

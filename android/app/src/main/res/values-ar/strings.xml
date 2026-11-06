@@ -586,6 +586,12 @@
     <string name="toolbox_toast_layer_changed">تم تغيير أزرار اللمس. ستتغير لوحة اللعبة الخاصة عند التشغيل التالي.</string>
     <string name="toolbox_toast_layout_loaded">تم تحميل التخطيط المحفوظ.</string>
     <string name="touch_alt_tab_warning">تتجاهل اللعبة مفتاح Tab أثناء الضغط على Alt، لذا لن يصل إليها هذا المزيج.</string>
+    <string name="touch_clear_key">مسح الزر</string>
+    <string name="touch_editor_background_dim">تعتيم الخلفية: %1$d%%</string>
+    <string name="touch_section_appearance">الشكل والمظهر</string>
+    <string name="touch_section_layout">الموضع والحجم</string>
+    <string name="touch_key_unassigned">بدون تعيين</string>
+    <string name="touch_key_cleared">تم مسح تعيين الزر</string>
     <string name="touch_bring_to_front">إحضار إلى المقدمة</string>
     <string name="touch_mode_hold">استمرار</string>
     <string name="touch_mode_label">التفعيل</string>

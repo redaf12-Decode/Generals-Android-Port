@@ -272,6 +272,123 @@ public class TouchLayoutEditorTest {
         assertEquals(-1, editor.selectedIndex());
     }
 
+    // ---------------------------------------------------------------- Clear Key
+
+    /**
+     * GeneralsX @feature Android touch editor 06/11/2026 Clearing removes the mapping and nothing
+     * else: the button stays in the layout, in the same slot, with every visual property intact.
+     * Delete and the profile reset are different operations and are asserted as such below.
+     */
+    @Test
+    public void clearingTheKeyKeepsTheButtonAndItsAppearance() {
+        editor.select(0);
+        TouchControlConfig.ButtonSpec before = editor.selectedButton();
+        float x = before.x;
+        float y = before.y;
+        float width = before.widthDp;
+        float height = before.heightDp;
+        int shape = before.shape;
+        int polygon = before.polygonType;
+        float opacity = before.opacity;
+        float corner = before.cornerDp;
+        float border = before.borderWidthDp;
+        int fill = before.fillColor;
+        String label = before.label;
+        int count = editor.buttons().size();
+
+        assertTrue(editor.clearSelectedKey());
+
+        assertEquals("the button is still there", count, editor.buttons().size());
+        assertFalse("its key is gone", before.isAssigned());
+        assertEquals(KeyEvent.KEYCODE_UNKNOWN, before.keyCode);
+        assertEquals("the same slot is still selected", 0, editor.selectedIndex());
+        assertEquals(x, before.x, 0.0001f);
+        assertEquals(y, before.y, 0.0001f);
+        assertEquals(width, before.widthDp, 0.001f);
+        assertEquals(height, before.heightDp, 0.001f);
+        assertEquals(shape, before.shape);
+        assertEquals(polygon, before.polygonType);
+        assertEquals(opacity, before.opacity, 0.001f);
+        assertEquals(corner, before.cornerDp, 0.001f);
+        assertEquals(border, before.borderWidthDp, 0.001f);
+        assertEquals(fill, before.fillColor);
+        assertEquals("the label is left alone, not replaced by a placeholder", label, before.label);
+    }
+
+    /** Clearing also drops the modifiers: a modifier with no primary key would still press Ctrl. */
+    @Test
+    public void clearingTheKeyAlsoDropsTheModifiers() {
+        editor.select(0);
+        editor.setSelectedModifiers(TouchKeyCatalog.MOD_CTRL | TouchKeyCatalog.MOD_SHIFT);
+        assertTrue(editor.clearSelectedKey());
+        assertEquals(0, editor.selectedButton().modifiers);
+    }
+
+    /** A cleared button can be given a new key later, through the same setter as any other. */
+    @Test
+    public void aClearedButtonCanBeReassigned() {
+        editor.select(0);
+        editor.clearSelectedKey();
+        assertTrue(editor.setSelectedKey(KeyEvent.KEYCODE_Q));
+        assertEquals(KeyEvent.KEYCODE_Q, editor.selectedButton().keyCode);
+    }
+
+    /** A second Clear changes nothing, so it does not mark an unedited session dirty. */
+    @Test
+    public void clearingTwiceIsNotAChange() {
+        editor.select(0);
+        assertTrue(editor.clearSelectedKey());
+        assertFalse(editor.clearSelectedKey());
+    }
+
+    /** Clear with nothing selected is refused rather than clearing an arbitrary button. */
+    @Test
+    public void clearingWithNoSelectionIsRefused() {
+        editor.clearSelection();
+        assertFalse(editor.clearSelectedKey());
+    }
+
+    /** Clearing is not deleting: the other buttons keep their mappings, and this one keeps its
+     *  position. */
+    @Test
+    public void clearingDoesNotTouchOtherButtons() {
+        editor.select(0);
+        editor.clearSelectedKey();
+        assertTrue(editor.buttons().size() > 1);
+        for (int i = 1; i < editor.buttons().size(); ++i) {
+            assertTrue("button " + i + " is untouched",
+                editor.buttons().get(i).isAssigned());
+        }
+    }
+
+    /** A cleared mapping is persisted and reloaded as cleared, not silently re-defaulted. */
+    @Test
+    public void aClearedMappingSurvivesSaveAndReload() {
+        editor.select(0);
+        float x = editor.selectedButton().x;
+        editor.clearSelectedKey();
+        assertTrue(editor.save(context));
+        TouchControlConfig reloaded = TouchControlConfig.load(context);
+        TouchControlConfig.ButtonSpec back = reloaded.buttons.get(0);
+        assertFalse("the cleared state survived the round trip", back.isAssigned());
+        assertEquals(KeyEvent.KEYCODE_UNKNOWN, back.keyCode);
+        assertEquals("and its position came with it", x, back.x, 0.0001f);
+        assertEquals("and it was not dropped from the layout",
+            editor.buttons().size(), reloaded.buttons.size());
+    }
+
+    /** Delete is still Delete: it removes the button, which Clear never does. */
+    @Test
+    public void clearAndDeleteRemainDifferentOperations() {
+        int before = editor.buttons().size();
+        editor.select(0);
+        editor.clearSelectedKey();
+        assertEquals("Clear keeps the button", before, editor.buttons().size());
+        editor.select(0);
+        editor.deleteSelected();
+        assertEquals("Delete removes it", before - 1, editor.buttons().size());
+    }
+
     @Test
     public void addIsRefusedAtTheMaximum() {
         while (editor.buttons().size() < TouchControlConfig.MAX_BUTTONS) {
