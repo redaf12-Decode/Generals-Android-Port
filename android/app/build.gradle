@@ -111,6 +111,21 @@ android {
             // assets the user must own.
             signingConfig signingConfigs.debug
         }
+
+        // GeneralsX @build Android CI 06/11/2026 Launcher-only variant, for CI that must not
+        // build the C++ engine. It is the whole launcher -- every Activity, resource, asset and
+        // translation, the fixed debug key and the production applicationId -- with every native
+        // library stripped out by the androidComponents block below.
+        //
+        // initWith debug is what keeps it installable: same signingConfig, debuggable, and the
+        // same applicationId, so `adb install -r` puts it over a normally-built APK and the
+        // Setup screen opens straight away. Nothing here changes the debug or release variants;
+        // it is a third, opt-in variant that only `assembleLauncherOnly` produces.
+        launcherOnly {
+            initWith debug
+            // No minify: the point is to exercise the same classes the real APK ships.
+            minifyEnabled false
+        }
     }
 
     testOptions {
@@ -149,6 +164,18 @@ android {
             // only when the libs are stripped; keeping symbols fixes it.
             keepDebugSymbols += ['**/libdxvk_d3d8.so', '**/libdxvk_d3d9.so']
         }
+    }
+}
+
+// GeneralsX @build Android CI 06/11/2026 Strip every native library from the launcherOnly
+// variant. jniLibs/ is staged by scripts/build/android/package-android-zh.sh from the CMake
+// build output; a CI job that only compiles Java has none of it, and the whole point of the
+// variant is to prove the launcher runs with no engine behind it. Excluding here rather than
+// by emptying jniLibs.srcDirs keeps the variant honest: if a .so ever does turn up it is
+// still dropped, so the APK's contents do not depend on what happened to be staged.
+androidComponents {
+    onVariants(selector().withBuildType('launcherOnly')) { variant ->
+        variant.packaging.jniLibs.excludes.add('**/*.so')
     }
 }
 

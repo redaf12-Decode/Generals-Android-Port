@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Lint configuration for the Android launcher.
+
+  GeneralsX @build Android CI 06/11/2026 The three findings below are Errors, so they abort
+  `gradle :app:lintDebug` before it finishes. All three are in `src/main/java-sdl/` --
+  SDL3's own Java glue, staged verbatim by scripts/build/android/package-android-zh.sh (or by
+  stage-sdl-java.sh) from the upstream SDL3 release tarball and never edited here:
+
+    MissingPermission (29)             HIDDeviceBLE*/SDLControllerManager/HIDDeviceManager call
+                                       Bluetooth and controller APIs without the manifest
+                                       permissions the game does not request.
+    NewApi (1)                         SDLControllerManager calls InputDevice#isExternal (API 29)
+                                       with no version guard; minSdk is 28.
+    UnspecifiedRegisterReceiverFlag (1) HIDDeviceManager registers a receiver without the API-33
+                                       flags.
+
+  They are ignored by path, not globally, so the same checks still fail the build for this
+  project's own sources -- the launcher's Java under src/main/java/ is clean and must stay that
+  way. Removing an <ignore> below is how you would re-check SDL's copy after an SDL3 upgrade.
+
+  Warnings are not listed here: they do not fail the build, and a report of them is more useful
+  than a growing ignore list. See docs/port/ANDROID_PORT.md.
+-->
+<lint>
+    <issue id="MissingPermission">
+        <ignore path="src/main/java-sdl/**" />
+    </issue>
+    <issue id="NewApi">
+        <ignore path="src/main/java-sdl/**" />
+    </issue>
+    <issue id="UnspecifiedRegisterReceiverFlag">
+        <ignore path="src/main/java-sdl/**" />
+    </issue>
+</lint>

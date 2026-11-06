@@ -421,6 +421,18 @@ public class GeneralsZHActivity extends SDLActivity {
         // Activity's window is even measured, closing the gap further.
         setRequestedOrientation(android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
 
+        // GeneralsX @build Android CI 06/11/2026 No engine in this APK (the launcher-only
+        // variant, build.gradle): go back to Setup rather than let super.onCreate() reach
+        // SDLActivity.loadLibraries() and fail with SDL's own error box, which says nothing about
+        // why. Reached from Setup's Play button and from ReplayCheckActivity; both get the same
+        // redirect, and Setup explains it.
+        if (!SetupActivity.engineInstalled(this)) {
+            Log.i(TAG, "this APK carries no engine; redirecting to Setup");
+            startActivity(new Intent(this, SetupActivity.class));
+            finish();
+            return;
+        }
+
         extractBundledRuntime();
 
         String gamePath = getSavedGamePath();

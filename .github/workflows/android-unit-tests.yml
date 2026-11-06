@@ -1,0 +1,180 @@
+name: Android Unit Tests
+
+# GeneralsX @build Android CI 06/11/2026 A Java-and-resources job for the Android launcher.
+#
+# It deliberately builds no native code: no `cmake --preset android-vulkan`, no `cmake --build`,
+# no vcpkg bootstrap, no DXVK, and none of build-android-zh.sh / build-dual-hz.sh /
+# package-android-zh.sh (which need the CMake-built .so set). It compiles the launcher's Java,
+# runs the unit tests and lint, checks the translation resources, and packages a launcher-only
+# APK whose every native library is excluded -- the whole point being that the Setup screen and
+# the rest of the UI do not depend on the engine.
+#
+# SDL3's Java glue is fetched straight from the SDL3 release tarball by
+# scripts/build/android/stage-sdl-java.sh, so the Java shell still matches the version the game
+# links without configuring CMake to get it.
+#
+# Compared with the full Android build this is minutes rather than tens of minutes, and it is the
+# job that should run on every launcher change.
+
+permissions:
+  contents: read
+
+on:
+  # GeneralsX @build Android CI 06/11/2026 Manual dispatch and a pull-request trigger scoped to
+  # the launcher's own paths. No push: trigger -- the repository owner builds locally and pushes
+  # to both main and the working branch on every commit, and AGENTS.md asks for local builds only
+  # (a push trigger would start two unattended runs per commit). See build-android.yml for the
+  # same decision and its reasoning.
+  workflow_dispatch:
+
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'android/**'
+      - 'scripts/build/android/stage-sdl-java.sh'
+      - '.github/workflows/android-unit-tests.yml'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  launcher:
+    name: launcher tests + lint + APK
+    runs-on: ubuntu-latest
+    # Generous, but this job has no native compile in it: a cold run is dominated by the Gradle
+    # dependency download, which the cache below removes after the first run.
+    timeout-minutes: 45
+
+    env:
+      # GeneralsX @build Android CI 06/11/2026 Pinned to match build-android.yml, so a launcher
+      # that builds here builds there. Do not float these.
+      GRADLE_VERSION: "8.9"
+      JAVA_VERSION: "17"
+      COMPILE_SDK: "35"
+      BUILD_TOOLS: "35.0.0"
+      # cmdline-tools zip, pinned and checksummed exactly as build-android.yml does. Only
+      # platform + build-tools are installed below -- no NDK, because nothing here compiles C++.
+      CMDLINE_TOOLS_VERSION: "13114758"
+      CMDLINE_TOOLS_SHA1: "5fdcc763663eefb86a5b8879697aa6088b041e70"
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v6
+        with:
+          # The launcher job needs the working tree only; no history and no submodules (the DXVK
+          # submodule is a native dependency and is not touched here).
+          fetch-depth: 1
+          submodules: false
+
+      - name: Set up JDK ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: ${{ env.JAVA_VERSION }}
+
+      # GeneralsX @build Android CI 06/11/2026 Installs the SDK platform and build-tools the
+      # Gradle build needs and nothing else: no NDK, no CMake, no vcpkg. The versions match
+      # android/app/build.gradle (compileSdk 35) and build-android.yml.
+      - name: Install Android SDK (cmdline-tools + platform + build-tools)
+        run: |
+          set -euo pipefail
+          curl -fL --retry 3 -o /tmp/cmdline-tools.zip \
+            "https://dl.google.com/android/repository/commandlinetools-linux-${CMDLINE_TOOLS_VERSION}_latest.zip"
+          echo "${CMDLINE_TOOLS_SHA1}  /tmp/cmdline-tools.zip" | sha1sum -c -
+          sudo mkdir -p /opt/android-sdk/cmdline-tools
+          sudo unzip -q /tmp/cmdline-tools.zip -d /opt/android-sdk/cmdline-tools
+          # sdkmanager requires the "<sdk>/cmdline-tools/latest" layout to locate its SDK root.
+          sudo mv /opt/android-sdk/cmdline-tools/cmdline-tools /opt/android-sdk/cmdline-tools/latest
+          rm /tmp/cmdline-tools.zip
+          SDKMANAGER=/opt/android-sdk/cmdline-tools/latest/bin/sdkmanager
+          yes | "$SDKMANAGER" --licenses >/dev/null
+          "$SDKMANAGER" "platforms;android-${COMPILE_SDK}" "build-tools;${BUILD_TOOLS}" "platform-tools"
+          echo "ANDROID_HOME=/opt/android-sdk" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=/opt/android-sdk" >> "$GITHUB_ENV"
+
+      # gradle/actions/setup-gradle puts the requested Gradle on PATH and caches both the Gradle
+      # distribution and ~/.gradle/caches, which is what keeps this job short on a warm cache.
+      - name: Set up Gradle ${{ env.GRADLE_VERSION }}
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: ${{ env.GRADLE_VERSION }}
+          cache-read-only: false
+
+      # GeneralsX @build Android CI 06/11/2026 The launcher's Java compiles against SDL3's Java
+      # glue, which is gitignored (it is SDL's code, staged at build time). This fetches it from
+      # the SDL3 release tarball and applies android/patches/*.patch -- the same files, same
+      # patches, same version package-android-zh.sh stages from the CMake tree -- without
+      # configuring or building CMake.
+      - name: Stage SDL3 Java glue
+        run: ./scripts/build/android/stage-sdl-java.sh --force
+
+      # GeneralsX @build Android CI 06/11/2026 Runs every unit test in app/src/test, the touch
+      # editor's existing ones included. Reports are uploaded even when this fails, below.
+      - name: Run Android unit tests
+        run: gradle :app:testDebugUnitTest --no-daemon --console=plain
+
+      # GeneralsX @build Android CI 06/11/2026 Lint is its own step so a lint failure is visible
+      # as such rather than as "the test job failed". It needs no native compilation: the only
+      # findings that were aborting it were in SDL's own staged Java, and those are scoped out by
+      # path in android/app/lint.xml.
+      - name: Run Android Lint
+        run: gradle :app:lintDebug --no-daemon --console=plain
+
+      # GeneralsX @build Android CI 06/11/2026 The translation rules AGENTS.md asks for, checked
+      # as a script over res/values*/strings.xml: every locale declares the same string names as
+      # values/, no translation is empty where English has text, and no printf argument was
+      # dropped or reordered. The same rules are also unit tests (TranslationResourceTest); this
+      # step keeps the check readable in the log and independent of the JVM test run.
+      - name: Validate translations and XML resources
+        run: python3 scripts/qa/android/check-translations.py
+
+      # GeneralsX @build Android CI 06/11/2026 The launcher-only APK: the production launcher with
+      # every native library excluded (androidComponents in android/app/build.gradle). It is built
+      # from the same Java, resources, assets and translations as the real APK, so it is what a
+      # tester installs to exercise the UI -- and its emptiness of .so files is asserted below.
+      - name: Build launcher-only APK
+        run: gradle :app:assembleLauncherOnly --no-daemon --console=plain
+
+      # GeneralsX @build Android CI 06/11/2026 The APK's whole claim is that it has no engine. If a
+      # .so ever appears in it the build is wrong, so this fails rather than shipping it. python3
+      # reads the zip directly -- no unzip/aapt2 dependency, and the listing is unambiguous.
+      - name: Assert the launcher APK contains no native libraries
+        run: |
+          python3 - <<'PY'
+          import sys, zipfile
+          apk = "android/app/build/outputs/apk/launcherOnly/app-launcherOnly.apk"
+          names = zipfile.ZipFile(apk).namelist()
+          native = sorted(n for n in names if n.endswith(".so"))
+          if native:
+              print("::error::the launcher-only APK contains native libraries: " + ", ".join(native))
+              sys.exit(1)
+          assert "classes.dex" in names, "the APK has no classes.dex"
+          print("Launcher-only APK: %d entries, 0 native libraries, classes.dex present." % len(names))
+          PY
+
+      # GeneralsX @build Android CI 06/11/2026 Both uploads are if: always(), so a failing test or
+      # lint run still leaves its report behind -- the report is the thing you need when the step
+      # above went red. Only the APK is conditional on having been built.
+      - name: Upload test reports
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: android-unit-test-reports
+          path: |
+            android/app/build/reports/tests/**
+            android/app/build/test-results/**
+            android/app/build/reports/lint-results-*.html
+            android/app/build/reports/lint-results-*.xml
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Upload launcher-only APK
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: launcher-only-apk
+          path: android/app/build/outputs/apk/launcherOnly/*.apk
+          if-no-files-found: warn
+          retention-days: 14

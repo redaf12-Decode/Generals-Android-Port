@@ -63,6 +63,8 @@
     <string name="setup_sim_rate_60_desc">60 Hz jest čestota klienta GeneralsOnline za Windows. Simulacija imaje dvakrat vęcej raboty za sekundu, zato na slabšem ustrojstvu igra može iti medlenněje od normy.</string>
     <string name="setup_sim_rate_help">Častota tika jest utverđena pri buđenju motora, tomu aplikacija nese obě verzije i nalagaje tu, kotorǫ izbereš tutde. Izměna dějstvuje pri slědujučem puščenju igry. Oba igrača v meču mahjǫt iměti istǫ častotǫ.</string>
     <string name="setup_toast_sim_rate_saved">Častota simulacije sohranjena. Budě dějstvovati pri slědujučem puščenju igry.</string>
+    <string name="setup_engine_missing_title">Igrin motor ne ustanovjen</string>
+    <string name="setup_engine_missing_message">Tuto izdanje nema igrin motor, zato igra ne može se puščati. Instalirujte polny APK aby igrati.</string>
     <string name="online_crossplay_hz_title">Častota simulacije prěključena na 60 Hz</string>
     <string name="online_crossplay_hz_message">Klient Windows simuluje na 60 Hz, a klient na 30 Hz ne može držati s njim takt, tomu križna igra prěključila tuto uređaje na 60 Hz. Budě dějstvovati pri slědujučem puščenju igry.\n\nRabota simulacije na sekundǫ stane dvakrat vyša. Ako igra pojde pomalěje, izključi križnǫ igrǫ ili vrni 30 Hz v razdělu «Grafika» — no togda igrati budě možno tolko s drugymi igračami na Android na 30 Hz.</string>
     <string name="online_crossplay_hz_30">Častota simulacije: 30 Hz — sinhronizacija s PC nemožliva</string>
