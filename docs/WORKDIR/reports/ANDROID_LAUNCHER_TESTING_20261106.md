@@ -4,19 +4,17 @@ GeneralsX @build Android CI 06/11/2026
 
 ## What this is
 
-A GitHub Actions job that tested the Android launcher — its Java, its resources and its
-translations — and packaged a launcher-only APK, **without compiling a single line of C++**. It was
-`.github/workflows/android-unit-tests.yml`, and it existed because the only Android workflow this
+A GitHub Actions job that tests the Android launcher — its Java, its resources and its
+translations — and packages a launcher-only APK, **without compiling a single line of C++**. It is
+`.github/workflows/android-unit-tests.yml`, and it exists because the only Android workflow this
 repository had (`build-android.yml`) has to compile four engines before it can produce anything at
 all, which makes it useless as a fast check on a launcher change.
 
-> **Retired 06/11/2026** at the repository owner's request. The workflow now lives at
-> `.github/workflows/old/android-unit-tests.yml` (GitHub does not run workflows in subdirectories)
-> and can be revived by moving it back up one directory. Nothing depended on it — no `needs:`, no
-> reusable-workflow `uses:`, nothing consuming its artifacts — so the APK build and the release
-> path are unaffected. Its checks are still run locally before every push. The reasoning and the
-> two traps it encodes are recorded in `.github/workflows/old/README.md`; the rest of this report
-> is kept as the record of the audit that produced it.
+> **Updated 06/11/2026** — the `Run Android unit tests` (`testDebugUnitTest`) step was removed at
+> the repository owner's request; the job now runs lint, the translation check and the
+> launcher-only APK build, and the JVM suite is run locally before a push instead. The sections
+> below still describe the job as built, including that step, and are kept as the record of the
+> audit that produced it.
 
 The findings below are what the audit turned up, what was actually built and verified, and what is
 still not covered.

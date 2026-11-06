@@ -5,9 +5,15 @@ name: Android Unit Tests
 # It deliberately builds no native code: no `cmake --preset android-vulkan`, no `cmake --build`,
 # no vcpkg bootstrap, no DXVK, and none of build-android-zh.sh / build-dual-hz.sh /
 # package-android-zh.sh (which need the CMake-built .so set). It compiles the launcher's Java,
-# runs the unit tests and lint, checks the translation resources, and packages a launcher-only
-# APK whose every native library is excluded -- the whole point being that the Setup screen and
-# the rest of the UI do not depend on the engine.
+# runs lint, checks the translation resources, and packages a launcher-only APK whose every
+# native library is excluded -- the whole point being that the Setup screen and the rest of the
+# UI do not depend on the engine.
+#
+# GeneralsX @build Android CI 06/11/2026 The `testDebugUnitTest` step was removed at the
+# repository owner's request (06/11/2026). The JVM tests are still run locally before a push,
+# which is what AGENTS.md asks for; keeping them here as well only added a second place for the
+# same result to go red. The workflow's name is left as-is so existing run history and any
+# branch-protection reference to "Android Unit Tests" keep resolving to this job.
 #
 # SDL3's Java glue is fetched straight from the SDL3 release tarball by
 # scripts/build/android/stage-sdl-java.sh, so the Java shell still matches the version the game
@@ -166,17 +172,10 @@ jobs:
         # action's own `path:` above does expand `~`, so the two agree on the directory.
         run: SDL3_TARBALL_CACHE="$HOME/.cache/generalsx/sdl3" ./scripts/build/android/stage-sdl-java.sh --force
 
-      # GeneralsX @build Android CI 06/11/2026 Runs every unit test in app/src/test, the touch
-      # editor's existing ones included. Reports are uploaded even when this fails, below.
-      - name: Run Android unit tests
-        # android/settings.gradle is the Gradle root; run from there, as the build scripts do.
-        working-directory: android
-        run: gradle :app:testDebugUnitTest --no-daemon --console=plain
-
-      # GeneralsX @build Android CI 06/11/2026 Lint is its own step so a lint failure is visible
-      # as such rather than as "the test job failed". It needs no native compilation: the only
-      # findings that were aborting it were in SDL's own staged Java, and those are scoped out by
-      # path in android/app/lint.xml.
+      # GeneralsX @build Android CI 06/11/2026 Lint is its own step so a lint failure is visible as
+      # such rather than as "the build failed". It needs no native compilation: the only findings
+      # that were aborting it were in SDL's own staged Java, and those are scoped out by path in
+      # android/app/lint.xml.
       - name: Run Android Lint
         working-directory: android
         run: gradle :app:lintDebug --no-daemon --console=plain
@@ -184,8 +183,9 @@ jobs:
       # GeneralsX @build Android CI 06/11/2026 The translation rules AGENTS.md asks for, checked
       # as a script over res/values*/strings.xml: every locale declares the same string names as
       # values/, no translation is empty where English has text, and no printf argument was
-      # dropped or reordered. The same rules are also unit tests (TranslationResourceTest); this
-      # step keeps the check readable in the log and independent of the JVM test run.
+      # dropped or reordered. The same rules are also asserted by TranslationResourceTest in the
+      # JVM suite, which now runs locally only; this step is the CI-side check and does not depend
+      # on the JVM run.
       - name: Validate translations and XML resources
         run: python3 scripts/qa/android/check-translations.py
 
@@ -214,17 +214,16 @@ jobs:
           print("Launcher-only APK: %d entries, 0 native libraries, classes.dex present." % len(names))
           PY
 
-      # GeneralsX @build Android CI 06/11/2026 Both uploads are if: always(), so a failing test or
-      # lint run still leaves its report behind -- the report is the thing you need when the step
-      # above went red. Only the APK is conditional on having been built.
-      - name: Upload test reports
+      # GeneralsX @build Android CI 06/11/2026 `if: always()`, so a failing lint run still leaves
+      # its report behind -- the report is the thing you need when the step above went red. The
+      # unit-test report paths that used to be listed here were dropped along with the
+      # `testDebugUnitTest` step; only the lint report is still produced.
+      - name: Upload lint reports
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: android-unit-test-reports
+          name: android-lint-reports
           path: |
-            android/app/build/reports/tests/**
-            android/app/build/test-results/**
             android/app/build/reports/lint-results-*.html
             android/app/build/reports/lint-results-*.xml
           if-no-files-found: warn

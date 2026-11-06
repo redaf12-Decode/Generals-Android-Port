@@ -6,16 +6,6 @@ This directory contains workflows and configuration files from the original Supe
 
 ### Workflow Files (`.yml`)
 
-- **`android-unit-tests.yml`** — the launcher-only Android job (`testDebugUnitTest` + `lintDebug` +
-  `assembleLauncherOnly`, no native build). Retired 06/11/2026 at the repository owner's request:
-  it duplicated nothing, but it was a second CI surface to keep green for a build path that already
-  gets verified locally before every push (AGENTS.md asks for local builds only). Nothing depended
-  on it — no `needs:`, no reusable-workflow `uses:`, and nothing consumed its artifacts — so
-  removing it from the active set does not affect the APK build (`build-android.yml`) or a release
-  (`publish-release.yml`, which attaches an APK built locally). Revive by moving it back up one
-  directory; the two traps it encodes are worth keeping: `yes | sdkmanager --licenses` needs
-  `|| true` under `set -o pipefail` (SIGPIPE 141), and the Gradle steps need
-  `working-directory: android` because the repo root has no Gradle build.
 - **`build-historical.yml`** — Historical build workflow (legacy)
 - **`build-toolchain.yml`** — Toolchain-based build (used by old ci.yml for vc6/win32 presets)
 - **`check-replays.yml`** — Replay compatibility testing (deferred until game is feature-complete)
