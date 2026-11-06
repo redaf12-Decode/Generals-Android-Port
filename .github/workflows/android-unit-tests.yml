@@ -30,6 +30,10 @@ on:
   pull_request:
     branches:
       - main
+      # New-app is the integration branch PRs actually land on (PRs #3 and #4 both
+      # targeted it). Without it here, a PR to New-app does not run this job at all,
+      # which is how the first broken revision reached New-app unreviewed by CI.
+      - New-app
     paths:
       - 'android/**'
       - 'scripts/build/android/stage-sdl-java.sh'
