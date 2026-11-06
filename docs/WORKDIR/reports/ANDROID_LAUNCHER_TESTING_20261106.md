@@ -102,7 +102,7 @@ need for, by staging the same Java from the SDL3 release tarball instead.
 |---|---|---|
 | `LocaleHelperTest` | 14 | Language tags, the picker's list, applying a locale, RTL for Arabic and Persian, fallback for an unknown tag |
 | `SetupActivityHelperTest` | 21 | Folder validation for both games, nested-folder search, ambiguous and missing folders, per-game folder memory, tick-rate parsing, engine library names, `engineInstalled()` |
-| `UpdateManagerTest` | 16 | Signed-manifest parsing, signature verification (tamper, wrong key, malformed), feature flags, channel selection, bundled-engine sequence |
+| `UpdateManagerTest` | 17 | Signed-manifest parsing, signature verification (tamper, wrong key, malformed), feature flags, channel selection, bundled-engine sequence |
 | `NetworkTraceRedactTest` | 19 | Token redaction (JWTs, base64 with `+`/`/`/`=`, repeats, quoting) and the BIG directory-table bounds checks that guard the mod importer |
 | `LauncherSmokeTest` | 14 | The manifest as declared and as resolved; `UiKit` widgets built against the real theme and real strings |
 | `TranslationResourceTest` | 9 | Every locale against the base locale: same names, no empty value, printf arguments, escaped apostrophes, RTL locales present |
