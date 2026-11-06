@@ -89,7 +89,13 @@ jobs:
           sudo mv /opt/android-sdk/cmdline-tools/cmdline-tools /opt/android-sdk/cmdline-tools/latest
           rm /tmp/cmdline-tools.zip
           SDKMANAGER=/opt/android-sdk/cmdline-tools/latest/bin/sdkmanager
-          yes | "$SDKMANAGER" --licenses >/dev/null
+          # GeneralsX @bugfix Android CI 06/11/2026 The `|| true` is required, not defensive.
+          # sdkmanager exits as soon as it has read every licence, which closes the pipe while
+          # `yes` is still writing; `yes` then dies on SIGPIPE (141) and `set -o pipefail` at the
+          # top of this script promotes that to a failed step even though every licence was
+          # accepted. build-android.yml carries the same `|| true` on the same pipeline for the
+          # same reason. The real failure signal is the install below, which must still fail hard.
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
           "$SDKMANAGER" "platforms;android-${COMPILE_SDK}" "build-tools;${BUILD_TOOLS}" "platform-tools"
           echo "ANDROID_HOME=/opt/android-sdk" >> "$GITHUB_ENV"
           echo "ANDROID_SDK_ROOT=/opt/android-sdk" >> "$GITHUB_ENV"
