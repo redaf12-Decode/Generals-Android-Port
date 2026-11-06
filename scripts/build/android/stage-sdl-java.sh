@@ -16,6 +16,13 @@
 #
 # Usage: ./scripts/build/android/stage-sdl-java.sh [--force]
 #   --force  re-stage even when the destination is already populated
+#
+# Environment:
+#   SDL3_TARBALL_CACHE  a directory to keep the verified SDL3 tarball in. When set, the tarball is
+#                       read from there if it is present and passes its SHA256, and written there
+#                       after a download otherwise, so CI can cache it between runs. The SHA256 is
+#                       always checked, so the cache is reused, never trusted. Unset = the old
+#                       behaviour (download to a temp dir every time).
 set -euo pipefail
 
 FORCE=0
@@ -64,9 +71,30 @@ command -v tar  >/dev/null 2>&1 || { echo "ERROR: tar not found on PATH"; exit 1
 TMP="$(mktemp -d)"
 trap 'rm -rf "${TMP}"' EXIT
 
-echo "==> Downloading SDL3 ${SDL3_VERSION} (Java sources only)"
-curl -fsSL -o "${TMP}/SDL3.tar.gz" "${SDL3_URL}"
-echo "${SDL3_URL_HASH}  ${TMP}/SDL3.tar.gz" | sha256sum -c - \
+TARBALL="${TMP}/SDL3.tar.gz"
+# A caller may point SDL3_TARBALL_CACHE at a directory holding the tarball, so CI can restore it
+# from a cache rather than re-download ~40 MB on every run. The SHA256 check below is applied to
+# whatever ends up in ${TARBALL}, cached or downloaded, so a stale or tampered cache file is
+# rejected exactly as a bad download would be -- the cache is never trusted, only reused.
+CACHED=""
+if [[ -n "${SDL3_TARBALL_CACHE:-}" ]]; then
+    CACHED="${SDL3_TARBALL_CACHE}/SDL3-${SDL3_VERSION}.tar.gz"
+    # Created up front so the directory exists even if the download below fails: the CI save step
+    # runs with `if: always()`, and a save pointed at a path that does not exist fails the step.
+    mkdir -p "${SDL3_TARBALL_CACHE}"
+fi
+if [[ -n "${CACHED}" && -f "${CACHED}" ]] \
+    && echo "${SDL3_URL_HASH}  ${CACHED}" | sha256sum -c - >/dev/null 2>&1; then
+    echo "==> Using cached SDL3 ${SDL3_VERSION} tarball (${CACHED})"
+    cp "${CACHED}" "${TARBALL}"
+else
+    echo "==> Downloading SDL3 ${SDL3_VERSION} (Java sources only)"
+    curl -fsSL -o "${TARBALL}" "${SDL3_URL}"
+    if [[ -n "${CACHED}" ]]; then
+        cp "${TARBALL}" "${CACHED}"
+    fi
+fi
+echo "${SDL3_URL_HASH}  ${TARBALL}" | sha256sum -c - \
     || { echo "ERROR: SDL3 ${SDL3_VERSION} tarball failed its SHA256 check."; exit 1; }
 
 # The release tarball's Android project is the only place these files live.

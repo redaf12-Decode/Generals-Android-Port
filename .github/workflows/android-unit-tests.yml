@@ -30,9 +30,18 @@ on:
   pull_request:
     branches:
       - main
+      # New-app is the integration branch PRs actually land on (PRs #3 and #4 both
+      # targeted it). Without it here, a PR to New-app does not run this job at all,
+      # which is how the first broken revision reached New-app unreviewed by CI.
+      - New-app
     paths:
       - 'android/**'
       - 'scripts/build/android/stage-sdl-java.sh'
+      # The translation checker the job runs; a change to it should re-run the check.
+      - 'scripts/qa/android/**'
+      # stage-sdl-java.sh reads SDL3_VERSION and SDL3_URL_HASH from here, so bumping SDL3
+      # changes the Java shell this job builds against.
+      - 'cmake/sdl3.cmake'
       - '.github/workflows/android-unit-tests.yml'
 
 concurrency:
@@ -74,10 +83,23 @@ jobs:
           distribution: 'temurin'
           java-version: ${{ env.JAVA_VERSION }}
 
+      # GeneralsX @build Android CI 06/11/2026 Restore/save are an explicit pair here rather than
+      # plain actions/cache, for the reason build-android.yml gives: actions/cache's automatic
+      # post-step save runs only when the job succeeded, and this cache matters most on a red run
+      # -- that is the run you re-run. The key carries no NDK component because this job installs
+      # no NDK, so it can never collide with build-android.yml's SDK cache, whose contents differ.
+      - name: Restore Android SDK cache
+        id: cache-android-sdk
+        uses: actions/cache/restore@v5
+        with:
+          path: /opt/android-sdk
+          key: android-sdk-${{ env.CMDLINE_TOOLS_VERSION }}-p${{ env.COMPILE_SDK }}-bt${{ env.BUILD_TOOLS }}
+
       # GeneralsX @build Android CI 06/11/2026 Installs the SDK platform and build-tools the
       # Gradle build needs and nothing else: no NDK, no CMake, no vcpkg. The versions match
       # android/app/build.gradle (compileSdk 35) and build-android.yml.
       - name: Install Android SDK (cmdline-tools + platform + build-tools)
+        if: steps.cache-android-sdk.outputs.cache-hit != 'true'
         run: |
           set -euo pipefail
           curl -fL --retry 3 -o /tmp/cmdline-tools.zip \
@@ -87,18 +109,42 @@ jobs:
           sudo unzip -q /tmp/cmdline-tools.zip -d /opt/android-sdk/cmdline-tools
           # sdkmanager requires the "<sdk>/cmdline-tools/latest" layout to locate its SDK root.
           sudo mv /opt/android-sdk/cmdline-tools/cmdline-tools /opt/android-sdk/cmdline-tools/latest
+          # sdkmanager and the later Gradle run write into the SDK, so hand it to this user rather
+          # than leave it root-owned (build-android.yml does the same).
+          sudo chown -R "$(id -u):$(id -g)" /opt/android-sdk
           rm /tmp/cmdline-tools.zip
           SDKMANAGER=/opt/android-sdk/cmdline-tools/latest/bin/sdkmanager
-          # GeneralsX @bugfix Android CI 06/11/2026 The `|| true` is required, not defensive.
-          # sdkmanager exits as soon as it has read every licence, which closes the pipe while
-          # `yes` is still writing; `yes` then dies on SIGPIPE (141) and `set -o pipefail` at the
-          # top of this script promotes that to a failed step even though every licence was
-          # accepted. build-android.yml carries the same `|| true` on the same pipeline for the
-          # same reason. The real failure signal is the install below, which must still fail hard.
+          # `|| true` is load-bearing, not decoration: sdkmanager exits as soon as it has read the
+          # answers it needs, and `yes` then dies of SIGPIPE (141). Under `set -o pipefail` that
+          # non-zero status becomes the pipeline's, and with `set -e` it aborts the step -- which
+          # is exactly how this job first failed. build-android.yml carries the same `|| true`.
           yes | "$SDKMANAGER" --licenses >/dev/null || true
-          "$SDKMANAGER" "platforms;android-${COMPILE_SDK}" "build-tools;${BUILD_TOOLS}" "platform-tools"
+          "$SDKMANAGER" --install "platforms;android-${COMPILE_SDK}" "build-tools;${BUILD_TOOLS}" "platform-tools"
+
+      # GeneralsX @build Android CI 06/11/2026 Exported in its own always-run step, not inside the
+      # install above: on a cache hit that step is skipped, and these two variables are what the
+      # Gradle steps need to find the SDK at all. build-android.yml splits it for the same reason.
+      - name: Export Android SDK environment
+        run: |
+          set -euo pipefail
           echo "ANDROID_HOME=/opt/android-sdk" >> "$GITHUB_ENV"
           echo "ANDROID_SDK_ROOT=/opt/android-sdk" >> "$GITHUB_ENV"
+          test -x "/opt/android-sdk/cmdline-tools/latest/bin/sdkmanager" \
+            || { echo "::error::sdkmanager missing after restore/install"; exit 1; }
+          test -d "/opt/android-sdk/platforms/android-${COMPILE_SDK}" \
+            || { echo "::error::platform android-${COMPILE_SDK} missing after restore/install"; exit 1; }
+
+      # GeneralsX @build Android CI 06/11/2026 The SDL3 release tarball (~40 MB, and the step below
+      # runs with --force so it is fetched on every run). Cached under a key derived from
+      # cmake/sdl3.cmake, the same source of truth stage-sdl-java.sh reads its version and SHA256
+      # from, so bumping SDL3 changes the key and the new tarball is fetched. The script verifies
+      # the SHA256 of whatever it finds, cached or downloaded, so a poisoned cache cannot pass.
+      - name: Restore SDL3 tarball cache
+        id: cache-sdl3-tarball
+        uses: actions/cache/restore@v5
+        with:
+          path: ~/.cache/generalsx/sdl3
+          key: sdl3-tarball-${{ hashFiles('cmake/sdl3.cmake') }}
 
       # gradle/actions/setup-gradle puts the requested Gradle on PATH and caches both the Gradle
       # distribution and ~/.gradle/caches, which is what keeps this job short on a warm cache.
@@ -114,11 +160,17 @@ jobs:
       # patches, same version package-android-zh.sh stages from the CMake tree -- without
       # configuring or building CMake.
       - name: Stage SDL3 Java glue
-        run: ./scripts/build/android/stage-sdl-java.sh --force
+        # SDL3_TARBALL_CACHE is set here rather than as an `env:` value on purpose: a `~` or `$HOME`
+        # in a step's env is passed through literally (the shell does not expand a variable's value),
+        # so the directory has to be built in the shell for `~` to mean the runner's home. The cache
+        # action's own `path:` above does expand `~`, so the two agree on the directory.
+        run: SDL3_TARBALL_CACHE="$HOME/.cache/generalsx/sdl3" ./scripts/build/android/stage-sdl-java.sh --force
 
       # GeneralsX @build Android CI 06/11/2026 Runs every unit test in app/src/test, the touch
       # editor's existing ones included. Reports are uploaded even when this fails, below.
       - name: Run Android unit tests
+        # android/settings.gradle is the Gradle root; run from there, as the build scripts do.
+        working-directory: android
         run: gradle :app:testDebugUnitTest --no-daemon --console=plain
 
       # GeneralsX @build Android CI 06/11/2026 Lint is its own step so a lint failure is visible
@@ -126,6 +178,7 @@ jobs:
       # findings that were aborting it were in SDL's own staged Java, and those are scoped out by
       # path in android/app/lint.xml.
       - name: Run Android Lint
+        working-directory: android
         run: gradle :app:lintDebug --no-daemon --console=plain
 
       # GeneralsX @build Android CI 06/11/2026 The translation rules AGENTS.md asks for, checked
@@ -141,6 +194,7 @@ jobs:
       # from the same Java, resources, assets and translations as the real APK, so it is what a
       # tester installs to exercise the UI -- and its emptiness of .so files is asserted below.
       - name: Build launcher-only APK
+        working-directory: android
         run: gradle :app:assembleLauncherOnly --no-daemon --console=plain
 
       # GeneralsX @build Android CI 06/11/2026 The APK's whole claim is that it has no engine. If a
@@ -184,3 +238,23 @@ jobs:
           path: android/app/build/outputs/apk/launcherOnly/*.apk
           if-no-files-found: warn
           retention-days: 14
+
+      # GeneralsX @build Android CI 06/11/2026 Caches are saved even when the job failed, and in
+      # their own always-run steps rather than through plain actions/cache, which saves only on a
+      # successful job. build-android.yml uses the same explicit pair for the same reason: the run
+      # whose cache you most want is the red one you are about to re-run. Each save is guarded on
+      # its restore having missed, so a run that restored an exact-key hit does not try to re-save
+      # an unchanged entry.
+      - name: Save Android SDK cache
+        if: always() && steps.cache-android-sdk.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v5
+        with:
+          path: /opt/android-sdk
+          key: android-sdk-${{ env.CMDLINE_TOOLS_VERSION }}-p${{ env.COMPILE_SDK }}-bt${{ env.BUILD_TOOLS }}
+
+      - name: Save SDL3 tarball cache
+        if: always() && steps.cache-sdl3-tarball.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v5
+        with:
+          path: ~/.cache/generalsx/sdl3
+          key: sdl3-tarball-${{ hashFiles('cmake/sdl3.cmake') }}
