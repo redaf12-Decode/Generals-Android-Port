@@ -120,6 +120,8 @@ jobs:
       # GeneralsX @build Android CI 06/11/2026 Runs every unit test in app/src/test, the touch
       # editor's existing ones included. Reports are uploaded even when this fails, below.
       - name: Run Android unit tests
+        # android/settings.gradle is the Gradle root; run from there, as the build scripts do.
+        working-directory: android
         run: gradle :app:testDebugUnitTest --no-daemon --console=plain
 
       # GeneralsX @build Android CI 06/11/2026 Lint is its own step so a lint failure is visible
@@ -127,6 +129,7 @@ jobs:
       # findings that were aborting it were in SDL's own staged Java, and those are scoped out by
       # path in android/app/lint.xml.
       - name: Run Android Lint
+        working-directory: android
         run: gradle :app:lintDebug --no-daemon --console=plain
 
       # GeneralsX @build Android CI 06/11/2026 The translation rules AGENTS.md asks for, checked
@@ -142,6 +145,7 @@ jobs:
       # from the same Java, resources, assets and translations as the real APK, so it is what a
       # tester installs to exercise the UI -- and its emptiness of .so files is asserted below.
       - name: Build launcher-only APK
+        working-directory: android
         run: gradle :app:assembleLauncherOnly --no-daemon --console=plain
 
       # GeneralsX @build Android CI 06/11/2026 The APK's whole claim is that it has no engine. If a
