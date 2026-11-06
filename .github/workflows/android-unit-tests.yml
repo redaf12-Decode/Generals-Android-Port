@@ -30,9 +30,18 @@ on:
   pull_request:
     branches:
       - main
+      # New-app is the integration branch PRs actually land on (PRs #3 and #4 both
+      # targeted it). Without it here, a PR to New-app does not run this job at all,
+      # which is how the first broken revision reached New-app unreviewed by CI.
+      - New-app
     paths:
       - 'android/**'
       - 'scripts/build/android/stage-sdl-java.sh'
+      # The translation checker the job runs; a change to it should re-run the check.
+      - 'scripts/qa/android/**'
+      # stage-sdl-java.sh reads SDL3_VERSION and SDL3_URL_HASH from here, so bumping SDL3
+      # changes the Java shell this job builds against.
+      - 'cmake/sdl3.cmake'
       - '.github/workflows/android-unit-tests.yml'
 
 concurrency:
@@ -87,10 +96,17 @@ jobs:
           sudo unzip -q /tmp/cmdline-tools.zip -d /opt/android-sdk/cmdline-tools
           # sdkmanager requires the "<sdk>/cmdline-tools/latest" layout to locate its SDK root.
           sudo mv /opt/android-sdk/cmdline-tools/cmdline-tools /opt/android-sdk/cmdline-tools/latest
+          # sdkmanager and the later Gradle run write into the SDK, so hand it to this user rather
+          # than leave it root-owned (build-android.yml does the same).
+          sudo chown -R "$(id -u):$(id -g)" /opt/android-sdk
           rm /tmp/cmdline-tools.zip
           SDKMANAGER=/opt/android-sdk/cmdline-tools/latest/bin/sdkmanager
-          yes | "$SDKMANAGER" --licenses >/dev/null
-          "$SDKMANAGER" "platforms;android-${COMPILE_SDK}" "build-tools;${BUILD_TOOLS}" "platform-tools"
+          # `|| true` is load-bearing, not decoration: sdkmanager exits as soon as it has read the
+          # answers it needs, and `yes` then dies of SIGPIPE (141). Under `set -o pipefail` that
+          # non-zero status becomes the pipeline's, and with `set -e` it aborts the step -- which
+          # is exactly how this job first failed. build-android.yml carries the same `|| true`.
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" --install "platforms;android-${COMPILE_SDK}" "build-tools;${BUILD_TOOLS}" "platform-tools"
           echo "ANDROID_HOME=/opt/android-sdk" >> "$GITHUB_ENV"
           echo "ANDROID_SDK_ROOT=/opt/android-sdk" >> "$GITHUB_ENV"
 
@@ -113,6 +129,8 @@ jobs:
       # GeneralsX @build Android CI 06/11/2026 Runs every unit test in app/src/test, the touch
       # editor's existing ones included. Reports are uploaded even when this fails, below.
       - name: Run Android unit tests
+        # android/settings.gradle is the Gradle root; run from there, as the build scripts do.
+        working-directory: android
         run: gradle :app:testDebugUnitTest --no-daemon --console=plain
 
       # GeneralsX @build Android CI 06/11/2026 Lint is its own step so a lint failure is visible
@@ -120,6 +138,7 @@ jobs:
       # findings that were aborting it were in SDL's own staged Java, and those are scoped out by
       # path in android/app/lint.xml.
       - name: Run Android Lint
+        working-directory: android
         run: gradle :app:lintDebug --no-daemon --console=plain
 
       # GeneralsX @build Android CI 06/11/2026 The translation rules AGENTS.md asks for, checked
@@ -135,6 +154,7 @@ jobs:
       # from the same Java, resources, assets and translations as the real APK, so it is what a
       # tester installs to exercise the UI -- and its emptiness of .so files is asserted below.
       - name: Build launcher-only APK
+        working-directory: android
         run: gradle :app:assembleLauncherOnly --no-daemon --console=plain
 
       # GeneralsX @build Android CI 06/11/2026 The APK's whole claim is that it has no engine. If a
