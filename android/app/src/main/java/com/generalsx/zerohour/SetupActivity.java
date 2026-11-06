@@ -133,6 +133,39 @@ public class SetupActivity extends Activity {
             : new String[] { "main", "main60" };
     }
 
+    // GeneralsX @build Android CI 06/11/2026 Whether this APK actually carries the selected
+    // game's engine. The launcher-only variant (build.gradle) strips every .so, and without this
+    // check "Launch Game" would start GeneralsZHActivity, whose SDLActivity base would then fail
+    // to load libmain.so and show SDL's own "An error occurred while trying to start the
+    // application" box -- an error the player cannot act on and cannot tell from a broken
+    // install. Asking the APK first turns that into a sentence that says what is actually wrong.
+    //
+    // This is a plain file check, not a load: nothing here touches a .so, so the launcher-only
+    // APK's Launch button is decided without ever attempting a dlopen.
+    static boolean engineInstalled(android.content.Context ctx) {
+        // An engine delivered by UpdateManager lives outside the APK (see
+        // GeneralsZHActivity.loadLibraries), so the file check below would miss it and the Play
+        // button would refuse to start an engine that is in fact there. activeEngineSeq() is the
+        // same question loadLibraries asks; asking it here keeps the guard and the loader in step.
+        if (UpdateManager.activeEngineSeq(ctx) > 0) {
+            return true;
+        }
+        // nativeLibraryDir is null when the platform has not laid out a lib directory at all --
+        // no engine is installed in that case, which is the answer, not a reason to throw on the
+        // Play button.
+        String dir = ctx.getApplicationInfo().nativeLibraryDir;
+        if (dir == null) {
+            return false;
+        }
+        File libDir = new File(dir);
+        for (String lib : engineLibraries(ctx)) {
+            if (new File(libDir, "lib" + lib + ".so").isFile()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     // GeneralsX @feature Android port 15/09/2026 Simulation tick rate.
     //
     // This is not an ordinary setting: the tick rate is fixed when the engine is
@@ -4429,6 +4462,17 @@ public class SetupActivity extends Activity {
     }
 
     private void launchGameNow() {
+        // GeneralsX @build Android CI 06/11/2026 Refuse before starting an Activity that could
+        // only fail: the launcher-only APK has no engine, and SDLActivity's own error box does not
+        // say why. See engineInstalled().
+        if (!engineInstalled(this)) {
+            new android.app.AlertDialog.Builder(this)
+                .setTitle(R.string.setup_engine_missing_title)
+                .setMessage(R.string.setup_engine_missing_message)
+                .setPositiveButton(android.R.string.ok, null)
+                .show();
+            return;
+        }
         // GeneralsX @feature Android port 04/10/2026 The text-language marker is checked against
         // the data of the game about to start, which may not be the one it was last written for.
         applyGameLanguageOverride();

@@ -63,6 +63,8 @@
     <string name="setup_sim_rate_60_desc">60 Hz 是 Windows 版 GeneralsOnline 客户端的速率。每秒模拟工作量翻倍，因此在较慢的设备上游戏可能低于正常速度。</string>
     <string name="setup_sim_rate_help">帧率在编译引擎时就已固定，因此应用同时包含两个版本，并加载你在此选择的那个。更改将在下次启动游戏时生效。同一场对战的双方必须使用相同的频率。</string>
     <string name="setup_toast_sim_rate_saved">模拟频率已保存，将在下次启动游戏时生效。</string>
+    <string name="setup_engine_missing_title">未安装游戏引擎</string>
+    <string name="setup_engine_missing_message">此版本不包含游戏引擎，无法启动游戏。请安装完整 APK 以进行游戏。</string>
     <string name="online_crossplay_hz_title">模拟频率已切换为 60 Hz</string>
     <string name="online_crossplay_hz_message">Windows 客户端以 60 Hz 进行模拟，30 Hz 的客户端无法与之保持同步，因此跨平台对战已将本设备切换为 60 Hz。该更改将在下次启动游戏时生效。\n\n这会使每秒的模拟计算量翻倍。如果游戏运行缓慢，请关闭跨平台对战，或在“图形”中改回 30 Hz——但那样就只能与同为 30 Hz 的其他安卓玩家对战。</string>
     <string name="online_crossplay_hz_30">模拟频率：30 Hz — 无法与 PC 保持同步</string>

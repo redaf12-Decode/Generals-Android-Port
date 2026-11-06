@@ -63,6 +63,8 @@
     <string name="setup_sim_rate_60_desc">60 Hz est la fréquence du client GeneralsOnline pour Windows. La simulation a deux fois plus de travail par seconde, donc sur un appareil lent le jeu peut tourner en dessous de sa vitesse normale.</string>
     <string name="setup_sim_rate_help">La fréquence est fixée à la compilation du moteur : l\'application embarque donc les deux versions et charge celle choisie ici. Le changement prend effet au prochain démarrage du jeu. Les deux joueurs d\'une partie doivent utiliser la même fréquence.</string>
     <string name="setup_toast_sim_rate_saved">Fréquence de simulation enregistrée. Elle s\'appliquera au prochain démarrage du jeu.</string>
+    <string name="setup_engine_missing_title">Moteur du jeu non installé</string>
+    <string name="setup_engine_missing_message">Cette version n\'inclut pas le moteur du jeu, le jeu ne peut donc pas démarrer. Installez l\'APK complet pour jouer.</string>
     <string name="online_crossplay_hz_title">Fréquence de simulation passée à 60 Hz</string>
     <string name="online_crossplay_hz_message">Le client Windows simule à 60 Hz, et un client à 30 Hz ne peut pas rester synchronisé avec lui : le jeu multiplateforme a donc basculé cet appareil sur 60 Hz. Cela prendra effet au prochain démarrage du jeu.\n\nLa simulation effectuera deux fois plus de travail par seconde. Si le jeu ralentit, désactivez le jeu multiplateforme ou revenez à 30 Hz dans « Graphismes » — mais vous ne pourrez alors jouer qu\'avec d\'autres joueurs Android en 30 Hz.</string>
     <string name="online_crossplay_hz_30">Fréquence de simulation : 30 Hz — synchronisation impossible avec un PC</string>

@@ -63,6 +63,8 @@
     <string name="setup_sim_rate_60_desc">60 Hz ist die Rate des GeneralsOnline-Clients für Windows. Die Simulation hat doppelt so viel Arbeit pro Sekunde, daher kann das Spiel auf einem langsameren Gerät unter voller Geschwindigkeit laufen.</string>
     <string name="setup_sim_rate_help">Die Taktrate wird beim Kompilieren der Engine festgelegt, deshalb enthält die App beide Versionen und lädt die hier gewählte. Die Änderung greift beim nächsten Start des Spiels. Beide Spieler eines Matches müssen dieselbe Rate verwenden.</string>
     <string name="setup_toast_sim_rate_saved">Simulationsrate gespeichert. Sie greift beim nächsten Start des Spiels.</string>
+    <string name="setup_engine_missing_title">Spiel-Engine nicht installiert</string>
+    <string name="setup_engine_missing_message">Diese Version enthält keine Spiel-Engine, daher kann das Spiel nicht gestartet werden. Installiere das vollständige APK, um zu spielen.</string>
     <string name="online_crossplay_hz_title">Simulationsrate auf 60 Hz umgestellt</string>
     <string name="online_crossplay_hz_message">Der Windows-Client simuliert mit 60 Hz, und ein 30-Hz-Client kann damit nicht Schritt halten. Cross-Play hat dieses Gerät deshalb auf 60 Hz umgestellt. Die Änderung greift beim nächsten Start des Spiels.\n\nDas verdoppelt die Simulationsarbeit pro Sekunde. Läuft das Spiel langsam, schalte Cross-Play ab oder stelle unter „Grafik“ wieder auf 30 Hz — dann sind aber nur Partien gegen andere Android-Spieler mit 30 Hz möglich.</string>
     <string name="online_crossplay_hz_30">Simulationsrate: 30 Hz — kann nicht mit einem PC synchron bleiben</string>

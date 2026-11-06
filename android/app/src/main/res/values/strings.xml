@@ -63,6 +63,10 @@
     <string name="setup_sim_rate_60_desc">60 Hz is the rate the Windows GeneralsOnline client runs at. It doubles the simulation work per second, so a slower device may run the game below full speed.</string>
     <string name="setup_sim_rate_help">The tick rate is fixed when the engine is built, so the app carries both versions and loads the one you pick here. The change takes effect the next time you start the game. Both players in a match must be on the same rate.</string>
     <string name="setup_toast_sim_rate_saved">Simulation rate saved. It will apply the next time you start the game.</string>
+    <!-- GeneralsX @build Android CI 06/11/2026 Shown by launchGameNow() when the APK
+         carries no engine (SetupActivity.engineInstalled()); the launcher-only build. -->
+    <string name="setup_engine_missing_title">Game engine not installed</string>
+    <string name="setup_engine_missing_message">This build has no game engine, so the game cannot be started. Install the full APK to play.</string>
     <string name="online_crossplay_hz_title">Simulation rate switched to 60 Hz</string>
     <string name="online_crossplay_hz_message">The Windows client simulates at 60 Hz, and a 30 Hz client cannot stay in step with it, so cross-play has switched this device to 60 Hz. It takes effect the next time you start the game.\n\nThis doubles the simulation work per second. If the game runs slowly, turn cross-play off or set the rate back to 30 Hz under Graphics — but then you can only play against other Android players on 30 Hz.</string>
     <string name="online_crossplay_hz_30">Simulation rate: 30 Hz — cannot hold sync with a PC</string>
