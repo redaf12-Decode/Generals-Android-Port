@@ -62,6 +62,16 @@ final class TouchEditorRenderer {
     private final int accentColor;
     private final float density;
 
+    /**
+     * GeneralsX @feature Android touch editor 05/11/2026 The optional letterbox transform the
+     * launcher's preview needs. The in-game editor draws at 1:1 (scale 1, offset 0), which is the
+     * default, so this changes nothing there; the launcher sets the same transform it maps touch
+     * through, so the buttons a player drags land exactly where they are drawn.
+     */
+    private float previewScale = 1f;
+    private float previewOffsetX;
+    private float previewOffsetY;
+
     TouchEditorRenderer(Context context) {
         this.context = context;
         this.accentColor = resolveAccent(context);
@@ -72,6 +82,24 @@ final class TouchEditorRenderer {
         outlinePaint.setPathEffect(new android.graphics.DashPathEffect(
             new float[] {dp(7f), dp(5f)}, 0f));
         handlePaint.setStyle(Paint.Style.STROKE);
+    }
+
+    /**
+     * Sets the preview transform: the renderer draws inside translate(offset) * scale(scale), so a
+     * game-screen coordinate lands at the same place the touch mapping reads it back from. Passing
+     * a non-positive scale keeps the last good transform rather than collapsing the field.
+     */
+    void setPreviewTransform(float scale, float offsetX, float offsetY) {
+        if (scale <= 0f || Float.isNaN(scale) || Float.isInfinite(scale)) {
+            return;
+        }
+        previewScale = scale;
+        previewOffsetX = Float.isNaN(offsetX) ? 0f : offsetX;
+        previewOffsetY = Float.isNaN(offsetY) ? 0f : offsetY;
+    }
+
+    float previewScale() {
+        return previewScale;
     }
 
     private static int resolveAccent(Context context) {
@@ -103,6 +131,12 @@ final class TouchEditorRenderer {
         int selectedIndex = editor.selectedIndex();
         float scale = editor.working().buttonScale;
         float globalOpacity = editor.working().buttonOpacity;
+        // The launcher's preview is letterboxed: everything below is drawn in game-screen pixels,
+        // then the whole field is scaled into the area the canvas actually has. The in-game editor
+        // leaves the transform at 1:1, so this save/restore is a no-op there.
+        int checkpoint = canvas.save();
+        canvas.translate(previewOffsetX, previewOffsetY);
+        canvas.scale(previewScale, previewScale);
         for (TouchControlConfig.ButtonSpec spec : editor.working().inDrawOrder()) {
             editor.bounds(spec, rect);
             boolean selected = editor.buttons().indexOf(spec) == selectedIndex;
@@ -132,6 +166,7 @@ final class TouchEditorRenderer {
                 canvas.drawPath(dashPath, outlinePaint);
             }
         }
+        canvas.restoreToCount(checkpoint);
     }
 
     /** An accent dashed frame around the selected button's box -- the selection indicator. */

@@ -541,8 +541,8 @@
     <string name="touch_modifier_ctrl">Ctrl</string>
     <string name="touch_modifier_shift">Shift</string>
     <string name="touch_modifier_alt">Alt</string>
-    <string name="touch_width_dp">Širina: %1$d dp</string>
-    <string name="touch_height_dp">Visina: %1$d dp</string>
+    <string name="touch_width_dp">Širina: %1$d</string>
+    <string name="touch_height_dp">Visina: %1$d</string>
     <string name="touch_shape_rectangle">Pravougaonik</string>
     <string name="touch_shape_rounded">Zaokruženo</string>
     <string name="touch_shape_square">Kvadrat</string>
@@ -594,6 +594,12 @@
     <string name="touch_polygon_pentagon">Petokutnik</string>
     <string name="touch_polygon_triangle">Trokutnik</string>
     <string name="touch_shape_label">Forma</string>
+    <string name="touch_key_menu_title">Vybratj klavišu</string>
+    <string name="touch_key_group_letters">Bukvy</string>
+    <string name="touch_key_group_numbers">Čisla</string>
+    <string name="touch_key_group_modifiers">Modifikatory</string>
+    <string name="touch_key_group_special">Osoblivyje</string>
+    <string name="touch_key_group_function">Funkcijne</string>
     <string name="touch_shape_polygon">Mnogokutnik</string>
     <string name="setup_card_touch_controls">Upravljanje na ekranu</string>
     <string name="setup_touch_controls_body">Risujte svoje knopky skraćenic nad bojnim poljem i izměnjajte je bez vyhoda iz matča.</string>

@@ -91,6 +91,8 @@ final class HotkeyOverlayView extends View {
 
     private static final float TOOLBAR_HEIGHT_DP = 56f;
     private static final float SHAPE_CELL_HEIGHT_DP = 44f;
+    private static final float KEY_CELL_HEIGHT_DP = 40f;
+    private static final float KEY_HEADER_HEIGHT_DP = 44f;
     private static final float STEP_SIZE_DP = 4f;
     private static final float STEP_ALPHA = 0.06f;
 
@@ -105,6 +107,24 @@ final class HotkeyOverlayView extends View {
 
     /** True while the shape menu is open over the editor toolbar. */
     private boolean shapeMenuOpen;
+
+    /**
+     * GeneralsX @feature Android touch editor 05/11/2026 The key-selection menu Add (+) opens: a
+     * scrolling grid above the toolbar, drawn from the shared TouchKeyPicker. While it is open it
+     * owns the touch, so a tap in it can never become a gameplay command or a button press. The
+     * modifier toggles in its header apply to the key chosen next.
+     */
+    private boolean keyMenuOpen;
+    private int keyMenuModifiers;
+    private final TouchKeyPicker keyPicker = new TouchKeyPicker();
+    private final RectF keyMenuRect = new RectF();
+    private final RectF keyHeaderRect = new RectF();
+    private final RectF keyGridRect = new RectF();
+    private final RectF[] keyModifierCells = new RectF[3];
+    private boolean keyMenuDownInMenu;
+    private boolean keyMenuScrolling;
+    private float keyMenuDownY;
+    private float keyMenuLastY;
 
     /**
      * The buttons to draw, in draw order, with their boxes and their index in the model. Rebuilt
@@ -168,6 +188,9 @@ final class HotkeyOverlayView extends View {
         }
         for (int i = 0; i < POLYGON_COUNT; ++i) {
             polygonCells[i] = new RectF();
+        }
+        for (int i = 0; i < keyModifierCells.length; ++i) {
+            keyModifierCells[i] = new RectF();
         }
         textPaint.setTextAlign(Paint.Align.CENTER);
         borderPaint.setStyle(Paint.Style.STROKE);
@@ -252,7 +275,7 @@ final class HotkeyOverlayView extends View {
         editorPointer = MotionEvent.INVALID_POINTER_ID;
         dragging = false;
         resizing = false;
-        shapeMenuOpen = false;
+        closeMenus();
         editing = true;
         setVisibility(VISIBLE);
         rebuildGeometry();
@@ -260,17 +283,79 @@ final class HotkeyOverlayView extends View {
     }
 
     /**
-     * GeneralsX @feature Android touch editor 05/11/2026 Opens the editor and adds a button at
-     * once -- the in-game toolbox's "Add button" entry point. It calls the same editor model and
-     * the same addButton() the toolbar and the launcher page call, so there is one implementation
-     * of "add", not three. Returns false at the model's maximum, so the caller can report it.
+     * GeneralsX @feature Android touch editor 05/11/2026 Opens the editor and its key-selection
+     * menu at once -- the in-game toolbox's "Add button" entry point. It calls the same editor
+     * model and the same key catalog the toolbar and the launcher page call, so there is one
+     * implementation of "add", not three. Returns false at the model's maximum, so the caller can
+     * report it; nothing is created until a key is chosen.
      */
-    boolean addButtonInEditor() {
+    boolean openKeyPickerInEditor() {
         enterEditor();
-        boolean added = editor.addButton();
+        return openKeyMenu();
+    }
+
+    /**
+     * Opens the key-selection menu over the editor, or reports false when the layout is already
+     * full. The menu starts with no modifiers latched, so a player who just wants "A" gets "A".
+     */
+    private boolean openKeyMenu() {
+        if (!editor.canAddButton()) {
+            return false;
+        }
+        keyMenuOpen = true;
+        shapeMenuOpen = false;
+        keyMenuModifiers = 0;
+        keyMenuDownInMenu = false;
+        keyMenuScrolling = false;
+        keyPicker.setScroll(0f, keyGridRect.height());
         rebuildGeometry();
         invalidate();
-        return added;
+        return true;
+    }
+
+    /** Whether the key menu is open, for a test of the real touch path. */
+    boolean keyMenuOpenForTest() {
+        return keyMenuOpen;
+    }
+
+    /** A key-menu cell's centre in view coordinates, for a test that drives the real touch path. */
+    android.graphics.PointF keyCellCenterForTest(int index) {
+        layoutToolbar();
+        layoutKeyMenu();
+        RectF cell = new RectF();
+        keyPicker.cellBounds(index, cell);
+        return new android.graphics.PointF(cell.centerX(),
+            keyGridRect.top + cell.centerY() - keyPicker.scroll());
+    }
+
+    /** A key-menu modifier cell's centre, for a test of the modifier latches. */
+    android.graphics.PointF keyModifierCenterForTest(int index) {
+        layoutToolbar();
+        layoutKeyMenu();
+        RectF cell = keyModifierCells[index];
+        return new android.graphics.PointF(cell.centerX(), cell.centerY());
+    }
+
+    /** The index of a catalog entry in the picker grid, for a test that taps it. */
+    int keyPickerIndexOf(int keyCode) {
+        for (int i = 0; i < keyPicker.count(); ++i) {
+            if (keyPicker.entry(i).keyCode == keyCode) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    /** Chooses a catalog entry by index, exactly as tapping its cell does. */
+    void chooseKeyForTest(int index) {
+        if (index >= 0 && index < keyPicker.count()) {
+            chooseKey(keyPicker.entry(index).keyCode);
+        }
+    }
+
+    /** Latches a modifier through the menu's own toggle, for a test of the modifier path. */
+    void toggleKeyModifierForTest(int index) {
+        toggleKeyMenuModifier(index);
     }
 
     /**
@@ -286,7 +371,7 @@ final class HotkeyOverlayView extends View {
         editorPointer = MotionEvent.INVALID_POINTER_ID;
         dragging = false;
         resizing = false;
-        shapeMenuOpen = false;
+        closeMenus();
         editing = false;
         reload();
     }
@@ -298,10 +383,18 @@ final class HotkeyOverlayView extends View {
         editorPointer = MotionEvent.INVALID_POINTER_ID;
         dragging = false;
         resizing = false;
-        shapeMenuOpen = false;
+        closeMenus();
         editing = false;
         reload();
         return wrote;
+    }
+
+    /** Closes every editor menu and forgets any in-progress menu gesture. */
+    private void closeMenus() {
+        shapeMenuOpen = false;
+        keyMenuOpen = false;
+        keyMenuDownInMenu = false;
+        keyMenuScrolling = false;
     }
 
     /**
@@ -468,6 +561,31 @@ final class HotkeyOverlayView extends View {
         }
     }
 
+    /**
+     * GeneralsX @feature Android touch editor 05/11/2026 The key menu fills the space between the
+     * top of the screen and the toolbar, so its grid is as tall as there is room for and scrolls
+     * when the catalog is longer than that. The header carries the three modifier latches; the
+     * grid below it is where a key is tapped.
+     */
+    private void layoutKeyMenu() {
+        float header = dp(KEY_HEADER_HEIGHT_DP);
+        keyMenuRect.set(0, 0, getWidth(), toolbarRect.top);
+        keyHeaderRect.set(0, 0, getWidth(), header);
+        keyGridRect.set(0, header, getWidth(), keyMenuRect.bottom);
+        // The three modifier latches sit on the right of the header, clear of the title. The cells
+        // are placed here once -- drawing and hit testing both read these rects, so a latch cannot
+        // be drawn in one place and tapped in another.
+        float latchWidth = Math.min(dp(180f), getWidth() * 0.5f);
+        float latchLeft = getWidth() - latchWidth;
+        float third = latchWidth / 3f;
+        for (int i = 0; i < keyModifierCells.length; ++i) {
+            keyModifierCells[i].set(latchLeft + i * third, 0,
+                latchLeft + (i + 1) * third, header);
+        }
+        keyPicker.layout(getWidth(), dp(KEY_CELL_HEIGHT_DP));
+        keyPicker.setScroll(keyPicker.scroll(), keyGridRect.height());
+    }
+
     // ------------------------------------------------------------------ drawing
 
     @Override
@@ -513,6 +631,9 @@ final class HotkeyOverlayView extends View {
         drawToolbar(canvas);
         if (shapeMenuOpen) {
             drawShapeMenu(canvas);
+        }
+        if (keyMenuOpen) {
+            drawKeyMenu(canvas);
         }
     }
 
@@ -571,7 +692,11 @@ final class HotkeyOverlayView extends View {
             case TOOL_CANCEL: return "Cancel";
             case TOOL_SAVE: return "Save";
             case TOOL_SIZE_VALUE:
-                return spec == null ? "\u2013" : Math.round(spec.widthDp) + "dp";
+                // GeneralsX @tweak Android touch editor 05/11/2026 The size cell shows the number
+                // alone. The unit is dp -- the same unit the launcher's Width/Height sliders are
+                // labelled in -- so the suffix only stole width from the cell; the value, the
+                // density conversion and the resize behaviour are unchanged.
+                return spec == null ? "\u2013" : String.valueOf(Math.round(spec.widthDp));
             case TOOL_ALPHA_VALUE:
                 return spec == null ? "\u2013" : Math.round(spec.opacity * 100f) + "%";
             default: return "";
@@ -614,6 +739,94 @@ final class HotkeyOverlayView extends View {
             boolean on = spec != null && spec.shape == TouchButtonShape.POLYGON
                 && spec.polygonType == types[i];
             drawMenuCell(canvas, polygonCells[i], polygonLabel(types[i]), on);
+        }
+    }
+
+    /**
+     * GeneralsX @feature Android touch editor 05/11/2026 Draws the key-selection menu: a header of
+     * three modifier latches, then the catalog's grid grouped and scrolling. The buttons underneath
+     * are still drawn by drawEditor before this, so the menu reads as a panel over the layout
+     * rather than replacing it -- which is what "without hiding the existing buttons" asks for.
+     */
+    private void drawKeyMenu(Canvas canvas) {
+        layoutKeyMenu();
+        chromePaint.setColor(toolbarBackground);
+        chromePaint.setAlpha(0xF4);
+        canvas.drawRect(keyMenuRect, chromePaint);
+        chromePaint.setColor(accentColor);
+        chromePaint.setAlpha(180);
+        canvas.drawRect(keyMenuRect.left, keyMenuRect.bottom - Math.max(1f, dp(1f)),
+            keyMenuRect.right, keyMenuRect.bottom, chromePaint);
+
+        // The header: a title and the three modifier latches, which apply to the key tapped next.
+        textPaint.setTextSize(dp(13f));
+        textPaint.setColor(0xFF9FD4D8);
+        textPaint.setAlpha(255);
+        canvas.drawText(activity.getString(R.string.touch_key_menu_title),
+            dp(8f), keyHeaderRect.centerY()
+                - (textPaint.ascent() + textPaint.descent()) * 0.5f, textPaint);
+
+        String[] modifierNames = {
+            activity.getString(R.string.touch_modifier_ctrl),
+            activity.getString(R.string.touch_modifier_shift),
+            activity.getString(R.string.touch_modifier_alt)};
+        int[] modifierFlags = {TouchKeyCatalog.MOD_CTRL, TouchKeyCatalog.MOD_SHIFT,
+            TouchKeyCatalog.MOD_ALT};
+        for (int i = 0; i < keyModifierCells.length; ++i) {
+            RectF cell = keyModifierCells[i];
+            boolean on = (keyMenuModifiers & modifierFlags[i]) != 0;
+            if (on) {
+                chromePaint.setColor(accentColor);
+                chromePaint.setAlpha(70);
+                canvas.drawRoundRect(cell, dp(6f), dp(6f), chromePaint);
+            }
+            textPaint.setColor(on ? accentColor : 0xFFEDEDED);
+            textPaint.setAlpha(255);
+            drawFittedText(canvas, modifierNames[i], cell, dp(13f));
+        }
+
+        // The grid, clipped to its own area so a scrolled row never bleeds into the header or the
+        // toolbar, with a caption on the first row of each group.
+        int checkpoint = canvas.save();
+        canvas.clipRect(keyGridRect);
+        RectF cell = new RectF();
+        int lastGroup = -1;
+        for (int i = 0; i < keyPicker.count(); ++i) {
+            keyPicker.cellBounds(i, cell);
+            float top = keyGridRect.top + cell.top - keyPicker.scroll();
+            float bottom = top + cell.height();
+            if (bottom < keyGridRect.top || top > keyGridRect.bottom) {
+                continue;
+            }
+            cell.set(cell.left, top, cell.right, bottom);
+            int group = keyPicker.entry(i).group;
+            if (group != lastGroup) {
+                lastGroup = group;
+                textPaint.setTextSize(dp(10f));
+                textPaint.setColor(0x99FFB74D);
+                textPaint.setAlpha(0x99);
+                canvas.drawText(groupName(group), dp(6f), top - dp(2f), textPaint);
+            }
+            textPaint.setColor(0xFFEDEDED);
+            textPaint.setAlpha(255);
+            drawFittedText(canvas, keyPicker.entry(i).name, cell, dp(14f));
+        }
+        canvas.restoreToCount(checkpoint);
+    }
+
+    /** A picker group's caption, localised. */
+    private String groupName(int group) {
+        switch (group) {
+            case TouchKeyCatalog.GROUP_LETTER:
+                return activity.getString(R.string.touch_key_group_letters);
+            case TouchKeyCatalog.GROUP_DIGIT:
+                return activity.getString(R.string.touch_key_group_numbers);
+            case TouchKeyCatalog.GROUP_MODIFIER:
+                return activity.getString(R.string.touch_key_group_modifiers);
+            case TouchKeyCatalog.GROUP_SPECIAL:
+                return activity.getString(R.string.touch_key_group_special);
+            default:
+                return activity.getString(R.string.touch_key_group_function);
         }
     }
 
@@ -781,6 +994,23 @@ final class HotkeyOverlayView extends View {
         if (shapeMenuOpen) {
             layoutShapeMenu();
         }
+        if (keyMenuOpen) {
+            layoutKeyMenu();
+            // GeneralsX @feature Android touch editor 05/11/2026 The key menu owns the touch while
+            // it is open: a press inside it is tested before the toolbar and before any button, so
+            // a tap in it can never press a game button underneath or fire a toolbar cell. A press
+            // on the toolbar itself is left to the toolbar, so Cancel and Save still dismiss the
+            // menu and no one can get stuck in it.
+            int action = event.getActionMasked();
+            if (action == MotionEvent.ACTION_DOWN) {
+                if (keyMenuRect.contains(event.getX(), event.getY())) {
+                    return onKeyMenuTouch(event);
+                }
+                keyMenuDownInMenu = false;
+            } else if (keyMenuDownInMenu) {
+                return onKeyMenuTouch(event);
+            }
+        }
         switch (event.getActionMasked()) {
             case MotionEvent.ACTION_DOWN: {
                 editorPointer = event.getPointerId(0);
@@ -898,13 +1128,112 @@ final class HotkeyOverlayView extends View {
         Toast.makeText(activity, message, Toast.LENGTH_SHORT).show();
     }
 
+
+    /**
+     * GeneralsX @feature Android touch editor 05/11/2026 The key menu's own touch handling. It is
+     * reached before anything else in the editor, so a press here can neither reach a game button
+     * nor the toolbar. A press that moves past the slop scrolls the grid; a press that lifts where
+     * it started chooses a key (or toggles a modifier latch). ACTION_CANCEL ends the gesture with
+     * nothing chosen, and the menu stays open so a stray cancel does not lose the player's place.
+     */
+    private boolean onKeyMenuTouch(MotionEvent event) {
+        switch (event.getActionMasked()) {
+            case MotionEvent.ACTION_DOWN: {
+                downX = event.getX();
+                downY = event.getY();
+                keyMenuDownY = downY;
+                keyMenuLastY = downY;
+                keyMenuDownInMenu = keyMenuRect.contains(downX, downY);
+                keyMenuScrolling = false;
+                return keyMenuDownInMenu;
+            }
+            case MotionEvent.ACTION_MOVE: {
+                if (!keyMenuDownInMenu) {
+                    return true;
+                }
+                float y = event.getY();
+                if (keyGridRect.contains(downX, keyMenuDownY)) {
+                    if (!keyMenuScrolling
+                            && Math.abs(y - keyMenuDownY) >= touchSlop) {
+                        keyMenuScrolling = true;
+                    }
+                    if (keyMenuScrolling) {
+                        keyPicker.scrollBy(keyMenuLastY - y, keyGridRect.height());
+                        invalidate();
+                    }
+                }
+                keyMenuLastY = y;
+                return true;
+            }
+            case MotionEvent.ACTION_UP: {
+                if (!keyMenuDownInMenu) {
+                    return true;
+                }
+                float x = event.getX();
+                float y = event.getY();
+                if (!keyMenuScrolling) {
+                    boolean consumed = false;
+                    for (int i = 0; i < keyModifierCells.length; ++i) {
+                        if (keyModifierCells[i].contains(x, y)) {
+                            toggleKeyMenuModifier(i);
+                            consumed = true;
+                            break;
+                        }
+                    }
+                    if (!consumed && keyGridRect.contains(x, y)) {
+                        int index = keyPicker.hitTest(x, y - keyGridRect.top,
+                            keyGridRect.height());
+                        if (index >= 0) {
+                            chooseKey(keyPicker.entry(index).keyCode);
+                        }
+                    }
+                }
+                keyMenuDownInMenu = false;
+                keyMenuScrolling = false;
+                invalidate();
+                return true;
+            }
+            case MotionEvent.ACTION_CANCEL: {
+                keyMenuDownInMenu = false;
+                keyMenuScrolling = false;
+                invalidate();
+                return true;
+            }
+            default:
+                return true;
+        }
+    }
+
+    /** Latches or unlatches one modifier, so the next key tapped carries it. */
+    private void toggleKeyMenuModifier(int index) {
+        int[] flags = {TouchKeyCatalog.MOD_CTRL, TouchKeyCatalog.MOD_SHIFT, TouchKeyCatalog.MOD_ALT};
+        keyMenuModifiers = (keyMenuModifiers ^ flags[index]) & TouchKeyCatalog.MOD_MASK;
+        invalidate();
+    }
+
+    /**
+     * Creates the button for the chosen key and its latched modifiers, selects it, closes the menu
+     * and redraws at once. Nothing is created when the layout is full, and the menu closes without
+     * a button so the maximum is reported exactly as the other Add entry points do.
+     */
+    private void chooseKey(int keyCode) {
+        boolean added = editor.addButton(keyCode, keyMenuModifiers);
+        closeMenus();
+        if (!added) {
+            toast(activity.getString(R.string.touch_too_many_buttons));
+        }
+        rebuildGeometry();
+        invalidate();
+    }
+
     private void runTool(int tool) {
         TouchControlConfig.ButtonSpec spec = editor.selectedButton();
         switch (tool) {
             case TOOL_ADD:
-                // The same model call the toolbox and the launcher page use. It selects the new
-                // button, so it can be moved, resized and customised at once.
-                if (!editor.addButton()) {
+                // GeneralsX @feature Android touch editor 05/11/2026 Add opens the key-selection
+                // menu; the button is created only once a key is chosen, so no placeholder SPACE
+                // button is ever made. A full layout is reported here, before the menu opens.
+                if (!openKeyMenu()) {
                     toast(activity.getString(R.string.touch_too_many_buttons));
                 }
                 break;
@@ -913,6 +1242,7 @@ final class HotkeyOverlayView extends View {
                     toast(activity.getString(R.string.touch_select_button_first));
                 } else {
                     shapeMenuOpen = !shapeMenuOpen;
+                    keyMenuOpen = false;
                 }
                 break;
             case TOOL_SIZE_DOWN:

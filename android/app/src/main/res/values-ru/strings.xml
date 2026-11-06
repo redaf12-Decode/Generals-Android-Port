@@ -543,8 +543,8 @@
     <string name="touch_modifier_ctrl">Ctrl</string>
     <string name="touch_modifier_shift">Shift</string>
     <string name="touch_modifier_alt">Alt</string>
-    <string name="touch_width_dp">Ширина: %1$d dp</string>
-    <string name="touch_height_dp">Высота: %1$d dp</string>
+    <string name="touch_width_dp">Ширина: %1$d</string>
+    <string name="touch_height_dp">Высота: %1$d</string>
     <string name="touch_shape_rectangle">Прямоугольник</string>
     <string name="touch_shape_rounded">Со скруглением</string>
     <string name="touch_shape_square">Квадрат</string>
@@ -596,6 +596,12 @@
     <string name="touch_polygon_pentagon">Пятиугольник</string>
     <string name="touch_polygon_triangle">Треугольник</string>
     <string name="touch_shape_label">Форма</string>
+    <string name="touch_key_menu_title">Выбор клавиши</string>
+    <string name="touch_key_group_letters">Буквы</string>
+    <string name="touch_key_group_numbers">Цифры</string>
+    <string name="touch_key_group_modifiers">Модификаторы</string>
+    <string name="touch_key_group_special">Особые</string>
+    <string name="touch_key_group_function">Функции</string>
     <string name="touch_shape_polygon">Многоугольник</string>
     <string name="setup_card_touch_controls">Экранное управление</string>
     <string name="setup_touch_controls_body">Рисуйте собственные кнопки быстрого доступа поверх поля боя и редактируйте их, не выходя из матча.</string>

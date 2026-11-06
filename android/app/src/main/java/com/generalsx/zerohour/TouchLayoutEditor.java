@@ -543,19 +543,28 @@ final class TouchLayoutEditor {
         reservedBottomPx = Math.max(0f, px);
     }
 
+    /** True while another button may be created. The editor's Add row asks before opening a picker. */
+    boolean canAddButton() {
+        return working.buttons.size() < TouchControlConfig.MAX_BUTTONS;
+    }
+
     /**
-     * Adds a button in a free-ish spot and selects it. False at the model's maximum, which is
-     * what the toolbar's Add row reports rather than silently doing nothing.
+     * GeneralsX @feature Android touch editor 05/11/2026 Adds a button for a key the player has
+     * chosen. The key is required: there is no default, so Add always opens the key picker first
+     * and a placeholder SPACE button is never created. A key the catalog refuses, or a layout
+     * already at the maximum, is refused here rather than creating something unusable.
+     *
+     * The new button is selected and placed in a free-ish spot, so it can be moved, resized and
+     * customised at once. Returns false when nothing was created.
      */
-    boolean addButton() {
-        if (working.buttons.size() >= TouchControlConfig.MAX_BUTTONS) {
+    boolean addButton(int keyCode, int modifiers) {
+        if (!canAddButton() || !TouchKeyCatalog.isSelectable(keyCode)) {
             return false;
         }
         TouchControlConfig.ButtonSpec template = working.buttons.isEmpty()
             ? TouchControlConfig.defaults().buttons.get(0) : working.buttons.get(0);
-        int keyCode = KeyEvent.KEYCODE_SPACE;
         TouchControlConfig.ButtonSpec spec = new TouchControlConfig.ButtonSpec(
-            TouchKeyCatalog.displayName(keyCode), keyCode, 0, 0.5f, 0.6f,
+            TouchKeyCatalog.displayName(keyCode), keyCode, modifiers, 0.5f, 0.6f,
             template.widthDp, template.heightDp, template.shape,
             template.fillColor, template.borderColor, template.textColor);
         int highest = 0;

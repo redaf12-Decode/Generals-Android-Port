@@ -541,8 +541,8 @@
     <string name="touch_modifier_ctrl">Ctrl</string>
     <string name="touch_modifier_shift">Shift</string>
     <string name="touch_modifier_alt">Alt</string>
-    <string name="touch_width_dp">宽度：%1$d dp</string>
-    <string name="touch_height_dp">高度：%1$d dp</string>
+    <string name="touch_width_dp">宽度：%1$d</string>
+    <string name="touch_height_dp">高度：%1$d</string>
     <string name="touch_shape_rectangle">矩形</string>
     <string name="touch_shape_rounded">圆角</string>
     <string name="touch_shape_square">正方形</string>
@@ -594,6 +594,12 @@
     <string name="touch_polygon_pentagon">五边形</string>
     <string name="touch_polygon_triangle">三角形</string>
     <string name="touch_shape_label">形状</string>
+    <string name="touch_key_menu_title">选择按键</string>
+    <string name="touch_key_group_letters">字母</string>
+    <string name="touch_key_group_numbers">数字</string>
+    <string name="touch_key_group_modifiers">修饰键</string>
+    <string name="touch_key_group_special">特殊</string>
+    <string name="touch_key_group_function">功能</string>
     <string name="touch_shape_polygon">多边形</string>
     <string name="setup_card_touch_controls">屏幕控制</string>
     <string name="setup_touch_controls_body">在战场上绘制你自己的快捷按钮，并可在不离开对局的情况下编辑它们。</string>

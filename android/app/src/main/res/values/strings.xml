@@ -580,8 +580,8 @@
     <string name="touch_modifier_ctrl">Ctrl</string>
     <string name="touch_modifier_shift">Shift</string>
     <string name="touch_modifier_alt">Alt</string>
-    <string name="touch_width_dp">Width: %1$d dp</string>
-    <string name="touch_height_dp">Height: %1$d dp</string>
+    <string name="touch_width_dp">Width: %1$d</string>
+    <string name="touch_height_dp">Height: %1$d</string>
     <string name="touch_shape_rectangle">Rectangle</string>
     <string name="touch_shape_rounded">Rounded</string>
     <string name="touch_shape_square">Square</string>
@@ -601,6 +601,12 @@
     <string name="touch_polygon_pentagon">Pentagon</string>
     <string name="touch_polygon_triangle">Triangle</string>
     <string name="touch_shape_label">Shape</string>
+    <string name="touch_key_menu_title">Choose a key</string>
+    <string name="touch_key_group_letters">Letters</string>
+    <string name="touch_key_group_numbers">Numbers</string>
+    <string name="touch_key_group_modifiers">Modifiers</string>
+    <string name="touch_key_group_special">Special</string>
+    <string name="touch_key_group_function">Function</string>
     <string name="touch_shape_polygon">Polygon</string>
     <string name="setup_card_touch_controls">On-screen controls</string>
     <string name="setup_touch_controls_body">Draw your own shortcut buttons over the battlefield, and edit them without leaving the match.</string>

@@ -541,8 +541,8 @@
     <string name="touch_modifier_ctrl">Ctrl</string>
     <string name="touch_modifier_shift">Shift</string>
     <string name="touch_modifier_alt">Alt</string>
-    <string name="touch_width_dp">Largeur : %1$d dp</string>
-    <string name="touch_height_dp">Hauteur : %1$d dp</string>
+    <string name="touch_width_dp">Largeur : %1$d</string>
+    <string name="touch_height_dp">Hauteur : %1$d</string>
     <string name="touch_shape_rectangle">Rectangle</string>
     <string name="touch_shape_rounded">Arrondi</string>
     <string name="touch_shape_square">Carré</string>
@@ -594,6 +594,12 @@
     <string name="touch_polygon_pentagon">Pentagone</string>
     <string name="touch_polygon_triangle">Triangle</string>
     <string name="touch_shape_label">Forme</string>
+    <string name="touch_key_menu_title">Choisir une touche</string>
+    <string name="touch_key_group_letters">Lettres</string>
+    <string name="touch_key_group_numbers">Chiffres</string>
+    <string name="touch_key_group_modifiers">Modificateurs</string>
+    <string name="touch_key_group_special">Spéciales</string>
+    <string name="touch_key_group_function">Fonction</string>
     <string name="touch_shape_polygon">Polygone</string>
     <string name="setup_card_touch_controls">Commandes à l\'écran</string>
     <string name="setup_touch_controls_body">Dessinez vos propres boutons de raccourci sur le champ de bataille et modifiez-les sans quitter la partie.</string>

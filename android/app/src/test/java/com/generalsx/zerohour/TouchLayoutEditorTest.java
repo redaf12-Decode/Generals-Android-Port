@@ -49,7 +49,7 @@ public class TouchLayoutEditorTest {
     @Test
     public void selectAtFindsTheTopmostButton() {
         // Two buttons on the same spot: the one drawn last wins the tap.
-        editor.addButton();
+        editor.addButton(KeyEvent.KEYCODE_A, 0);
         editor.setSelectedKey(KeyEvent.KEYCODE_Z);
         TouchControlConfig.ButtonSpec added = editor.selectedButton();
         added.x = 0.5f;
@@ -275,9 +275,9 @@ public class TouchLayoutEditorTest {
     @Test
     public void addIsRefusedAtTheMaximum() {
         while (editor.buttons().size() < TouchControlConfig.MAX_BUTTONS) {
-            assertTrue(editor.addButton());
+            assertTrue(editor.addButton(KeyEvent.KEYCODE_A, 0));
         }
-        assertFalse(editor.addButton());
+        assertFalse(editor.addButton(KeyEvent.KEYCODE_A, 0));
         assertEquals(TouchControlConfig.MAX_BUTTONS, editor.buttons().size());
     }
 
@@ -335,12 +335,12 @@ public class TouchLayoutEditorTest {
         assertEquals(40, TouchControlConfig.MAX_BUTTONS);
         // The shipped layout starts with 10, so this lands exactly on 39 and then 40.
         while (editor.buttons().size() < 39) {
-            assertTrue(editor.addButton());
+            assertTrue(editor.addButton(KeyEvent.KEYCODE_A, 0));
         }
         assertEquals(39, editor.buttons().size());
-        assertTrue("the 40th button is accepted", editor.addButton());
+        assertTrue("the 40th button is accepted", editor.addButton(KeyEvent.KEYCODE_A, 0));
         assertEquals(40, editor.buttons().size());
-        assertFalse("the 41st button is refused", editor.addButton());
+        assertFalse("the 41st button is refused", editor.addButton(KeyEvent.KEYCODE_A, 0));
         assertEquals("and nothing was removed to make room", 40, editor.buttons().size());
 
         // Give the last one a corner so the reload has something distinctive to check.

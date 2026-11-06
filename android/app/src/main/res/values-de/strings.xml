@@ -541,8 +541,8 @@
     <string name="touch_modifier_ctrl">Ctrl</string>
     <string name="touch_modifier_shift">Shift</string>
     <string name="touch_modifier_alt">Alt</string>
-    <string name="touch_width_dp">Breite: %1$d dp</string>
-    <string name="touch_height_dp">Höhe: %1$d dp</string>
+    <string name="touch_width_dp">Breite: %1$d</string>
+    <string name="touch_height_dp">Höhe: %1$d</string>
     <string name="touch_shape_rectangle">Rechteck</string>
     <string name="touch_shape_rounded">Abgerundet</string>
     <string name="touch_shape_square">Quadrat</string>
@@ -594,6 +594,12 @@
     <string name="touch_polygon_pentagon">Fünfeck</string>
     <string name="touch_polygon_triangle">Dreieck</string>
     <string name="touch_shape_label">Form</string>
+    <string name="touch_key_menu_title">Taste wählen</string>
+    <string name="touch_key_group_letters">Buchstaben</string>
+    <string name="touch_key_group_numbers">Zahlen</string>
+    <string name="touch_key_group_modifiers">Modifikatoren</string>
+    <string name="touch_key_group_special">Spezial</string>
+    <string name="touch_key_group_function">Funktion</string>
     <string name="touch_shape_polygon">Vieleck</string>
     <string name="setup_card_touch_controls">Bildschirmsteuerung</string>
     <string name="setup_touch_controls_body">Zeichnen Sie eigene Kurzbefehlsknöpfe über das Schlachtfeld und bearbeiten Sie sie, ohne das Match zu verlassen.</string>

@@ -541,8 +541,8 @@
     <string name="touch_modifier_ctrl">Ctrl</string>
     <string name="touch_modifier_shift">Shift</string>
     <string name="touch_modifier_alt">Alt</string>
-    <string name="touch_width_dp">너비: %1$d dp</string>
-    <string name="touch_height_dp">높이: %1$d dp</string>
+    <string name="touch_width_dp">너비: %1$d</string>
+    <string name="touch_height_dp">높이: %1$d</string>
     <string name="touch_shape_rectangle">사각형</string>
     <string name="touch_shape_rounded">둥근 사각형</string>
     <string name="touch_shape_square">정사각형</string>
@@ -594,6 +594,12 @@
     <string name="touch_polygon_pentagon">오각형</string>
     <string name="touch_polygon_triangle">삼각형</string>
     <string name="touch_shape_label">모양</string>
+    <string name="touch_key_menu_title">키 선택</string>
+    <string name="touch_key_group_letters">문자</string>
+    <string name="touch_key_group_numbers">숫자</string>
+    <string name="touch_key_group_modifiers">보조 키</string>
+    <string name="touch_key_group_special">특수</string>
+    <string name="touch_key_group_function">기능</string>
     <string name="touch_shape_polygon">다각형</string>
     <string name="setup_card_touch_controls">화면 조작</string>
     <string name="setup_touch_controls_body">전장 위에 나만의 단축 버튼을 그리고, 경기를 나가지 않고 편집하세요.</string>

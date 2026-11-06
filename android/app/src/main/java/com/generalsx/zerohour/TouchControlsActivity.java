@@ -65,6 +65,29 @@ public class TouchControlsActivity extends Activity {
     private TouchLayoutEditor editor;
     private TouchEditorRenderer renderer;
 
+    /**
+     * GeneralsX @bugfix Android touch editor 05/11/2026 The view that actually draws. The frame it
+     * sits in is a container, so invalidating the container never repaints the buttons inside it.
+     * Every edit refreshes this reference directly.
+     */
+    private EditorCanvas editorSurface;
+
+    /**
+     * GeneralsX @feature Android touch editor 05/11/2026 The preview's letterbox transform. The
+     * editor's viewport is the real landscape game screen; this maps it into the narrower area the
+     * side inspector leaves. The renderer draws through it and touch is mapped back through its
+     * inverse, so a button's stored position never depends on the inspector's width.
+     */
+    private final TouchPreviewViewport preview = new TouchPreviewViewport();
+    /** The game screen the preview stands for, in pixels. */
+    private int gameWidth;
+    private int gameHeight;
+
+    /** The key-selection menu the Add button opens, shared with the in-game editor. */
+    private TouchKeyPicker keyPicker;
+    /** The picker dialog while it is showing, so a choice or a Cancel can close it. */
+    private android.app.AlertDialog keyDialog;
+
     private float downX;
     private float downY;
     private boolean dragging;
@@ -77,9 +100,10 @@ public class TouchControlsActivity extends Activity {
         ThemeHelper.apply(this);
         editor = new TouchLayoutEditor(TouchControlConfig.load(this));
         renderer = new TouchEditorRenderer(this);
+        keyPicker = new TouchKeyPicker();
         touchSlop[0] = ViewConfiguration.get(this).getScaledTouchSlop();
         setContentView(buildLayout());
-        canvas.post(this::refresh);
+        editorSurface.post(this::refresh);
     }
 
     private View buildLayout() {
@@ -100,11 +124,12 @@ public class TouchControlsActivity extends Activity {
         // GeneralsX @bugfix Android touch editor 05/11/2026 The editing surface is the whole
         // FrameLayout: it must be attached MATCH_PARENT, or a plain View measures to nothing
         // (WRAP_CONTENT) and the editor draws on a 0-pixel-high canvas -- the layout loads, but
-        // no button appears. The reference attached it with weight, so do the same.
-        EditorCanvas surface = new EditorCanvas(this);
-        surface.setLayoutParams(new FrameLayout.LayoutParams(
+        // no button appears. The reference attached it with weight, so do the same. The reference
+        // to it is kept so every edit can repaint the view that actually draws.
+        editorSurface = new EditorCanvas(this);
+        editorSurface.setLayoutParams(new FrameLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
-        canvas.addView(surface);
+        canvas.addView(editorSurface);
         body.addView(canvas);
 
         inspector = new LinearLayout(this);
@@ -153,12 +178,7 @@ public class TouchControlsActivity extends Activity {
         int pad = (int) (8 * getResources().getDisplayMetrics().density);
         footer.setPadding(pad, pad, pad, pad);
 
-        footer.addView(footerButton(R.string.touch_add_button, v -> {
-            if (!editor.addButton()) {
-                toast(getString(R.string.touch_too_many_buttons));
-            }
-            refresh();
-        }));
+        footer.addView(footerButton(R.string.touch_add_button, v -> showKeyPicker()));
         footer.addView(footerButton(R.string.touch_reset_button, v -> {
             editor.restoreDefaults();
             refresh();
@@ -195,11 +215,91 @@ public class TouchControlsActivity extends Activity {
 
     // ------------------------------------------------------------------ inspector
 
+    /**
+     * Recomputes the preview transform, rebuilds the inspector and repaints the drawing surface.
+     *
+     * GeneralsX @bugfix Android touch editor 05/11/2026 This used to call canvas.invalidate() --
+     * the FrameLayout -- which never repaints the EditorCanvas child that draws the buttons, so an
+     * edit changed the model and left the picture stale. The surface is invalidated directly, and
+     * the editor's viewport is the game screen the preview stands for rather than the narrow canvas,
+     * so a stored position is the same here as in the match.
+     */
     private void refresh() {
-        editor.applyViewportTo(canvas.getWidth(), canvas.getHeight(),
-            getResources().getDisplayMetrics().density);
+        applyPreviewTransform();
         rebuildInspector();
-        canvas.invalidate();
+        editorSurface.invalidate();
+    }
+
+    /**
+     * Fits the game screen into the area the canvas has, hands the transform to the renderer and
+     * sets the editor's viewport to the game screen. The game screen is the phone's display size,
+     * which is what the in-game overlay measures, so the two editors agree on every coordinate.
+     */
+    private void applyPreviewTransform() {
+        int width = editorSurface.getWidth();
+        int height = editorSurface.getHeight();
+        if (width <= 0 || height <= 0) {
+            // Before the first layout there is nothing to fit into; the game screen is still the
+            // display, so the editor can be given a valid viewport and the transform is applied on
+            // the next pass.
+            editor.applyViewportTo(gameWidth(), gameHeight(),
+                getResources().getDisplayMetrics().density);
+            return;
+        }
+        preview.update(width, height, gameWidth(), gameHeight());
+        renderer.setPreviewTransform(preview.scale(), preview.offsetX(), preview.offsetY());
+        editor.applyViewportTo(gameWidth(), gameHeight(),
+            getResources().getDisplayMetrics().density);
+    }
+
+    /** The landscape game screen the preview stands for: the display, whichever way it is held. */
+    private int gameWidth() {
+        return gameWidth > 0 ? gameWidth : Math.max(displayWidth(), displayHeight());
+    }
+
+    private int gameHeight() {
+        return gameHeight > 0 ? gameHeight : Math.min(displayWidth(), displayHeight());
+    }
+
+    private int displayWidth() {
+        return getResources().getDisplayMetrics().widthPixels;
+    }
+
+    private int displayHeight() {
+        return getResources().getDisplayMetrics().heightPixels;
+    }
+
+    /**
+     * GeneralsX @feature Android touch editor 05/11/2026 Pins the game screen the preview stands
+     * for, so a test can render the page at a known size instead of the emulator's.
+     */
+    void setGameViewportForTest(int width, int height) {
+        gameWidth = width;
+        gameHeight = height;
+    }
+
+    /** The editor model, for a test that drives the real touch path and reads the result. */
+    TouchLayoutEditor editorForTest() {
+        return editor;
+    }
+
+    /** The view that draws, for a test that renders the page as the window does. */
+    View editorSurfaceForTest() {
+        return editorSurface;
+    }
+
+    /** The open picker dialog, or null when Add refused or the picker was dismissed. */
+    android.app.AlertDialog keyDialogForTest() {
+        return keyDialog;
+    }
+
+    /** A canvas point in game-screen pixels: the inverse of the preview's transform. */
+    private float toGameX(float previewX) {
+        return preview.toGameX(previewX);
+    }
+
+    private float toGameY(float previewY) {
+        return preview.toGameY(previewY);
     }
 
     private void rebuildInspector() {
@@ -233,21 +333,21 @@ public class TouchControlsActivity extends Activity {
         addSlider(column, R.string.touch_width_dp, spec.widthDp,
             TouchControlConfig.MIN_SIZE_DP, TouchControlConfig.MAX_SIZE_DP, value -> {
                 spec.setSize(value, spec.heightDp);
-                editor.applyViewportTo(canvas.getWidth(), canvas.getHeight(),
+                editor.applyViewportTo(gameWidth(), gameHeight(),
                     getResources().getDisplayMetrics().density);
-                canvas.invalidate();
+                editorSurface.invalidate();
             });
         addSlider(column, R.string.touch_height_dp, spec.heightDp,
             TouchControlConfig.MIN_SIZE_DP, TouchControlConfig.MAX_SIZE_DP, value -> {
                 spec.setSize(spec.widthDp, value);
-                editor.applyViewportTo(canvas.getWidth(), canvas.getHeight(),
+                editor.applyViewportTo(gameWidth(), gameHeight(),
                     getResources().getDisplayMetrics().density);
-                canvas.invalidate();
+                editorSurface.invalidate();
             });
         addSlider(column, R.string.touch_button_opacity, spec.opacity * 100f, 0f, 100f,
             value -> {
                 spec.opacity = value / 100f;
-                canvas.invalidate();
+                editorSurface.invalidate();
             });
         addModePicker(column, spec);
         addColorRows(column, spec);
@@ -537,43 +637,61 @@ public class TouchControlsActivity extends Activity {
         @Override
         protected void onSizeChanged(int width, int height, int oldWidth, int oldHeight) {
             super.onSizeChanged(width, height, oldWidth, oldHeight);
-            // GeneralsX @bugfix Android touch editor 05/11/2026 The viewport is the canvas' real
-            // size, so it is applied the moment that size is known. Relying on the single post()
-            // in onCreate left the first frame -- and any rotation -- editing against a stale or
-            // zero size, which is the other half of the empty-editor defect.
-            editor.applyViewportTo(width, height, getResources().getDisplayMetrics().density);
+            // GeneralsX @bugfix Android touch editor 05/11/2026 The viewport is the GAME screen the
+            // preview stands for, and the letterbox transform is recomputed here, the moment the
+            // canvas' real size is known -- so the first frame and a rotation both edit against the
+            // right geometry. Relying on the single post() in onCreate left the first frame editing
+            // against a stale or zero size, which was half of the empty-editor defect.
+            applyPreviewTransform();
             invalidate();
         }
 
         @Override
         protected void onDraw(Canvas canvas2) {
             super.onDraw(canvas2);
-            drawCommandBarGuide(canvas2);
+            drawGameFrame(canvas2);
             renderer.draw(canvas2, editor);
         }
 
-        private void drawCommandBarGuide(Canvas canvas2) {
+        /**
+         * GeneralsX @feature Android touch editor 05/11/2026 The letterboxed game screen and its
+         * command-bar guide, drawn in game-screen pixels through the preview transform so it lines
+         * up with the buttons the renderer draws. The area outside the game screen is left dark, so
+         * the preview never pretends the narrower canvas is the battlefield.
+         */
+        private void drawGameFrame(Canvas canvas2) {
             Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+            canvas2.save();
+            canvas2.translate(preview.offsetX(), preview.offsetY());
+            canvas2.scale(preview.scale(), preview.scale());
+            paint.setColor(0xFF121A22);
+            canvas2.drawRect(0, 0, gameWidth(), gameHeight(), paint);
+            float strip = gameHeight() * 0.24f;
             paint.setColor(0x33FFB74D);
-            float strip = getHeight() * 0.24f;
-            canvas2.drawRect(0, getHeight() - strip, getWidth(), getHeight(), paint);
+            canvas2.drawRect(0, gameHeight() - strip, gameWidth(), gameHeight(), paint);
             paint.setColor(0x88FFB74D);
             paint.setStyle(Paint.Style.STROKE);
             paint.setStrokeWidth(2f);
-            canvas2.drawRect(0, getHeight() - strip, getWidth(), getHeight(), paint);
+            canvas2.drawRect(0, gameHeight() - strip, gameWidth(), gameHeight(), paint);
+            canvas2.restore();
         }
 
         @Override
         public boolean onTouchEvent(MotionEvent event) {
+            // GeneralsX @feature Android touch editor 05/11/2026 A touch is in canvas pixels, but
+            // the editor's geometry is in game-screen pixels, so every point is mapped through the
+            // preview's inverse before it is used. Dragging and resizing therefore place a button
+            // exactly where it is drawn, and the same stored fraction results whatever the canvas
+            // width is. Every refresh invalidates this surface directly -- not its parent frame.
             switch (event.getActionMasked()) {
                 case MotionEvent.ACTION_DOWN: {
-                    downX = event.getX();
-                    downY = event.getY();
+                    downX = toGameX(event.getX());
+                    downY = toGameY(event.getY());
                     if (editor.isOnResizeHandle(downX, downY)) {
                         resizing = true;
                         dragging = false;
                         editor.beginResize(downX, downY);
-                        canvas.invalidate();
+                        invalidate();
                         return true;
                     }
                     if (editor.selectAt(downX, downY)) {
@@ -584,15 +702,15 @@ public class TouchControlsActivity extends Activity {
                         editor.clearSelection();
                     }
                     rebuildInspector();
-                    canvas.invalidate();
+                    invalidate();
                     return true;
                 }
                 case MotionEvent.ACTION_MOVE: {
-                    float x = event.getX();
-                    float y = event.getY();
+                    float x = toGameX(event.getX());
+                    float y = toGameY(event.getY());
                     if (resizing) {
                         editor.resizeTo(x, y);
-                        canvas.invalidate();
+                        invalidate();
                         return true;
                     }
                     if (editor.selectedButton() != null) {
@@ -605,7 +723,7 @@ public class TouchControlsActivity extends Activity {
                             dragging = true;
                         }
                         editor.dragTo(x, y);
-                        canvas.invalidate();
+                        invalidate();
                     }
                     return true;
                 }
@@ -616,7 +734,7 @@ public class TouchControlsActivity extends Activity {
                     }
                     dragging = false;
                     resizing = false;
-                    canvas.invalidate();
+                    invalidate();
                     return true;
                 }
                 default:
@@ -626,6 +744,114 @@ public class TouchControlsActivity extends Activity {
     }
 
     // ------------------------------------------------------------------ transfer and save
+
+    // ------------------------------------------------------------------ key selection
+
+    /**
+     * GeneralsX @feature Android touch editor 05/11/2026 Add opens the key-selection menu, and a
+     * button is created only for the key the player picks -- there is no placeholder SPACE button.
+     * Cancelling creates nothing. A layout already at the maximum is refused before the menu opens.
+     *
+     * The menu is built from TouchKeyCatalog, the same source the in-game editor's grid draws, so
+     * the two pickers offer exactly the same keys and a chosen key is stored as the button's real
+     * keycode, not a label.
+     */
+    private void showKeyPicker() {
+        if (!editor.canAddButton()) {
+            toast(getString(R.string.touch_too_many_buttons));
+            return;
+        }
+        keyDialog = buildKeyPickerDialog();
+        keyDialog.show();
+    }
+
+    /** Builds the picker dialog, so a test can inspect it without showing a window. */
+    android.app.AlertDialog buildKeyPickerDialog() {
+        LinearLayout column = new LinearLayout(this);
+        column.setOrientation(LinearLayout.VERTICAL);
+        int pad = (int) (12 * getResources().getDisplayMetrics().density);
+        column.setPadding(pad, pad, pad, pad);
+
+        ScrollView scroll = new ScrollView(this);
+        scroll.addView(column);
+
+        for (int group = 0; group < TouchKeyCatalog.GROUP_COUNT; ++group) {
+            TextView caption = new TextView(this);
+            caption.setText(groupName(group));
+            caption.setTextColor(0xFF9FD4D8);
+            caption.setTextSize(12f);
+            caption.setPadding(0, 10, 0, 4);
+            column.addView(caption);
+
+            List<TouchKeyCatalog.Entry> entries = TouchKeyCatalog.group(group);
+            LinearLayout row = null;
+            for (int i = 0; i < entries.size(); ++i) {
+                if (i % TouchKeyPicker.COLUMNS == 0) {
+                    row = new LinearLayout(this);
+                    row.setOrientation(LinearLayout.HORIZONTAL);
+                    column.addView(row);
+                }
+                row.addView(keyChip(entries.get(i)));
+            }
+        }
+
+        return new android.app.AlertDialog.Builder(this)
+            .setTitle(R.string.touch_key_menu_title)
+            .setView(scroll)
+            .setNegativeButton(android.R.string.cancel, null)
+            .create();
+    }
+
+    /** Opens the picker as the footer's Add button does, for a test of the refusal path. */
+    void showKeyPickerForTest() {
+        showKeyPicker();
+    }
+
+    /** One key in the launcher's menu: tapping it creates the button and selects it. */
+    private View keyChip(TouchKeyCatalog.Entry entry) {
+        Button button = new Button(this);
+        button.setText(entry.name);
+        button.setTextSize(11f);
+        button.setTextColor(Color.WHITE);
+        button.setBackgroundColor(0xFF2A323A);
+        button.setPadding(4, 0, 4, 0);
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(0,
+            ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
+        params.setMargins(2, 2, 2, 2);
+        button.setLayoutParams(params);
+        button.setOnClickListener(v -> {
+            if (editor.addButton(entry.keyCode, 0)) {
+                dismissDialog();
+                refresh();
+            } else {
+                dismissDialog();
+                toast(getString(R.string.touch_too_many_buttons));
+            }
+        });
+        return button;
+    }
+
+    /** Closes the picker dialog when one is showing, so a choice leaves no window behind. */
+    private void dismissDialog() {
+        if (keyDialog != null && keyDialog.isShowing()) {
+            keyDialog.dismiss();
+        }
+    }
+
+    private String groupName(int group) {
+        switch (group) {
+            case TouchKeyCatalog.GROUP_LETTER:
+                return getString(R.string.touch_key_group_letters);
+            case TouchKeyCatalog.GROUP_DIGIT:
+                return getString(R.string.touch_key_group_numbers);
+            case TouchKeyCatalog.GROUP_MODIFIER:
+                return getString(R.string.touch_key_group_modifiers);
+            case TouchKeyCatalog.GROUP_SPECIAL:
+                return getString(R.string.touch_key_group_special);
+            default:
+                return getString(R.string.touch_key_group_function);
+        }
+    }
 
     private void importLayout() {
         Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);

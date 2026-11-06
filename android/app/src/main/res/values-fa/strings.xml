@@ -541,8 +541,8 @@
     <string name="touch_modifier_ctrl">Ctrl</string>
     <string name="touch_modifier_shift">Shift</string>
     <string name="touch_modifier_alt">Alt</string>
-    <string name="touch_width_dp">عرض: %1$d dp</string>
-    <string name="touch_height_dp">ارتفاع: %1$d dp</string>
+    <string name="touch_width_dp">عرض: %1$d</string>
+    <string name="touch_height_dp">ارتفاع: %1$d</string>
     <string name="touch_shape_rectangle">مستطیل</string>
     <string name="touch_shape_rounded">گردشده</string>
     <string name="touch_shape_square">مربع</string>
@@ -594,6 +594,12 @@
     <string name="touch_polygon_pentagon">پنج‌ضلعی</string>
     <string name="touch_polygon_triangle">مثلث</string>
     <string name="touch_shape_label">شکل</string>
+    <string name="touch_key_menu_title">انتخاب کلید</string>
+    <string name="touch_key_group_letters">حروف</string>
+    <string name="touch_key_group_numbers">اعداد</string>
+    <string name="touch_key_group_modifiers">تعدیل‌کننده‌ها</string>
+    <string name="touch_key_group_special">ویژه</string>
+    <string name="touch_key_group_function">عملکرد</string>
     <string name="touch_shape_polygon">چندضلعی</string>
     <string name="setup_card_touch_controls">کنترل‌های روی صفحه</string>
     <string name="setup_touch_controls_body">دکمه‌های میان‌بر خود را روی میدان نبرد بکشید و بدون ترک مسابقه آن‌ها را ویرایش کنید.</string>

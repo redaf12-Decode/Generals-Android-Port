@@ -541,8 +541,8 @@
     <string name="touch_modifier_ctrl">Ctrl</string>
     <string name="touch_modifier_shift">Shift</string>
     <string name="touch_modifier_alt">Alt</string>
-    <string name="touch_width_dp">العرض: %1$d dp</string>
-    <string name="touch_height_dp">الارتفاع: %1$d dp</string>
+    <string name="touch_width_dp">العرض: %1$d</string>
+    <string name="touch_height_dp">الارتفاع: %1$d</string>
     <string name="touch_shape_rectangle">مستطيل</string>
     <string name="touch_shape_rounded">مستدير الزوايا</string>
     <string name="touch_shape_square">مربع</string>
@@ -594,6 +594,12 @@
     <string name="touch_polygon_pentagon">خماسي</string>
     <string name="touch_polygon_triangle">مثلث</string>
     <string name="touch_shape_label">الشكل</string>
+    <string name="touch_key_menu_title">اختر مفتاحًا</string>
+    <string name="touch_key_group_letters">حروف</string>
+    <string name="touch_key_group_numbers">أرقام</string>
+    <string name="touch_key_group_modifiers">معدِّلات</string>
+    <string name="touch_key_group_special">خاص</string>
+    <string name="touch_key_group_function">وظائف</string>
     <string name="touch_shape_polygon">مضلع</string>
     <string name="setup_card_touch_controls">أدوات التحكم على الشاشة</string>
     <string name="setup_touch_controls_body">ارسم أزرار الاختصار الخاصة بك فوق ساحة المعركة وحرّرها دون مغادرة المباراة.</string>

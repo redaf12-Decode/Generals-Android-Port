@@ -194,7 +194,7 @@ public class TouchEditorAppearanceTest {
         TouchLayoutEditor editor = new TouchLayoutEditor(TouchControlConfig.load(activity));
         editor.applyViewportTo(WIDTH, HEIGHT, 2f);
         int before = editor.buttons().size();
-        assertTrue(editor.addButton());
+        assertTrue(editor.addButton(KeyEvent.KEYCODE_A, 0));
         assertEquals(before + 1, editor.buttons().size());
         assertEquals("the new button is selected", before, editor.selectedIndex());
         assertNotNull(editor.selectedButton());
@@ -207,7 +207,7 @@ public class TouchEditorAppearanceTest {
     public void addButtonLandsInASafeVisibleSpot() {
         TouchLayoutEditor editor = new TouchLayoutEditor(TouchControlConfig.load(activity));
         editor.applyViewportTo(WIDTH, HEIGHT, 2f);
-        editor.addButton();
+        editor.addButton(KeyEvent.KEYCODE_A, 0);
         TouchControlConfig.ButtonSpec added = editor.selectedButton();
         android.graphics.RectF rect = new android.graphics.RectF();
         editor.bounds(added, rect);
@@ -221,11 +221,11 @@ public class TouchEditorAppearanceTest {
     public void addIsRefusedAtTheSameMaximumFromEitherEntryPoint() {
         TouchLayoutEditor editor = new TouchLayoutEditor(TouchControlConfig.load(activity));
         editor.applyViewportTo(WIDTH, HEIGHT, 2f);
-        while (editor.addButton()) {
+        while (editor.addButton(KeyEvent.KEYCODE_A, 0)) {
             // fill it up through the one operation
         }
         assertEquals(TouchControlConfig.MAX_BUTTONS, editor.buttons().size());
-        assertFalse("the same call refuses past the maximum", editor.addButton());
+        assertFalse("the same call refuses past the maximum", editor.addButton(KeyEvent.KEYCODE_A, 0));
     }
 
     /** A new button is not dropped on top of a button that is live in the match. */
@@ -233,8 +233,8 @@ public class TouchEditorAppearanceTest {
     public void aNewButtonAvoidsAnExistingLiveButton() {
         TouchLayoutEditor editor = new TouchLayoutEditor(TouchControlConfig.load(activity));
         editor.applyViewportTo(WIDTH, HEIGHT, 2f);
-        editor.addButton();
-        editor.addButton();
+        editor.addButton(KeyEvent.KEYCODE_A, 0);
+        editor.addButton(KeyEvent.KEYCODE_A, 0);
         android.graphics.RectF a = new android.graphics.RectF();
         android.graphics.RectF b = new android.graphics.RectF();
         editor.bounds(editor.buttons().get(editor.buttons().size() - 2), a);
@@ -254,7 +254,7 @@ public class TouchEditorAppearanceTest {
     public void rotatingTheViewportKeepsEveryButtonRecoverable() {
         TouchLayoutEditor editor = new TouchLayoutEditor(TouchControlConfig.load(activity));
         editor.applyViewportTo(WIDTH, HEIGHT, 2f);
-        editor.addButton();
+        editor.addButton(KeyEvent.KEYCODE_A, 0);
         int rotatedWidth = HEIGHT;
         int rotatedHeight = WIDTH;
         editor.applyViewportTo(rotatedWidth, rotatedHeight, 2f);   // landscape -> portrait
@@ -280,7 +280,7 @@ public class TouchEditorAppearanceTest {
     public void aNewButtonIsImmediatelyEditable() {
         TouchLayoutEditor editor = new TouchLayoutEditor(TouchControlConfig.load(activity));
         editor.applyViewportTo(WIDTH, HEIGHT, 2f);
-        editor.addButton();
+        editor.addButton(KeyEvent.KEYCODE_A, 0);
         int key = editor.selectedButton().keyCode;
         float x0 = editor.selectedButton().x;
         editor.moveSelectedBy(60f, 0f);
@@ -374,7 +374,7 @@ public class TouchEditorAppearanceTest {
         }
     }
 
-    /** The overlay's own Add entry point adds through the model and reports the maximum. */
+    /** The overlay's own Add entry point opens the key menu and creates the chosen button. */
     @Test
     public void theOverlayAddEntryPointUsesTheEditorModel() {
         HotkeyOverlayView overlay = HotkeyOverlayView.attach(activity);
@@ -382,10 +382,18 @@ public class TouchEditorAppearanceTest {
             View.MeasureSpec.makeMeasureSpec(HEIGHT, View.MeasureSpec.EXACTLY));
         overlay.layout(0, 0, WIDTH, HEIGHT);
         int stored = TouchControlConfig.load(activity).buttons.size();
-        assertTrue("the in-game Add opens the editor and adds", overlay.addButtonInEditor());
+        assertTrue("the in-game Add opens the editor and its key menu",
+            overlay.openKeyPickerInEditor());
         assertTrue(overlay.isEditing());
+        assertTrue("the key menu is open", overlay.keyMenuOpenForTest());
+        assertEquals("nothing is created before a key is chosen",
+            stored, overlay.editorButtonCountForTest());
+        overlay.chooseKeyForTest(overlay.keyPickerIndexOf(KeyEvent.KEYCODE_Z));
         assertEquals("one more button in the editor's working copy",
             stored + 1, overlay.editorButtonCountForTest());
+        assertEquals("and it carries the chosen key", KeyEvent.KEYCODE_Z,
+            overlay.editorModel().selectedButton().keyCode);
+        assertFalse("choosing closes the key menu", overlay.keyMenuOpenForTest());
         overlay.leaveEditor();
         assertEquals("Cancel discards the added button",
             stored, TouchControlConfig.load(activity).buttons.size());
@@ -424,6 +432,20 @@ public class TouchEditorAppearanceTest {
         view.onTouchEvent(move(x0 + (x1 - x0) * 0.2f, y0 + (y1 - y0) * 0.2f));
         view.onTouchEvent(move(x1, y1));
         view.onTouchEvent(up(x1, y1));
+    }
+
+    /**
+     * Adds a button the way a player does: tap the toolbar's + cell, then tap the key. The key is
+     * chosen through the view's own touch path, so this exercises the real menu, not a back door.
+     */
+    private void addThroughKeyMenu(HotkeyOverlayView overlay, int keyCode) {
+        tap(overlay, toolX(0), toolbarY());
+        assertTrue("the + cell opened the key menu", overlay.keyMenuOpenForTest());
+        int index = overlay.keyPickerIndexOf(keyCode);
+        assertTrue("the key is in the catalog", index >= 0);
+        android.graphics.PointF cell = overlay.keyCellCenterForTest(index);
+        tap(overlay, cell.x, cell.y);
+        assertFalse("choosing a key closes the menu", overlay.keyMenuOpenForTest());
     }
 
     /** The toolbar cell centres, as the view lays them out at this size and density. */
@@ -499,15 +521,43 @@ public class TouchEditorAppearanceTest {
         return count;
     }
 
-    /** A tap on the toolbar's Add cell creates a button through the model, on the real view. */
+    /** A tap on the toolbar's Add cell opens the key menu; a key tap creates the button. */
     @Test
     public void tappingTheToolbarAddCellAddsAButton() {
         HotkeyOverlayView overlay = laidOutOverlay();
         overlay.enterEditor();
         int before = overlay.editorButtonCountForTest();
         tap(overlay, toolX(0), toolbarY());
-        assertEquals("the visible + cell added a button", before + 1,
+        assertTrue("the visible + cell opened the key menu", overlay.keyMenuOpenForTest());
+        assertEquals("nothing is created before a key is chosen", before,
             overlay.editorButtonCountForTest());
+        // A tap on a real key cell, driven through the view's own touch path.
+        android.graphics.PointF keyCell =
+            overlay.keyCellCenterForTest(overlay.keyPickerIndexOf(KeyEvent.KEYCODE_B));
+        tap(overlay, keyCell.x, keyCell.y);
+        assertEquals("the key tap added a button", before + 1,
+            overlay.editorButtonCountForTest());
+        assertEquals("with the tapped key", KeyEvent.KEYCODE_B,
+            overlay.editorModel().selectedButton().keyCode);
+        assertFalse("and the menu closed", overlay.keyMenuOpenForTest());
+    }
+
+    /** A modifier latched in the key menu's header is stored on the button it helps create. */
+    @Test
+    public void aLatchedModifierIsStoredOnTheCreatedButton() {
+        HotkeyOverlayView overlay = laidOutOverlay();
+        overlay.enterEditor();
+        tap(overlay, toolX(0), toolbarY());
+        assertTrue(overlay.keyMenuOpenForTest());
+        android.graphics.PointF ctrl = overlay.keyModifierCenterForTest(0);
+        tap(overlay, ctrl.x, ctrl.y);
+        android.graphics.PointF keyCell =
+            overlay.keyCellCenterForTest(overlay.keyPickerIndexOf(KeyEvent.KEYCODE_A));
+        tap(overlay, keyCell.x, keyCell.y);
+        TouchControlConfig.ButtonSpec spec = overlay.editorModel().selectedButton();
+        assertEquals(KeyEvent.KEYCODE_A, spec.keyCode);
+        assertEquals("Ctrl is part of the combination",
+            TouchKeyCatalog.MOD_CTRL, spec.modifiers & TouchKeyCatalog.MOD_CTRL);
     }
 
     /** Tapping Shape opens the menu, and tapping a shape cell changes the selected button. */
@@ -515,7 +565,7 @@ public class TouchEditorAppearanceTest {
     public void tappingShapeThenACellChangesTheShape() {
         HotkeyOverlayView overlay = laidOutOverlay();
         overlay.enterEditor();
-        tap(overlay, toolX(0), toolbarY());     // add, which selects the new button
+        addThroughKeyMenu(overlay, KeyEvent.KEYCODE_Z);
         int key = overlay.editorModel().selectedButton().keyCode;
         tap(overlay, toolX(1), toolbarY());     // open the shape menu
         assertTrue("the shape menu is open", overlay.shapeMenuOpenForTest());
@@ -534,7 +584,7 @@ public class TouchEditorAppearanceTest {
     public void tappingAPolygonCellStoresTheVariant() {
         HotkeyOverlayView overlay = laidOutOverlay();
         overlay.enterEditor();
-        tap(overlay, toolX(0), toolbarY());
+        addThroughKeyMenu(overlay, KeyEvent.KEYCODE_Z);
         int key = overlay.editorModel().selectedButton().keyCode;
         tap(overlay, toolX(1), toolbarY());
         // The octagon is the fourth polygon cell: index 6 + 3.
@@ -580,7 +630,7 @@ public class TouchEditorAppearanceTest {
 
     // ---------------------------------------------------------------- the real toolbox
 
-    /** The in-game toolbox's Add row uses the same model and opens the editor. */
+    /** The in-game toolbox's Add row opens the editor and its key menu, through the same model. */
     @Test
     public void theToolboxAddRowAddsThroughTheModel() {
         HotkeyOverlayView hotkeys = laidOutOverlay();
@@ -590,12 +640,16 @@ public class TouchEditorAppearanceTest {
             View.MeasureSpec.makeMeasureSpec(HEIGHT, View.MeasureSpec.EXACTLY));
         toolbox.layout(0, 0, WIDTH, HEIGHT);
         toolbox.ensurePanelOpenForTest();
+        int stored = TouchControlConfig.load(activity).buttons.size();
         android.graphics.PointF addRow = toolbox.toolRowCenterForTest(1); // TOOL_ADD_BUTTON
         tap(toolbox, addRow.x, addRow.y);
         assertTrue("the toolbox's Add opened the editor", hotkeys.isEditing());
+        assertTrue("and its key menu", hotkeys.keyMenuOpenForTest());
+        assertEquals("nothing is created until a key is chosen",
+            stored, hotkeys.editorButtonCountForTest());
+        hotkeys.chooseKeyForTest(hotkeys.keyPickerIndexOf(KeyEvent.KEYCODE_C));
         assertEquals("the toolbox's Add added through the same model",
-            TouchControlConfig.load(activity).buttons.size() + 1,
-            hotkeys.editorButtonCountForTest());
+            stored + 1, hotkeys.editorButtonCountForTest());
     }
 
     /**

@@ -541,8 +541,8 @@
     <string name="touch_modifier_ctrl">Ctrl</string>
     <string name="touch_modifier_shift">Shift</string>
     <string name="touch_modifier_alt">Alt</string>
-    <string name="touch_width_dp">Szerokość: %1$d dp</string>
-    <string name="touch_height_dp">Wysokość: %1$d dp</string>
+    <string name="touch_width_dp">Szerokość: %1$d</string>
+    <string name="touch_height_dp">Wysokość: %1$d</string>
     <string name="touch_shape_rectangle">Prostokąt</string>
     <string name="touch_shape_rounded">Zaokrąglony</string>
     <string name="touch_shape_square">Kwadrat</string>
@@ -594,6 +594,12 @@
     <string name="touch_polygon_pentagon">Pięciokąt</string>
     <string name="touch_polygon_triangle">Trójkąt</string>
     <string name="touch_shape_label">Kształt</string>
+    <string name="touch_key_menu_title">Wybierz klawisz</string>
+    <string name="touch_key_group_letters">Litery</string>
+    <string name="touch_key_group_numbers">Cyfry</string>
+    <string name="touch_key_group_modifiers">Modyfikatory</string>
+    <string name="touch_key_group_special">Specjalne</string>
+    <string name="touch_key_group_function">Funkcyjne</string>
     <string name="touch_shape_polygon">Wielokąt</string>
     <string name="setup_card_touch_controls">Sterowanie ekranowe</string>
     <string name="setup_touch_controls_body">Rysuj własne przyciski skrótów nad polem bitwy i edytuj je bez wychodzenia z meczu.</string>

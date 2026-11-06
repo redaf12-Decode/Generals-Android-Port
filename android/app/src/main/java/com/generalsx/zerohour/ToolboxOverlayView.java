@@ -654,8 +654,9 @@ final class ToolboxOverlayView extends View {
 
     /**
      * GeneralsX @feature Android touch editor 05/11/2026 The panel's "Add button": it opens the
-     * editor and adds a button through the same model call the editor toolbar and the launcher page
-     * use, then selects it. There is no second button-management system here.
+     * editor and the key-selection menu through the same model call the editor toolbar and the
+     * launcher page use. Nothing is created until a key is chosen, so there is no placeholder
+     * button; the maximum is reported here, before the menu would open.
      */
     private void addButtonFromToolbox() {
         panelOpen = false;
@@ -664,9 +665,7 @@ final class ToolboxOverlayView extends View {
         if (hotkeyOverlay == null) {
             return;
         }
-        if (hotkeyOverlay.addButtonInEditor()) {
-            toast(activity.getString(R.string.touch_toast_button_added));
-        } else {
+        if (!hotkeyOverlay.openKeyPickerInEditor()) {
             toast(activity.getString(R.string.touch_too_many_buttons));
         }
     }
