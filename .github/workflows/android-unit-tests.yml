@@ -33,6 +33,11 @@ on:
     paths:
       - 'android/**'
       - 'scripts/build/android/stage-sdl-java.sh'
+      # The translation checker the job runs; a change to it should re-run the check.
+      - 'scripts/qa/android/**'
+      # stage-sdl-java.sh reads SDL3_VERSION and SDL3_URL_HASH from here, so bumping SDL3
+      # changes the Java shell this job builds against.
+      - 'cmake/sdl3.cmake'
       - '.github/workflows/android-unit-tests.yml'
 
 concurrency:
