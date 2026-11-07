@@ -453,13 +453,25 @@ final class TouchLayoutEditor {
     /**
      * Assigns the key. The modifiers are preserved, so picking a new primary key keeps a
      * Ctrl+... combination the player already set.
+     *
+     * GeneralsX @feature Android touch editor 07/11/2026 The button's caption is its displayed
+     * action, so a button that was showing its key's own name takes the new key's name and the
+     * canvas reflects the change at once -- choosing "K" in the action popup must make the button
+     * read "K", not keep the old key's letter. A label the player customised through
+     * setSelectedLabel() is a deliberate choice and is kept; so is the caption of a button that was
+     * cleared and is being reassigned, whose stored label is the stale old key's name.
      */
     boolean setSelectedKey(int keyCode) {
         TouchControlConfig.ButtonSpec spec = selectedButton();
         if (spec == null || !TouchKeyCatalog.isSelectable(keyCode)) {
             return false;
         }
+        String previousDefault = TouchKeyCatalog.displayName(spec.keyCode);
+        boolean wasUnassigned = !spec.isAssigned();
         spec.keyCode = keyCode;
+        if (wasUnassigned || spec.label == null || spec.label.equals(previousDefault)) {
+            spec.label = TouchKeyCatalog.displayName(keyCode);
+        }
         return true;
     }
 

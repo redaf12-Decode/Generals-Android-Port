@@ -43,8 +43,20 @@
 //  * The footer is a wrapping FlowLayout too, so Cancel/Save/Apply can never be pushed off the
 //    bottom edge, and the root is padded by the system-bar and cutout insets so the header and the
 //    footer are never drawn under the status bar, the gesture bar or a camera cutout.
-//  * A bundled battlefield picture sits behind everything with a configurable dark scrim, and it
-//    takes no touch, so the controls stay readable and fully interactive over it.
+//  * A bundled battlefield picture sits inside the preview canvas -- the button layout area -- so
+//    the buttons are shown over the battlefield they will appear on and nothing else is. It takes
+//    no touch, so the controls stay fully interactive over it.
+//
+// GeneralsX @bugfix Android touch editor 07/11/2026 Two behaviours changed:
+//
+//  * The background picture moved out of the page and into the preview canvas. It used to be the
+//    root's first child, so it showed behind the header, the inspector, the sliders and the footer;
+//    it is now added inside the canvas FrameLayout, clipped to the canvas' bounds, and nothing else
+//    in the page can sit over it. See TouchEditorBackgroundView.
+//  * Tapping a button opens a compact popup menu of its actions, anchored on the button and applied
+//    on selection with no extra Save. The old always-on "Button action" section (the key grid and
+//    its Clear Key button) is gone from the inspector; the same model calls run, so a button's key,
+//    modifiers and mapping are unchanged. See showActionPopup.
 
 package com.generalsx.zerohour;
 
@@ -64,6 +76,7 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
+import android.widget.PopupMenu;
 import android.widget.ScrollView;
 import android.widget.SeekBar;
 import android.widget.TextView;
@@ -79,6 +92,25 @@ public class TouchControlsActivity extends Activity {
     /** The background scrim's stored opacity, in the launcher's own preferences. */
     private static final String PREF_BACKGROUND_DIM = "touch_editor_background_dim";
 
+    /**
+     * GeneralsX @feature Android touch editor 07/11/2026 The action popup's id ranges. The key rows
+     * are MENU_ITEM_KEY_BASE + the Android keycode, so a key's row id is its own keycode and no
+     * second table of ids is needed. The groups keep the key rows separate from the four actions.
+     */
+    private static final int MENU_GROUP_KEYS = 0x4000;
+    private static final int MENU_GROUP_MODIFIERS = 0x4500;
+    private static final int MENU_GROUP_HEADERS = 0x4800;
+    private static final int MENU_GROUP_ACTIONS = 0x5000;
+    private static final int MENU_ITEM_KEY_BASE = 0x10000;
+    private static final int MENU_ITEM_HEADER_BASE = 0x30000;
+    private static final int MENU_ITEM_CTRL = 0x2001;
+    private static final int MENU_ITEM_SHIFT = 0x2002;
+    private static final int MENU_ITEM_ALT = 0x2003;
+    private static final int MENU_ITEM_CLEAR = 0x2004;
+    private static final int MENU_ITEM_TOGGLE = 0x2005;
+    private static final int MENU_ITEM_FRONT = 0x2006;
+    private static final int MENU_ITEM_DELETE = 0x2007;
+
     private FrameLayout root;
     private TouchEditorBackgroundView background;
     private LinearLayout body;
@@ -90,6 +122,18 @@ public class TouchControlsActivity extends Activity {
     private FlowLayout footer;
     /** The body as the concrete split container, so its orientation callback can be installed. */
     private SplitBody splitBody;
+    /**
+     * GeneralsX @bugfix Android touch editor 07/11/2026 The anchor for the action popup: a
+     * one-pixel view inside the canvas, translated to the tapped button's centre before the menu
+     * opens. The framework then positions the popup beside that button and keeps it on screen.
+     */
+    private View popupAnchor;
+    /**
+     * GeneralsX @feature Android touch editor 07/11/2026 The compact action menu, opened on a tap on
+     * a button and dismissed the moment an action is chosen or the touch moves on. One instance,
+     * reused: the same model calls the inspector used to expose run from its rows.
+     */
+    private PopupMenu actionPopup;
 
     private TouchLayoutEditor editor;
     private TouchEditorRenderer renderer;
@@ -129,6 +173,12 @@ public class TouchControlsActivity extends Activity {
     private boolean bodyIsSideBySide;
     private int bodyArrangedWidth;
     private boolean bodyArranged;
+    /**
+     * GeneralsX @feature Android touch editor 07/11/2026 The selection the inspector was last built
+     * for. A DOWN that does not change it does not rebuild the panel, so a tap or a drag start no
+     * longer removes and re-adds the inspector's views under the finger.
+     */
+    private int lastInspectorSelection = -1;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -159,13 +209,6 @@ public class TouchControlsActivity extends Activity {
         root = new FrameLayout(this);
         root.setBackgroundColor(Color.rgb(12, 16, 20));
 
-        // The battlefield picture first, so it is behind every control, and non-touchable so a
-        // press on empty space still reaches the preview canvas and the buttons.
-        background = new TouchEditorBackgroundView(this);
-        background.setDimPercent(loadBackgroundDim());
-        root.addView(background, new FrameLayout.LayoutParams(
-            ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
-
         LinearLayout content = new LinearLayout(this);
         content.setOrientation(LinearLayout.VERTICAL);
         root.addView(content, new FrameLayout.LayoutParams(
@@ -178,7 +221,28 @@ public class TouchControlsActivity extends Activity {
             ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
         body = splitBody;
 
+        // GeneralsX @bugfix Android touch editor 07/11/2026 The button layout area. The battlefield
+        // picture is the canvas' first child -- behind the buttons and behind nothing else -- and
+        // clipped to the canvas' own bounds, so it is visible only where the buttons are laid out.
+        // The editing surface is added over it, so every edit gesture still reaches the canvas.
         canvas = new FrameLayout(this);
+        canvas.setClipChildren(true);
+        background = new TouchEditorBackgroundView(this);
+        background.setDimPercent(loadBackgroundDim());
+        background.setCropToBounds(true);
+        canvas.addView(background, new FrameLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+
+        // GeneralsX @feature Android touch editor 07/11/2026 The action popup's anchor. It is a
+        // one-pixel invisible view inside the canvas; opening the menu translates it to the tapped
+        // button's centre, so the framework positions the popup beside that button and keeps it on
+        // screen. It takes no touch and draws nothing.
+        popupAnchor = new View(this);
+        popupAnchor.setLayoutParams(new FrameLayout.LayoutParams(1, 1));
+        popupAnchor.setFocusable(false);
+        popupAnchor.setClickable(false);
+        canvas.addView(popupAnchor);
+
         // GeneralsX @bugfix Android touch editor 05/11/2026 The editing surface is the whole
         // FrameLayout: it must be attached MATCH_PARENT, or a plain View measures to nothing
         // (WRAP_CONTENT) and the editor draws on a 0-pixel-high canvas -- the layout loads, but
@@ -483,6 +547,14 @@ public class TouchControlsActivity extends Activity {
         return background;
     }
 
+    /**
+     * GeneralsX @feature Android touch editor 07/11/2026 The open action popup, or null when none is
+     * showing -- for a test of the real touch path that opens it.
+     */
+    PopupMenu actionPopupForTest() {
+        return actionPopup;
+    }
+
     /** Rebuilds the inspector without a layout pass, for a test that has no looper. */
     void rebuildInspectorForTest() {
         rebuildInspector();
@@ -500,6 +572,7 @@ public class TouchControlsActivity extends Activity {
     private void rebuildInspector() {
         inspector.removeAllViews();
         TouchControlConfig.ButtonSpec spec = editor.selectedButton();
+        lastInspectorSelection = editor.selectedIndex();
 
         inspectorTitle = new TextView(this);
         inspectorTitle.setText(spec == null
@@ -532,7 +605,10 @@ public class TouchControlsActivity extends Activity {
             return;
         }
 
-        addKeyPicker(inspectorColumn, spec);
+        // GeneralsX @bugfix Android touch editor 07/11/2026 The key grid and its Clear Key button are
+        // no longer built here: tapping a button opens the action popup, which carries the same
+        // actions. The inspector keeps the selected button's shape, appearance and layout, so the
+        // page stays compact and there is no second copy of the key menu to drift from the popup's.
         addShapePicker(inspectorColumn, spec);
         addAppearanceSection(inspectorColumn, spec);
         addLayoutSection(inspectorColumn, spec);
@@ -540,9 +616,9 @@ public class TouchControlsActivity extends Activity {
     }
 
     /**
-     * The scrim control. It applies to the whole page, so it is shown whether or not a button is
-     * selected, and it is the first thing in the column so it is reachable without scrolling past
-     * the button sections.
+     * The scrim control for the picture inside the button layout area. It is shown whether or not a
+     * button is selected, and it is the first thing in the column so it is reachable without
+     * scrolling past the button sections.
      */
     private void addBackgroundSection(LinearLayout column) {
         addSlider(column, R.string.touch_editor_background_dim, background.dimPercent(),
@@ -551,98 +627,6 @@ public class TouchControlsActivity extends Activity {
                 background.setDimPercent(Math.round(value));
                 saveBackgroundDim(background.dimPercent());
             });
-    }
-
-    private void addKeyPicker(LinearLayout column, TouchControlConfig.ButtonSpec spec) {
-        column.addView(sectionHeader(R.string.touch_edit_dialog_title));
-
-        FlowLayout modifiers = new FlowLayout(this);
-        modifiers.setGaps(dp(6), dp(6));
-        modifiers.addView(modifierToggle(R.string.touch_modifier_ctrl,
-            TouchKeyCatalog.MOD_CTRL, spec));
-        modifiers.addView(modifierToggle(R.string.touch_modifier_shift,
-            TouchKeyCatalog.MOD_SHIFT, spec));
-        modifiers.addView(modifierToggle(R.string.touch_modifier_alt,
-            TouchKeyCatalog.MOD_ALT, spec));
-        column.addView(modifiers);
-
-        // Clear Key: it removes the mapping and keeps the button. It sits next to the key grid,
-        // because it is the alternative to choosing a key, and is separated from Delete (which
-        // removes the button itself) by the whole appearance section.
-        Button clear = new Button(this);
-        clear.setText(R.string.touch_clear_key);
-        clear.setOnClickListener(v -> {
-            if (editor.clearSelectedKey()) {
-                toast(getString(R.string.touch_key_cleared));
-            }
-            refresh();
-        });
-        clear.setEnabled(spec.isAssigned());
-        clear.setMinimumHeight(dp(48));
-        LinearLayout.LayoutParams clearParams = new LinearLayout.LayoutParams(
-            ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        clearParams.topMargin = dp(6);
-        clear.setLayoutParams(clearParams);
-        column.addView(clear);
-
-        if (spec.isAssigned() && TouchKeyCatalog.isSwallowedByEngine(spec.keyCode, spec.modifiers)) {
-            TextView warn = new TextView(this);
-            warn.setText(R.string.touch_alt_tab_warning);
-            warn.setTextColor(0xFFFFB74D);
-            warn.setTextSize(12f);
-            column.addView(warn);
-        }
-
-        // The key grid: each group is a wrapping FlowLayout inside the panel's own ScrollView, so
-        // no key is clipped and there is no second, nested scroll area fighting the panel's.
-        for (int group = 0; group < TouchKeyCatalog.GROUP_COUNT; ++group) {
-            TextView caption = new TextView(this);
-            caption.setText(groupName(group));
-            caption.setTextColor(0x99FFB74D);
-            caption.setTextSize(11f);
-            caption.setPadding(0, dp(6), 0, dp(2));
-            column.addView(caption);
-            List<TouchKeyCatalog.Entry> entries = TouchKeyCatalog.group(group);
-            FlowLayout row = new FlowLayout(this);
-            row.setGaps(dp(4), dp(4));
-            for (TouchKeyCatalog.Entry entry : entries) {
-                row.addView(keyChip(entry, spec));
-            }
-            column.addView(row);
-        }
-    }
-
-    private View keyChip(TouchKeyCatalog.Entry entry, TouchControlConfig.ButtonSpec spec) {
-        Button button = new Button(this);
-        button.setText(entry.name);
-        button.setTextSize(11f);
-        boolean selected = entry.keyCode == spec.keyCode;
-        button.setBackgroundColor(selected ? renderer.accentColor() : 0xFF2A323A);
-        button.setTextColor(Color.WHITE);
-        button.setPadding(dp(6), 0, dp(6), 0);
-        button.setMinimumWidth(dp(48));
-        button.setMinimumHeight(dp(40));
-        button.setOnClickListener(v -> {
-            editor.setSelectedKey(entry.keyCode);
-            refresh();
-        });
-        return button;
-    }
-
-    private View modifierToggle(int textRes, int flag, TouchControlConfig.ButtonSpec spec) {
-        Button button = new Button(this);
-        button.setText(textRes);
-        button.setTextSize(11f);
-        boolean on = (spec.modifiers & flag) != 0;
-        button.setBackgroundColor(on ? renderer.accentColor() : 0xFF2A323A);
-        button.setTextColor(Color.WHITE);
-        button.setMinimumWidth(dp(64));
-        button.setMinimumHeight(dp(44));
-        button.setOnClickListener(v -> {
-            editor.toggleSelectedModifier(flag);
-            refresh();
-        });
-        return button;
     }
 
     private void addShapePicker(LinearLayout column, TouchControlConfig.ButtonSpec spec) {
@@ -964,6 +948,10 @@ public class TouchControlsActivity extends Activity {
                 case MotionEvent.ACTION_DOWN: {
                     downX = toGameX(event.getX());
                     downY = toGameY(event.getY());
+                    // GeneralsX @feature Android touch editor 07/11/2026 A new gesture dismisses the
+                    // previous action popup, so a stale menu can never float over the layout while
+                    // the finger moves on.
+                    dismissActionPopup();
                     if (editor.isOnResizeHandle(downX, downY)) {
                         resizing = true;
                         dragging = false;
@@ -978,7 +966,14 @@ public class TouchControlsActivity extends Activity {
                     } else {
                         editor.clearSelection();
                     }
-                    rebuildInspector();
+                    // GeneralsX @bugfix Android touch editor 07/11/2026 The inspector is rebuilt only
+                    // when the selection actually changed. It used to rebuild on every DOWN, which
+                    // removed and re-added its views while the finger was still on the canvas -- the
+                    // thrash the deferred refresh() existed to paper over, and a reason a tap could
+                    // feel like it fought the editor.
+                    if (editor.selectedIndex() != lastInspectorSelection) {
+                        rebuildInspector();
+                    }
                     invalidate();
                     return true;
                 }
@@ -1004,11 +999,23 @@ public class TouchControlsActivity extends Activity {
                     }
                     return true;
                 }
-                case MotionEvent.ACTION_UP:
-                case MotionEvent.ACTION_CANCEL: {
+                case MotionEvent.ACTION_UP: {
+                    // GeneralsX @feature Android touch editor 07/11/2026 A tap -- no drag and no
+                    // resize -- on a button opens its action popup, anchored at the button. A drag
+                    // that ends does not, and a tap on empty space clears the selection and leaves
+                    // no menu behind.
+                    if (!dragging && !resizing && editor.selectedIndex() >= 0) {
+                        showActionPopup(editor.selectedIndex());
+                    }
                     if (dragging || resizing) {
                         rebuildInspector();
                     }
+                    dragging = false;
+                    resizing = false;
+                    invalidate();
+                    return true;
+                }
+                case MotionEvent.ACTION_CANCEL: {
                     dragging = false;
                     resizing = false;
                     invalidate();
@@ -1019,6 +1026,161 @@ public class TouchControlsActivity extends Activity {
             }
         }
     }
+
+    // ------------------------------------------------------------------ button action menu
+
+    /**
+     * GeneralsX @feature Android touch editor 07/11/2026 Opens the compact action popup for the
+     * button the player tapped. It replaces the old always-on "Button action" section: the key grid
+     * and its Clear Key button are gone from the inspector, and the same actions are here, applied
+     * the moment a row is chosen -- no separate Save, and the button redraws at once.
+     *
+     * The menu is anchored on the canvas, positioned at the button's own box so it opens next to
+     * what it acts on, and clamped to the window so it never runs off an edge. It is a real Android
+     * PopupMenu, so a press that is not on it is dismissed by the framework and cannot reach the
+     * canvas as an edit gesture: the popup can never interfere with dragging.
+     */
+    private void showActionPopup(int index) {
+        editor.select(index);
+        TouchControlConfig.ButtonSpec spec = editor.selectedButton();
+        if (spec == null) {
+            return;
+        }
+        dismissActionPopup();
+
+        android.graphics.RectF rect = new android.graphics.RectF();
+        editor.bounds(spec, rect);
+        float centerX = preview.toPreviewX(rect.centerX());
+        float centerY = preview.toPreviewY(rect.centerY());
+        // The anchor is a 1px view laid out at the canvas' top-left; translating it to the button's
+        // centre is what puts the popup beside the button. The framework then keeps the popup inside
+        // the window, so it never runs off an edge however close to one the button is.
+        popupAnchor.setTranslationX(centerX - popupAnchor.getWidth() * 0.5f);
+        popupAnchor.setTranslationY(centerY - popupAnchor.getHeight() * 0.5f);
+
+        actionPopup = new PopupMenu(this, popupAnchor);
+        buildActionMenu(actionPopup.getMenu());
+        actionPopup.setOnMenuItemClickListener(item -> {
+            runAction(item.getItemId(), editor.selectedIndex());
+            return true;
+        });
+        actionPopup.setOnDismissListener(menu -> actionPopup = null);
+        actionPopup.show();
+    }
+
+    /** Closes the action popup when one is showing, so a new gesture leaves no menu behind. */
+    private void dismissActionPopup() {
+        if (actionPopup != null) {
+            PopupMenu menu = actionPopup;
+            actionPopup = null;
+            try {
+                menu.dismiss();
+            } catch (Exception ignored) {
+                // Already dismissed by the framework: nothing to do.
+            }
+        }
+    }
+
+    /**
+     * Fills the popup. The rows are the key and the three modifier latches -- the "Button action" a
+     * button carries -- followed by Clear Key, Toggle, Bring to front and Delete. Every row is a
+     * real, implemented action: nothing is a placeholder and none needs a second confirmation.
+     */
+    private void buildActionMenu(android.view.Menu menu) {
+        TouchControlConfig.ButtonSpec spec = editor.selectedButton();
+        menu.setGroupCheckable(MENU_GROUP_KEYS, true, true);
+        for (int group = 0; group < TouchKeyCatalog.GROUP_COUNT; ++group) {
+            menu.add(MENU_GROUP_HEADERS, MENU_ITEM_HEADER_BASE + group, group,
+                groupName(group)).setEnabled(false);
+            for (TouchKeyCatalog.Entry entry : TouchKeyCatalog.group(group)) {
+                android.view.MenuItem item = menu.add(MENU_GROUP_KEYS, MENU_ITEM_KEY_BASE + entry.keyCode,
+                    group + 1, entry.name);
+                if (spec != null && spec.keyCode == entry.keyCode) {
+                    item.setChecked(true);
+                }
+            }
+        }
+        int modifierOrder = TouchKeyCatalog.GROUP_COUNT + 1;
+        menu.setGroupCheckable(MENU_GROUP_MODIFIERS, true, false);
+        menu.add(MENU_GROUP_MODIFIERS, MENU_ITEM_CTRL, modifierOrder,
+            getString(R.string.touch_modifier_ctrl))
+            .setCheckable(true)
+            .setChecked(spec != null && (spec.modifiers & TouchKeyCatalog.MOD_CTRL) != 0);
+        menu.add(MENU_GROUP_MODIFIERS, MENU_ITEM_SHIFT, modifierOrder,
+            getString(R.string.touch_modifier_shift))
+            .setCheckable(true)
+            .setChecked(spec != null && (spec.modifiers & TouchKeyCatalog.MOD_SHIFT) != 0);
+        menu.add(MENU_GROUP_MODIFIERS, MENU_ITEM_ALT, modifierOrder,
+            getString(R.string.touch_modifier_alt))
+            .setCheckable(true)
+            .setChecked(spec != null && (spec.modifiers & TouchKeyCatalog.MOD_ALT) != 0);
+
+        int actionOrder = modifierOrder + 1;
+        menu.add(MENU_GROUP_ACTIONS, MENU_ITEM_CLEAR, actionOrder,
+            getString(R.string.touch_clear_key))
+            .setEnabled(spec != null && spec.isAssigned());
+        menu.add(MENU_GROUP_ACTIONS, MENU_ITEM_TOGGLE, actionOrder,
+            getString(R.string.toolbox_edit_toggle));
+        menu.add(MENU_GROUP_ACTIONS, MENU_ITEM_FRONT, actionOrder,
+            getString(R.string.touch_bring_to_front));
+        menu.add(MENU_GROUP_ACTIONS, MENU_ITEM_DELETE, actionOrder,
+            getString(R.string.touch_delete_button));
+    }
+
+    /**
+     * Runs one popup row against the selected button, through the model's own calls, and refreshes
+     * the page at once -- the button's caption, key and configuration update with no Save.
+     */
+    private void runAction(int itemId, int index) {
+        if (index < 0 || index >= editor.buttons().size()) {
+            return;
+        }
+        editor.select(index);
+        if (itemId >= MENU_ITEM_KEY_BASE) {
+            editor.setSelectedKey(itemId - MENU_ITEM_KEY_BASE);
+        } else if (itemId == MENU_ITEM_CTRL) {
+            editor.toggleSelectedModifier(TouchKeyCatalog.MOD_CTRL);
+        } else if (itemId == MENU_ITEM_SHIFT) {
+            editor.toggleSelectedModifier(TouchKeyCatalog.MOD_SHIFT);
+        } else if (itemId == MENU_ITEM_ALT) {
+            editor.toggleSelectedModifier(TouchKeyCatalog.MOD_ALT);
+        } else if (itemId == MENU_ITEM_CLEAR) {
+            if (editor.clearSelectedKey()) {
+                toast(getString(R.string.touch_key_cleared));
+            }
+        } else if (itemId == MENU_ITEM_TOGGLE) {
+            editor.toggleSelectedEnabled();
+        } else if (itemId == MENU_ITEM_FRONT) {
+            editor.bringSelectedToFront();
+        } else if (itemId == MENU_ITEM_DELETE) {
+            editor.deleteSelected();
+        }
+        refresh();
+    }
+
+    /** The popup's rows, for a test that inspects the menu the editor builds. */
+    android.view.Menu buildActionMenuForTest() {
+        PopupMenu menu = new PopupMenu(this, popupAnchor);
+        buildActionMenu(menu.getMenu());
+        return menu.getMenu();
+    }
+
+    /** Runs a popup row as the popup itself would, for a test that has no window. */
+    void runActionForTest(int itemId, int index) {
+        runAction(itemId, index);
+    }
+
+    /** The ids the popup uses, exposed so a test can name a row without guessing its number. */
+    static int keyMenuItemIdForTest(int keyCode) {
+        return MENU_ITEM_KEY_BASE + keyCode;
+    }
+    static final int MENU_ITEM_CTRL_FOR_TEST = MENU_ITEM_CTRL;
+    static final int MENU_ITEM_SHIFT_FOR_TEST = MENU_ITEM_SHIFT;
+    static final int MENU_ITEM_ALT_FOR_TEST = MENU_ITEM_ALT;
+    static final int MENU_ITEM_CLEAR_FOR_TEST = MENU_ITEM_CLEAR;
+    static final int MENU_ITEM_TOGGLE_FOR_TEST = MENU_ITEM_TOGGLE;
+    static final int MENU_ITEM_FRONT_FOR_TEST = MENU_ITEM_FRONT;
+    static final int MENU_ITEM_DELETE_FOR_TEST = MENU_ITEM_DELETE;
 
     // ------------------------------------------------------------------ key selection
 

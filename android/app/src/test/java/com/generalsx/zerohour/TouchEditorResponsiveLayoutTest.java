@@ -16,6 +16,7 @@ package com.generalsx.zerohour;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import android.app.Activity;
@@ -322,23 +323,62 @@ public class TouchEditorResponsiveLayoutTest {
 
     // ------------------------------------------------------------------ the background
 
-    /** The bundled picture decoded and is behind everything: it is the root's first child. */
+    /**
+     * GeneralsX @bugfix Android touch editor 07/11/2026 The bundled picture is inside the button
+     * layout area, not behind the whole page. It is the canvas FrameLayout's first child, it is
+     * clipped to the canvas' bounds, and it takes no touch -- so it shows only where the buttons are
+     * laid out and the controls stay fully interactive over it.
+     */
     @Test
-    public void theBackgroundIsBundledAndBehindEveryControl() {
+    public void theBackgroundIsBundledAndConfinedToTheButtonLayout() {
         TouchControlsActivity activity = laidOut(LANDSCAPE_W, LANDSCAPE_H);
         TouchEditorBackgroundView background = activity.backgroundForTest();
         assertNotNull("the editor has a background view", background);
         assertTrue("the bundled picture decoded", background.hasImage());
 
+        // It is inside the editing surface's container, not the window root.
         ViewGroup root = (ViewGroup) activity.getWindow().getDecorView();
-        View content = null;
-        // The root holds the background, then the content column above it.
         ViewGroup host = findFrameWithBackground(root, background);
         assertNotNull("the background is attached to the page", host);
-        assertEquals("the background is the first child, so it is behind everything",
+        assertTrue("the background is inside the button layout area, not the root",
+            host != root);
+        assertEquals("the background is the first child, so it is behind the buttons",
             background, host.getChildAt(0));
+        assertTrue("the background is clipped to the button layout area",
+            background.cropToBoundsForTest());
         assertFalse("and it does not take a touch", background.isClickable());
         assertFalse("and it is not focusable", background.isFocusable());
+    }
+
+    /**
+     * The picture is bounded by the canvas: it sits inside the canvas' rectangle and nowhere else,
+     * so nothing of it reaches the inspector, the header or the footer. Checked at the two window
+     * shapes a phone actually gives the page.
+     */
+    @Test
+    public void theBackgroundIsBoundedByTheButtonLayoutArea() {
+        for (int[] size : new int[][] {{LANDSCAPE_W, LANDSCAPE_H}, {PORTRAIT_W, PORTRAIT_H}}) {
+            TouchControlsActivity activity = laidOut(size[0], size[1]);
+            TouchEditorBackgroundView background = activity.backgroundForTest();
+            ViewGroup host = findFrameWithBackground(
+                activity.getWindow().getDecorView(), background);
+            assertNotNull(host);
+
+            int[] canvasBox = bounds(host);
+            int[] imageBox = bounds(background);
+            assertEquals("the picture starts at the canvas' left edge",
+                canvasBox[0], imageBox[0]);
+            assertEquals("and at its top edge", canvasBox[1], imageBox[1]);
+            assertEquals("and ends at its right edge", canvasBox[2], imageBox[2]);
+            assertEquals("and at its bottom edge", canvasBox[3], imageBox[3]);
+
+            // The inspector is a sibling: the picture must not reach into it.
+            View inspector = activity.inspectorForTest();
+            int[] inspectorBox = bounds(inspector);
+            assertTrue("the picture does not extend into the inspector",
+                imageBox[2] <= inspectorBox[0] || inspectorBox[2] <= imageBox[0]
+                    || imageBox[3] <= inspectorBox[1] || inspectorBox[3] <= imageBox[1]);
+        }
     }
 
     private static ViewGroup findFrameWithBackground(View view, View background) {
@@ -446,70 +486,173 @@ public class TouchEditorResponsiveLayoutTest {
         down.recycle();
     }
 
-    // ------------------------------------------------------------------ Clear Key, on the page
+    // ------------------------------------------------------------------ the action popup
 
     /**
-     * The launcher's Clear Key removes only the selected button's mapping, keeps the button, and
-     * leaves the others alone -- driven through the real view, not the model directly.
+     * GeneralsX @feature Android touch editor 07/11/2026 The launcher's Clear Key removes only the
+     * selected button's mapping, keeps the button, and leaves the others alone -- driven through the
+     * action popup's own row, not the model directly. The row lives in the popup now; the button
+     * used to sit in the inspector.
      */
     @Test
-    public void clearKeyOnThePageClearsOnlyTheSelectedMapping() {
+    public void clearKeyFromThePopupClearsOnlyTheSelectedMapping() {
         TouchControlsActivity activity = laidOut(LANDSCAPE_W, LANDSCAPE_H);
         TouchLayoutEditor editor = activity.editorForTest();
         editor.select(0);
-        // A selection made on the canvas rebuilds the inspector; this is that rebuild.
         activity.rebuildInspectorForTest();
         int count = editor.buttons().size();
         int secondKey = editor.buttons().get(1).keyCode;
 
-        View clear = findButton(activity.getWindow().getDecorView(),
-            activity.getString(R.string.touch_clear_key));
-        assertNotNull("the page offers a Clear Key action", clear);
-        clear.performClick();
+        activity.runActionForTest(TouchControlsActivity.MENU_ITEM_CLEAR_FOR_TEST, 0);
 
         assertEquals("the button is still there", count, editor.buttons().size());
         assertFalse("its mapping is gone", editor.buttons().get(0).isAssigned());
         assertEquals("the next button is untouched", secondKey, editor.buttons().get(1).keyCode);
     }
 
-    /** Clear is disabled when the selected button has nothing left to clear. */
+    /** Clear is disabled in the popup when the selected button has nothing left to clear. */
     @Test
-    public void clearKeyIsDisabledOnceThereIsNothingToClear() {
+    public void clearKeyIsDisabledInThePopupOnceThereIsNothingToClear() {
+        TouchControlsActivity activity = laidOut(LANDSCAPE_W, LANDSCAPE_H);
+        TouchLayoutEditor editor = activity.editorForTest();
+        editor.select(0);
+        editor.clearSelectedKey();
+        activity.rebuildInspectorForTest();
+
+        android.view.MenuItem clear =
+            activity.buildActionMenuForTest().findItem(TouchControlsActivity.MENU_ITEM_CLEAR_FOR_TEST);
+        assertNotNull("the popup offers a Clear Key row", clear);
+        assertFalse("nothing to clear means the row is off", clear.isEnabled());
+    }
+
+    /**
+     * GeneralsX @feature Android touch editor 07/11/2026 The popup carries every action the old
+     * "Button action" section did and then some: one row per catalog key, the three modifier
+     * latches, and Clear / Toggle / Bring to front / Delete. Nothing was dropped in the move.
+     */
+    @Test
+    public void theActionPopupKeepsEveryKeyAndEveryAction() {
+        TouchControlsActivity activity = laidOut(LANDSCAPE_W, LANDSCAPE_H);
+        activity.editorForTest().select(0);
+        activity.rebuildInspectorForTest();
+        android.view.Menu menu = activity.buildActionMenuForTest();
+
+        for (TouchKeyCatalog.Entry entry : TouchKeyCatalog.all()) {
+            assertNotNull("the popup offers the key " + entry.name,
+                menu.findItem(TouchControlsActivity.keyMenuItemIdForTest(entry.keyCode)));
+        }
+        assertNotNull(menu.findItem(TouchControlsActivity.MENU_ITEM_CTRL_FOR_TEST));
+        assertNotNull(menu.findItem(TouchControlsActivity.MENU_ITEM_SHIFT_FOR_TEST));
+        assertNotNull(menu.findItem(TouchControlsActivity.MENU_ITEM_ALT_FOR_TEST));
+        assertNotNull(menu.findItem(TouchControlsActivity.MENU_ITEM_CLEAR_FOR_TEST));
+        assertNotNull(menu.findItem(TouchControlsActivity.MENU_ITEM_TOGGLE_FOR_TEST));
+        assertNotNull(menu.findItem(TouchControlsActivity.MENU_ITEM_FRONT_FOR_TEST));
+        assertNotNull(menu.findItem(TouchControlsActivity.MENU_ITEM_DELETE_FOR_TEST));
+    }
+
+    /**
+     * Choosing a key row applies it to the selected button at once -- no Save, no second step -- and
+     * the button's caption follows, which is what "reflected immediately in the editor preview"
+     * means. The row id is the keycode, so a chosen row maps straight back to the model's key.
+     */
+    @Test
+    public void choosingAKeyInThePopupAppliesItImmediately() {
         TouchControlsActivity activity = laidOut(LANDSCAPE_W, LANDSCAPE_H);
         TouchLayoutEditor editor = activity.editorForTest();
         editor.select(0);
         activity.rebuildInspectorForTest();
-        editor.clearSelectedKey();
-        activity.rebuildInspectorForTest();
-        View clear = findButton(activity.getWindow().getDecorView(),
-            activity.getString(R.string.touch_clear_key));
-        assertNotNull(clear);
-        assertFalse("nothing to clear means the action is off", clear.isEnabled());
+
+        activity.runActionForTest(
+            TouchControlsActivity.keyMenuItemIdForTest(android.view.KeyEvent.KEYCODE_K), 0);
+
+        assertEquals("the button presses the key the row named",
+            android.view.KeyEvent.KEYCODE_K, editor.buttons().get(0).keyCode);
+        assertEquals("and its caption follows at once",
+            TouchKeyCatalog.displayName(android.view.KeyEvent.KEYCODE_K),
+            editor.buttons().get(0).label);
     }
 
-    private static View findButton(View view, String text) {
-        if (view instanceof android.widget.Button
-                && text.contentEquals(((android.widget.Button) view).getText())) {
-            return view;
+    /** A modifier row latches and unlatches, applied to the selected button on the spot. */
+    @Test
+    public void choosingAModifierInThePopupAppliesItImmediately() {
+        TouchControlsActivity activity = laidOut(LANDSCAPE_W, LANDSCAPE_H);
+        TouchLayoutEditor editor = activity.editorForTest();
+        editor.select(0);
+        activity.rebuildInspectorForTest();
+
+        activity.runActionForTest(TouchControlsActivity.MENU_ITEM_CTRL_FOR_TEST, 0);
+        assertTrue("Ctrl is on the button",
+            (editor.buttons().get(0).modifiers & TouchKeyCatalog.MOD_CTRL) != 0);
+        activity.runActionForTest(TouchControlsActivity.MENU_ITEM_CTRL_FOR_TEST, 0);
+        assertFalse("and a second tap takes it off",
+            (editor.buttons().get(0).modifiers & TouchKeyCatalog.MOD_CTRL) != 0);
+    }
+
+    /** Delete and Bring to front act on the selected button from the popup. */
+    @Test
+    public void deleteAndFrontRowsActOnTheSelectedButton() {
+        TouchControlsActivity activity = laidOut(LANDSCAPE_W, LANDSCAPE_H);
+        TouchLayoutEditor editor = activity.editorForTest();
+        editor.select(0);
+        activity.rebuildInspectorForTest();
+        int before = editor.buttons().size();
+
+        activity.runActionForTest(TouchControlsActivity.MENU_ITEM_DELETE_FOR_TEST, 0);
+        assertEquals("Delete removed the button", before - 1, editor.buttons().size());
+
+        editor.select(0);
+        int highest = 0;
+        for (TouchControlConfig.ButtonSpec spec : editor.buttons()) {
+            highest = Math.max(highest, spec.zOrder);
         }
-        if (view instanceof ViewGroup) {
-            ViewGroup group = (ViewGroup) view;
-            for (int i = 0; i < group.getChildCount(); ++i) {
-                View found = findButton(group.getChildAt(i), text);
-                if (found != null) {
-                    return found;
-                }
-            }
-        }
-        return null;
+        activity.runActionForTest(TouchControlsActivity.MENU_ITEM_FRONT_FOR_TEST, 0);
+        assertTrue("Bring to front raised the button's z-order",
+            editor.buttons().get(0).zOrder > highest);
+    }
+
+    /**
+     * GeneralsX @feature Android touch editor 07/11/2026 A tap on a button opens the action popup --
+     * driven through the real touch path, not the model -- and a tap on empty space does not.
+     */
+    @Test
+    public void aTapOnAButtonOpensTheActionPopup() {
+        TouchControlsActivity activity = laidOut(LANDSCAPE_W, LANDSCAPE_H);
+        activity.setGameViewportForTest(1000, 600);
+        View surface = activity.editorSurfaceForTest();
+        TouchLayoutEditor editor = activity.editorForTest();
+        TouchControlConfig.ButtonSpec spec = editor.buttons().get(0);
+        long now = android.os.SystemClock.uptimeMillis();
+
+        // A tap: down and up in the same place, on the button.
+        surface.onTouchEvent(MotionEvent.obtain(now, now, MotionEvent.ACTION_DOWN,
+            spec.x * surface.getWidth(), spec.y * surface.getHeight(), 0));
+        surface.onTouchEvent(MotionEvent.obtain(now, now, MotionEvent.ACTION_UP,
+            spec.x * surface.getWidth(), spec.y * surface.getHeight(), 0));
+
+        assertNotNull("a tap on a button opens the action popup", activity.actionPopupForTest());
+    }
+
+    /** A tap on empty space clears the selection and opens no popup. */
+    @Test
+    public void aTapOnEmptySpaceOpensNoPopup() {
+        TouchControlsActivity activity = laidOut(LANDSCAPE_W, LANDSCAPE_H);
+        activity.setGameViewportForTest(1000, 600);
+        View surface = activity.editorSurfaceForTest();
+        long now = android.os.SystemClock.uptimeMillis();
+
+        // The top-left corner is empty: the shipped layout sits in the lower third.
+        surface.onTouchEvent(MotionEvent.obtain(now, now, MotionEvent.ACTION_DOWN, 2f, 2f, 0));
+        surface.onTouchEvent(MotionEvent.obtain(now, now, MotionEvent.ACTION_UP, 2f, 2f, 0));
+
+        assertNull("no button means no popup", activity.actionPopupForTest());
     }
 
     // ------------------------------------------------------------------ Arabic (RTL)
 
     /**
-     * The page in Arabic: the layout is mirrored, the Clear Key action carries the Arabic label, and
-     * nothing is clipped or pushed off the edge. This is the "Arabic labels are clipped or partially
-     * hidden" defect, checked in the locale that showed it.
+     * The page in Arabic: the layout is mirrored and nothing is clipped or pushed off the edge.
+     * This is the "Arabic labels are clipped or partially hidden" defect, checked in the locale
+     * that showed it.
      */
     @Test
     @Config(qualifiers = "ar")
@@ -519,11 +662,6 @@ public class TouchEditorResponsiveLayoutTest {
         activity.rebuildInspectorForTest();
         View root = activity.getWindow().getDecorView();
         assertEquals("the page is RTL", View.LAYOUT_DIRECTION_RTL, root.getLayoutDirection());
-
-        View clear = findButton(root, activity.getString(R.string.touch_clear_key));
-        assertNotNull("the Arabic Clear Key label is on the page", clear);
-        assertTrue("and it is not the English one",
-            !"Clear Key".contentEquals(((android.widget.Button) clear).getText()));
 
         for (View child : descendants(root)) {
             if (!(child.getParent() instanceof ViewGroup) || child.getWidth() <= 0) {

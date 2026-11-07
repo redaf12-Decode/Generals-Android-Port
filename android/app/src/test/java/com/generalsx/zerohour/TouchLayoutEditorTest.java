@@ -333,6 +333,37 @@ public class TouchLayoutEditorTest {
         assertEquals(KeyEvent.KEYCODE_Q, editor.selectedButton().keyCode);
     }
 
+    /**
+     * GeneralsX @feature Android touch editor 07/11/2026 The caption follows the key when the
+     * caption was the key's own name: choosing a new action in the popup must make the button read
+     * the new key at once, which is what "reflected immediately in the editor preview" means.
+     */
+    @Test
+    public void changingTheKeyUpdatesTheDefaultCaption() {
+        editor.select(0);
+        assertEquals("E", editor.selectedButton().label);
+        editor.setSelectedKey(KeyEvent.KEYCODE_K);
+        assertEquals("K", editor.selectedButton().label);
+    }
+
+    /** A caption the player customised is a deliberate choice and survives a key change. */
+    @Test
+    public void changingTheKeyKeepsACustomCaption() {
+        editor.select(0);
+        editor.setSelectedLabel("Mine");
+        editor.setSelectedKey(KeyEvent.KEYCODE_K);
+        assertEquals("Mine", editor.selectedButton().label);
+    }
+
+    /** Reassigning a cleared button gives it the new key's caption, not the stale old one. */
+    @Test
+    public void reassigningAClearedButtonUsesTheNewKeyCaption() {
+        editor.select(0);
+        editor.clearSelectedKey();
+        editor.setSelectedKey(KeyEvent.KEYCODE_K);
+        assertEquals("K", editor.selectedButton().label);
+    }
+
     /** A second Clear changes nothing, so it does not mark an unedited session dirty. */
     @Test
     public void clearingTwiceIsNotAChange() {

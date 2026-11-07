@@ -38,6 +38,13 @@
 //
 // The image is bundled in res/drawable-nodpi (touch_editor_background.jpg) and decoded once, on
 // demand; there is no runtime download anywhere in this class.
+//
+// GeneralsX @bugfix Android touch editor 07/11/2026 The picture is confined to the button layout
+// area. The view used to be the whole window's first child, so the picture sat behind the header,
+// the inspector, the sliders and the footer as well as behind the buttons. It is now attached
+// inside the preview canvas only (TouchControlsActivity.buildLayout), and setCropToBounds(true)
+// makes it clip and fill exactly that rectangle -- the picture can never bleed into the settings
+// column beside it, whatever shape the canvas takes after a rotation or a fold.
 
 package com.generalsx.zerohour;
 
@@ -52,6 +59,9 @@ import android.view.View;
 
 final class TouchEditorBackgroundView extends View {
 
+    /** The colour used when no picture decoded. */
+    private static final int FALLBACK_COLOR = Color.rgb(12, 16, 20);
+
     /** The default scrim: enough to read white text and see a cyan/yellow border over the picture. */
     static final int DEFAULT_DIM_PERCENT = 62;
     static final int MIN_DIM_PERCENT = 0;
@@ -65,6 +75,14 @@ final class TouchEditorBackgroundView extends View {
 
     private int dimPercent = DEFAULT_DIM_PERCENT;
 
+    /**
+     * GeneralsX @bugfix Android touch editor 07/11/2026 Whether the picture is clipped and filled
+     * to this view's own bounds. True inside the button layout area, where the picture must stop at
+     * the canvas' edge. The default false draws without a clip, which is what a bare view (a test's,
+     * or any future full-bleed host) wants.
+     */
+    private boolean cropToBounds;
+
     TouchEditorBackgroundView(Context context) {
         super(context);
         // A background must never take a touch from the preview or the controls above it.
@@ -72,6 +90,18 @@ final class TouchEditorBackgroundView extends View {
         setClickable(false);
         setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);
         image = decode(context);
+    }
+
+    /**
+     * Clips the picture to this view's rectangle and paints the whole rectangle, so the image can
+     * never extend past the button layout's edge. Off by default (the picture fills whatever area
+     * the view is given, which for a full-page background is the page).
+     */
+    void setCropToBounds(boolean crop) {
+        if (cropToBounds != crop) {
+            cropToBounds = crop;
+            invalidate();
+        }
     }
 
     /** The bundled picture, or null when it is missing -- the view then draws only the scrim. */
@@ -87,6 +117,11 @@ final class TouchEditorBackgroundView extends View {
     /** True when the bundled image decoded, for a test and for a defensive fallback colour. */
     boolean hasImage() {
         return image != null;
+    }
+
+    /** Whether the picture is clipped to this view's bounds, for a test of the layout area. */
+    boolean cropToBoundsForTest() {
+        return cropToBounds;
     }
 
     /** The scrim's opacity as a percentage; clamped, and the whole point of the Dim control. */
@@ -110,15 +145,22 @@ final class TouchEditorBackgroundView extends View {
         if (width <= 0 || height <= 0) {
             return;
         }
+        int checkpoint = canvas.save();
+        if (cropToBounds) {
+            // Hard clip: even a source/destination pair that would overflow the view cannot paint
+            // outside the button layout's rectangle.
+            canvas.clipRect(0, 0, width, height);
+        }
         if (image != null) {
             centreCrop(width, height);
             canvas.drawBitmap(image, source, destination, bitmapPaint);
         } else {
-            canvas.drawColor(Color.rgb(12, 16, 20));
+            canvas.drawColor(FALLBACK_COLOR);
         }
         scrimPaint.setColor(Color.BLACK);
         scrimPaint.setAlpha(Math.round(255f * dimPercent / 100f));
         canvas.drawRect(0, 0, width, height, scrimPaint);
+        canvas.restoreToCount(checkpoint);
     }
 
     /**
