@@ -379,4 +379,76 @@ public class ModScriptsBackupTest {
         assertEquals("UPPER", read(new File(upper, "SkirmishScripts.scb")));
         assertNull(ModScriptsBackup.recordedName(app));
     }
+
+    /**
+     * The real device layout: the game's scripts live in an upper-case {@code Data/Scripts} (the
+     * engine was written on Windows), while the launcher installs its language packs into a
+     * lower-case {@code data/<language>/generals.str} beside it. Both directories are spelled
+     * "data" and the engine matches either, so the feature must act on the one that holds the
+     * scripts. Taking the exact lower-case match renamed the language folder and left the scripts
+     * in place, which is the reported "it does not disable the folder".
+     */
+    @Test
+    public void theScriptsAreFoundWhenTheLauncherAlsoMadeALowerCaseData() throws IOException {
+        File upperData = new File(game, "Data");
+        File upperScripts = new File(upperData, "Scripts");
+        assertTrue(upperScripts.mkdirs() || upperScripts.isDirectory());
+        write(new File(upperScripts, "SkirmishScripts.scb"), "AI".getBytes(StandardCharsets.US_ASCII));
+        File lowerData = new File(game, "data");
+        File language = new File(lowerData, "english");
+        assertTrue(language.mkdirs() || language.isDirectory());
+        write(new File(language, "generals.str"), "STR".getBytes(StandardCharsets.US_ASCII));
+
+        ModScriptsBackup.setEnabled(app, true);
+        setModsOn(1);
+
+        assertTrue("the retail scripts folder is the one moved aside",
+            ModScriptsBackup.apply(app).renamed);
+        assertFalse(upperScripts.exists());
+        assertTrue("the backup sits beside it", new File(upperData, "scriptsbackup").isDirectory());
+        assertFalse("nothing in the launcher's language folder moved",
+            new File(lowerData, "scriptsbackup").exists());
+        assertTrue("the language file is untouched", new File(language, "generals.str").isFile());
+
+        setModsAllOff(1);
+        assertTrue(ModScriptsBackup.sync(app).restored);
+        assertTrue("back under its own spelling", upperScripts.isDirectory());
+        assertEquals("AI", read(new File(upperScripts, "SkirmishScripts.scb")));
+    }
+
+    /** The other way round: the scripts are in the lower-case data, an upper-case Data has none. */
+    @Test
+    public void theScriptsAreFoundWhenTheyLiveInTheLowerCaseData() throws IOException {
+        File upperData = new File(game, "Data");
+        assertTrue(upperData.mkdirs() || upperData.isDirectory());
+        makeScripts();
+        ModScriptsBackup.setEnabled(app, true);
+        setModsOn(1);
+
+        assertTrue(ModScriptsBackup.apply(app).renamed);
+
+        assertFalse(scripts().exists());
+        assertTrue("the backup is in the folder that held the scripts", backup().isDirectory());
+    }
+
+    /**
+     * Safe start ("start without mods") switches every mod off through {@link ModManager#switchOff}
+     * rather than the Mods screen, so the folder has to come back the same way: the caller follows
+     * it with a {@link ModScriptsBackup#sync}.
+     */
+    @Test
+    public void switchingAllModsOffRestoresTheScriptsFolder() throws IOException {
+        makeScripts();
+        ModScriptsBackup.setEnabled(app, true);
+        setModsOn(1);
+        ModScriptsBackup.apply(app);
+        assertTrue(backup().isDirectory());
+
+        ModManager.switchOff(app, null);
+        assertTrue(ModScriptsBackup.sync(app).restored);
+
+        assertTrue(scripts().isDirectory());
+        assertFalse(backup().exists());
+        assertEquals("AI-SCRIPTS", read(new File(scripts(), "SkirmishScripts.scb")));
+    }
 }

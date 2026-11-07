@@ -4470,6 +4470,10 @@ public class SetupActivity extends Activity {
                 .setMessage(R.string.mods_safe_message)
                 .setPositiveButton(R.string.mods_safe_without, (d, w) -> {
                     ModManager.switchOff(this, null);
+                    // GeneralsX @bugfix Android port 07/11/2026 Safe start switches the mods off
+                    // outside the Mods screen, so it has to put the scripts folder back too --
+                    // otherwise starting without mods would leave data/scripts disabled.
+                    ModScriptsBackup.sync(this);
                     showTab(currentTab);
                     launchGameNow();
                 })
@@ -4477,6 +4481,7 @@ public class SetupActivity extends Activity {
             if (lastOn) {
                 b.setNeutralButton(getString(R.string.mods_safe_without_last, last), (d, w) -> {
                     ModManager.switchOff(this, last);
+                    ModScriptsBackup.sync(this);
                     showTab(currentTab);
                     launchGameNow();
                 });

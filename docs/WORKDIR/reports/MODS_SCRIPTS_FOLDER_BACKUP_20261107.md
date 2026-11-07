@@ -68,8 +68,11 @@ cancel the switch.
 
 ## Actual folder paths
 
-- Scripts folder: `<game folder>/data/scripts`
-- Backup folder: `<game folder>/data/scriptsbackup`
+- Scripts folder: `<game folder>/data/scripts` — but see the follow-up below: the folder is found
+  by listing every `data`-spelled directory in the game folder and taking the one that holds
+  `scripts`, because a retail install spells it `Data` and the launcher's own language packs live
+  in a lower-case `data` beside it
+- Backup folder: `<game folder>/data/scriptsbackup` (same directory as the scripts folder)
 - Marker: `<app files dir>/mods_scripts_backup_state`
 
 On Android the game folder is the one chosen in Setup (`GENERALSX_USERDATA_DIR` /
@@ -100,3 +103,36 @@ The ten scenarios the task lists are covered by `ModScriptsBackupTest`
 **Not done here**: a build of the full APK with all four engines (`build-dual-hz.sh`), which needs
 the Android NDK and the CMake/vcpkg/DXVK toolchain. The change is Java-only, so
 `assembleLauncherOnly` exercises every line that changed.
+
+## Follow-up (07/11/2026): why the folder was not actually disabled
+
+Reported after the first build: switching a mod on left `data/scripts` where it was. The cause was
+a **name collision between two `data` directories**.
+
+A retail install spells the directory `Data` (the game was written on Windows), and the loose
+scripts live at `Data/Scripts/SkirmishScripts.scb`. The launcher itself, however, installs its
+language packs into a **lower-case** `data/<language>/generals.str` in the same game folder
+(`SetupActivity.downloadLanguagePack`), and the engine matches either spelling. So a device can
+have both `Data` and `data` side by side, and `findChild(game, "data")` — which prefers the exact
+match — returned the launcher's own language folder. That folder holds no `scripts`, so `reconcile`
+found nothing to move and returned `Result.NONE`: the real `Data/Scripts` was never touched. The
+bug was reproduced with a failing test before it was fixed.
+
+The fix is `findDataDir(game)`: it lists the `data`-spelled directories and picks the one that
+actually holds `scripts`, else the one holding `scriptsbackup`, else the first found. Both the
+`dataDir(ctx)` accessor and `reconcile()` use it. Two regression tests cover the layout in both
+directions (`theScriptsAreFoundWhenTheLauncherAlsoMadeALowerCaseData`,
+`theScriptsAreFoundWhenTheyLiveInTheLowerCaseData`).
+
+The rename itself was hardened the same way: `Files.move` is tried first because it reports *why* a
+move failed and is the call that behaves on the FUSE-backed shared storage Android exposes, with
+`File.renameTo` kept as the fallback. Both are same-directory moves, so the directory and its
+contents cross in one step either way.
+
+A second gap was closed at the same time: **safe start** ("start without mods") switches every mod
+off through `ModManager.switchOff`, outside the Mods screen, so it now follows that with a
+`ModScriptsBackup.sync` — otherwise starting without mods would have left `data/scripts` disabled.
+(`switchingAllModsOffRestoresTheScriptsFolder`.)
+
+After the follow-up: `testDebugUnitTest` 286 tests / 0 failures, `lintDebug` 0 errors,
+`assembleLauncherOnly` `BUILD SUCCESSFUL`.

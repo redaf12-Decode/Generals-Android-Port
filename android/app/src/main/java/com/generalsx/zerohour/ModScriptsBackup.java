@@ -101,17 +101,50 @@ final class ModScriptsBackup {
 
     // ---------------------------------------------------------------- the pair
 
-    /**
-     * The game folder's {@code data} directory, or null while no game folder is chosen. The name
-     * is matched exactly first and case-insensitively after, because a repack may have written
-     * {@code Data} where the engine asks for {@code Data} and Setup's own checks accept either.
-     */
+    /** The game folder's {@code data} directory, or null while no game folder is chosen. */
     static File dataDir(Context ctx) {
         File game = ModManager.gameRoot(ctx);
         if (game == null || !game.isDirectory()) {
             return null;
         }
-        return findChild(game, "data");
+        return findDataDir(game);
+    }
+
+    /**
+     * The game folder's {@code data} directory. A retail install spells it {@code Data} (the game
+     * was made on Windows), while the launcher itself installs its language packs into a lower-case
+     * {@code data} beside it, and the engine matches either spelling. So the two can be present at
+     * once, and the one to act on is the one that actually holds the scripts: taking the exact
+     * lower-case match blindly renamed the launcher's language folder and left the real
+     * {@code Data/Scripts} untouched, which is why the folder was never disabled. Falls back to the
+     * backup holder, then to the first {@code data} found, so a plain install still works.
+     */
+    private static File findDataDir(File game) {
+        File[] children = game.listFiles();
+        if (children == null) {
+            return null;
+        }
+        File first = null;
+        File withScripts = null;
+        File withBackup = null;
+        for (File child : children) {
+            if (!child.isDirectory() || !child.getName().equalsIgnoreCase("data")) {
+                continue;
+            }
+            if (first == null) {
+                first = child;
+            }
+            if (withScripts == null && findChild(child, SCRIPTS_DIR) != null) {
+                withScripts = child;
+            }
+            if (withBackup == null && findChild(child, BACKUP_DIR) != null) {
+                withBackup = child;
+            }
+        }
+        if (withScripts != null) {
+            return withScripts;
+        }
+        return withBackup != null ? withBackup : first;
     }
 
     /** {@code <game>/data/scripts} as it exists on disk (any letter case), or null. */
@@ -194,7 +227,7 @@ final class ModScriptsBackup {
      */
     static Result reconcile(Context ctx, String gamePath, boolean wantBackup) {
         File data = gamePath == null || gamePath.trim().isEmpty()
-            ? null : findChild(new File(gamePath), "data");
+            ? null : findDataDir(new File(gamePath));
         if (data == null || !data.isDirectory()) {
             // No game folder (or no data directory): there is nothing to move, and a stale marker
             // from a folder that has since gone must not keep pointing at it.
@@ -284,16 +317,29 @@ final class ModScriptsBackup {
         return null;
     }
 
+    /**
+     * A same-directory rename that never overwrites. {@link java.nio.file.Files#move} is tried
+     * first because it reports why a move failed (a read-only or unsupported filesystem) instead
+     * of the silent {@code false} {@link File#renameTo} returns, and it is the call that behaves
+     * on the FUSE-backed shared storage Android exposes at {@code /storage/emulated/0}; a plain
+     * {@code renameTo} remains the fallback for anything NIO refuses.
+     */
     private static boolean rename(File from, File to) {
+        if (to.exists()) {
+            return false;
+        }
         try {
-            if (to.exists()) {
-                return false;
-            }
-            if (!from.renameTo(to)) {
-                android.util.Log.w(TAG, "could not rename " + from + " to " + to);
-                return false;
-            }
+            java.nio.file.Files.move(from.toPath(), to.toPath());
             return true;
+        } catch (IOException | SecurityException e) {
+            android.util.Log.w(TAG, "Files.move " + from + " -> " + to + " failed: " + e);
+        }
+        try {
+            if (from.renameTo(to)) {
+                return true;
+            }
+            android.util.Log.w(TAG, "could not rename " + from + " to " + to);
+            return false;
         } catch (SecurityException e) {
             android.util.Log.w(TAG, "could not rename " + from + " to " + to, e);
             return false;
