@@ -454,6 +454,16 @@
     <string name="mods_legacy_title">按旧方式安装（在游戏文件夹中）</string>
     <string name="mods_legacy_help">这些档案以“!”开头，直接放在游戏文件夹中：它们总会加载，优先级低于上面的模组，且无法在此关闭。“移入 mods”会把它变成此列表中的模组并保持开启，因此仍会加载。</string>
     <string name="mods_folder_help">模组文件夹：%1$s。每个模组是其中的一个文件夹，内含自己的 .big 文件；若模组带有 mod.ini（Name、Version、Author、Description、Image、Url）以及名为 cover、preview、logo 或 icon 的图片，会显示在这里。</string>
+    <string name="mods_scripts_backup_title">脚本文件夹</string>
+    <string name="mods_scripts_backup_switch">自动禁用 data/scripts 文件夹</string>
+    <string name="mods_scripts_backup_switch_desc">启用后，模组激活期间游戏的 data/scripts 文件夹会自动重命名为 scriptsbackup，模组停用时恢复。</string>
+    <string name="mods_scripts_backup_help">模组开启期间移开：%1$s。不会删除任何内容，也不会覆盖已有的 scriptsbackup 文件夹。当本游戏的最后一个模组关闭或关闭此选项时恢复。</string>
+    <string name="mods_scripts_backup_done">data/scripts 现为 %1$s。</string>
+    <string name="mods_scripts_backup_restored">data/scripts 已恢复原位。</string>
+    <string name="mods_scripts_backup_active">data/scripts 已作为 scriptsbackup 移开。</string>
+    <string name="mods_scripts_backup_idle">data/scripts 位于原位。</string>
+    <string name="mods_scripts_backup_conflict">data/scripts 与 data/scriptsbackup 同时存在，因此未做更改。请手动移开其中一个再试。</string>
+    <string name="mods_scripts_backup_failed">无法重命名 data/scripts 文件夹，因此模组保持关闭。</string>
     <string name="mods_home_none">无模组</string>
     <string name="mods_home_enabled">已开启模组：%1$d</string>
     <string name="mods_home_all_off">已安装：%1$d 个，全部关闭</string>

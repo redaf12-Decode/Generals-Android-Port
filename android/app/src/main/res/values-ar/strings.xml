@@ -454,6 +454,16 @@
     <string name="mods_legacy_title">مثبتة بالطريقة القديمة (في مجلد اللعبة)</string>
     <string name="mods_legacy_help">تبدأ هذه الأرشيفات بـ «!» وتوجد في مجلد اللعبة نفسه: تُحمَّل دائمًا، تحت المودات أعلاه، ولا يمكن تعطيلها هنا. «نقل إلى mods» يجعل أحدها مودًا في هذه القائمة، مفعّلًا، فيستمر تحميله.</string>
     <string name="mods_folder_help">مجلد المودات: %1$s. كل مود مجلد داخله بملفات .big الخاصة به؛ يُعرض هنا ملف mod.ini (Name وVersion وAuthor وDescription وImage, Url) وصورة باسم cover أو preview أو logo أو icon إن وُجدت لدى المود.</string>
+    <string name="mods_scripts_backup_title">مجلد السكربتات</string>
+    <string name="mods_scripts_backup_switch">تعطيل مجلد data/scripts تلقائيًا</string>
+    <string name="mods_scripts_backup_switch_desc">عند التفعيل، يُعاد تسمية مجلد data/scripts في اللعبة تلقائيًا إلى scriptsbackup أثناء تفعيل أي مود، ويُستعاد عند تعطيل المود.</string>
+    <string name="mods_scripts_backup_help">يُنقل جانبًا أثناء تفعيل مود: %1$s. لا يُحذف أي شيء ولا يُستبدل مجلد scriptsbackup الموجود. يُعاد عند إيقاف آخر مود لهذه اللعبة أو عند إيقاف هذا الخيار.</string>
+    <string name="mods_scripts_backup_done">أصبح data/scripts الآن %1$s.</string>
+    <string name="mods_scripts_backup_restored">أُعيد data/scripts إلى مكانه.</string>
+    <string name="mods_scripts_backup_active">data/scripts موضوع جانبًا باسم scriptsbackup.</string>
+    <string name="mods_scripts_backup_idle">data/scripts في مكانه.</string>
+    <string name="mods_scripts_backup_conflict">يوجد كل من data/scripts وdata/scriptsbackup، لذلك لم يتغير شيء. انقل أحدهما يدويًا ثم أعد المحاولة.</string>
+    <string name="mods_scripts_backup_failed">تعذّر إعادة تسمية مجلد data/scripts، لذلك بقي المود معطّلًا.</string>
     <string name="mods_home_none">بدون مودات</string>
     <string name="mods_home_enabled">المودات المفعّلة: %1$d</string>
     <string name="mods_home_all_off">المثبّتة: %1$d، كلها متوقفة</string>

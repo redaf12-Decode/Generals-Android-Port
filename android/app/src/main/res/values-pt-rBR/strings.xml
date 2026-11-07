@@ -454,6 +454,16 @@
     <string name="mods_legacy_title">Instalados do jeito antigo (na pasta do jogo)</string>
     <string name="mods_legacy_help">Estes arquivos começam com \"!\" e ficam na própria pasta do jogo: sempre carregam, abaixo dos mods acima, e não podem ser desligados aqui. \"Mover para mods\" transforma um em mod desta lista, ligado, para continuar carregando.</string>
     <string name="mods_folder_help">Pasta de mods: %1$s. Cada mod é uma pasta nela com seus .big; um mod.ini (Name, Version, Author, Description, Image, Url) e uma imagem chamada cover, preview, logo ou icon aparecem aqui se o mod tiver.</string>
+    <string name="mods_scripts_backup_title">Pasta de scripts</string>
+    <string name="mods_scripts_backup_switch">Desativar automaticamente a pasta data/scripts</string>
+    <string name="mods_scripts_backup_switch_desc">Quando ativado, a pasta data/scripts do jogo é renomeada automaticamente para scriptsbackup enquanto um mod está ativo e restaurada ao desativá-lo.</string>
+    <string name="mods_scripts_backup_help">Posta de lado enquanto um mod está ligado: %1$s. Nada é apagado e uma pasta scriptsbackup existente nunca é sobrescrita. Volta quando o último mod deste jogo é desligado ou quando esta opção é desligada.</string>
+    <string name="mods_scripts_backup_done">data/scripts agora é %1$s.</string>
+    <string name="mods_scripts_backup_restored">data/scripts voltou ao lugar.</string>
+    <string name="mods_scripts_backup_active">data/scripts está posta de lado como scriptsbackup.</string>
+    <string name="mods_scripts_backup_idle">data/scripts está no lugar.</string>
+    <string name="mods_scripts_backup_conflict">data/scripts e data/scriptsbackup existem os dois, então nada foi alterado. Afaste um à mão e tente de novo.</string>
+    <string name="mods_scripts_backup_failed">Não foi possível renomear a pasta data/scripts, então o mod ficou desligado.</string>
     <string name="mods_home_none">Sem mods</string>
     <string name="mods_home_enabled">Mods ligados: %1$d</string>
     <string name="mods_home_all_off">Instalados: %1$d, todos desligados</string>

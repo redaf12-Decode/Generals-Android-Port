@@ -454,6 +454,16 @@
     <string name="mods_legacy_title">Ustanovjene po-staromu (v papkě igry)</string>
     <string name="mods_legacy_help">Ti arhivy počinajut se s «!» i ležat prjamo v papkě igry: oni se vsegda nakladajut, pod modami vyše, i tut ne mogut byti izključene. «Prenesti v mods» stvori iz takogo arhiva mod tutogo spiska — vključeny, zato on bude dalje se nakladati.</string>
     <string name="mods_folder_help">Papka modov: %1$s. Každy mod je papka v njej so svojimi .big; mod.ini (Name, Version, Author, Description, Image, Url) i kartina cover, preview, logo ili icon se pokazujut tut, ako mod jih imaje.</string>
+    <string name="mods_scripts_backup_title">Papka skriptov</string>
+    <string name="mods_scripts_backup_switch">Avtomatično izključiti papku data/scripts</string>
+    <string name="mods_scripts_backup_switch_desc">Kogda vključeno, papka igry data/scripts se avtomatično prěimenuje v scriptsbackup dokolě mod jest vključen, i vrača se kogda mod jest izključen.</string>
+    <string name="mods_scripts_backup_help">Odložena na stranu dokolě mod jest vključen: %1$s. Ničto se ne izbrisuje i existujuča papka scriptsbackup se nikogda ne prěpisuje. Vrača se kogda poslědnji mod toj igry jest izključen ili kogda toj opcija jest izključena.</string>
+    <string name="mods_scripts_backup_done">data/scripts jest nyně %1$s.</string>
+    <string name="mods_scripts_backup_restored">data/scripts jest nazad na svom městu.</string>
+    <string name="mods_scripts_backup_active">data/scripts jest odložena kako scriptsbackup.</string>
+    <string name="mods_scripts_backup_idle">data/scripts jest na svom městu.</string>
+    <string name="mods_scripts_backup_conflict">Papky data/scripts i data/scriptsbackup obadve sut, tako ničto ne bylo změnjeno. Prěložite jednu rukoju i probujte znovu.</string>
+    <string name="mods_scripts_backup_failed">Ne udalo se prěimenovati papku data/scripts, tako mod ostal izključen.</string>
     <string name="mods_home_none">Bez modov</string>
     <string name="mods_home_enabled">Vključene mody: %1$d</string>
     <string name="mods_home_all_off">Instalovano modov: %1$d, vse vyključene</string>

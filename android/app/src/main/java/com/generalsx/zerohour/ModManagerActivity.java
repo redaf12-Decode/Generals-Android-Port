@@ -35,6 +35,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.widget.SwitchCompat;
+import com.google.android.material.materialswitch.MaterialSwitch;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -75,6 +76,7 @@ public class ModManagerActivity extends Activity {
     private AlertDialog importProgress;
     private ModImportService.CancellationSignal importCancellation;
     private Thread importThread;
+    private boolean revertingToggle;
 
     @Override
     protected void attachBaseContext(Context newBase) {
@@ -116,6 +118,10 @@ public class ModManagerActivity extends Activity {
         super.onResume();
         if (importThread == null) {
             refresh();
+            // GeneralsX @feature Android port 07/11/2026 Heal an interrupted scripts backup (or a
+            // folder left aside by the other game) before the list is drawn, so what the option
+            // shows and what is on disk agree.
+            syncScriptsBackup();
         }
     }
 
@@ -200,6 +206,7 @@ public class ModManagerActivity extends Activity {
         }
         renderSummary();
         renderMods();
+        renderScriptsBackup();
         renderLegacy();
 
         LinearLayout actions = UiKit.card(list);
@@ -306,6 +313,84 @@ public class ModManagerActivity extends Activity {
         }
     }
 
+    /**
+     * GeneralsX @feature Android port 07/11/2026 The scripts-folder backup switch (ModScriptsBackup):
+     * the game folder's data/scripts is renamed to data/scriptsbackup while a mod is on and back
+     * when the last one is switched off. The card explains what it does and, when it is on, what is
+     * on disk right now.
+     */
+    private void renderScriptsBackup() {
+        LinearLayout card = UiKit.card(list);
+        UiKit.sectionHeader(card, R.drawable.ic_gzh_save,
+            getString(R.string.mods_scripts_backup_title), false);
+        MaterialSwitch toggle = UiKit.switchRow(card,
+            getString(R.string.mods_scripts_backup_switch),
+            getString(R.string.mods_scripts_backup_switch_desc));
+        toggle.setChecked(ModScriptsBackup.isEnabled(this));
+        toggle.setEnabled(!busy);
+        toggle.setOnCheckedChangeListener((button, checked) -> {
+            ModScriptsBackup.setEnabled(this, checked);
+            ModScriptsBackup.Result result = ModScriptsBackup.sync(this);
+            Toast.makeText(this, scriptsBackupStatus(result), Toast.LENGTH_LONG).show();
+            render();
+        });
+        if (ModScriptsBackup.isEnabled(this)) {
+            UiKit.supporting(card, scriptsBackupStatus(ModScriptsBackup.Result.NONE));
+        }
+        UiKit.helpText(card, getString(R.string.mods_scripts_backup_help,
+            ModScriptsBackup.backupPathOf(this)));
+    }
+
+    /** A one-line account of where the scripts folder is now, for the card and the toast. */
+    private CharSequence scriptsBackupStatus(ModScriptsBackup.Result result) {
+        if (result.conflict) {
+            return getString(R.string.mods_scripts_backup_conflict);
+        }
+        if (result.failed) {
+            return getString(R.string.mods_scripts_backup_failed);
+        }
+        if (result.renamed) {
+            return getString(R.string.mods_scripts_backup_done, ModScriptsBackup.backupPathOf(this));
+        }
+        if (result.restored) {
+            return getString(R.string.mods_scripts_backup_restored);
+        }
+        if (ModScriptsBackup.backupDir(this) != null) {
+            return getString(R.string.mods_scripts_backup_active);
+        }
+        return getString(R.string.mods_scripts_backup_idle);
+    }
+
+    /**
+     * Puts the scripts folder in the state the switches now call for, before the change is saved:
+     * a mod switched on with the option on renames data/scripts away first, and a failure stops
+     * the switch from being remembered, so activation never continues in an inconsistent state.
+     *
+     * <p>Whether a mod is on is read from the list in memory, not from the saved list: this runs
+     * between the switch moving and {@link #changed()} saving it, and asking the saved list here
+     * would always see the state the player is leaving rather than the one they chose.
+     */
+    private boolean syncScriptsBackup() {
+        if (!ModScriptsBackup.isEnabled(this)) {
+            return true;
+        }
+        boolean anyOn = false;
+        for (ModManager.Mod mod : mods) {
+            anyOn |= mod.enabled;
+        }
+        if (anyOn) {
+            ModScriptsBackup.Result result = ModScriptsBackup.apply(this);
+            if (result.mustStopActivation() || result.conflict) {
+                Toast.makeText(this, scriptsBackupStatus(result), Toast.LENGTH_LONG).show();
+                return false;
+            }
+        } else {
+            // The last mod is going off: put the folder back before the switch is saved.
+            ModScriptsBackup.restore(this);
+        }
+        return true;
+    }
+
     private void renderMod(int index) {
         final ModManager.Mod mod = mods.get(index);
         final ModAnalysis.Info info = infos.get(mod.dir.getAbsolutePath());
@@ -337,7 +422,21 @@ public class ModManagerActivity extends Activity {
         toggle.setContentDescription(mod.name);
         toggle.setEnabled(!busy);
         toggle.setOnCheckedChangeListener((button, checked) -> {
+            // GeneralsX @feature Android port 07/11/2026 With the scripts backup on, the folder is
+            // moved aside before the switch is remembered: if the rename cannot be done, the switch
+            // goes back to where it was rather than leaving an active mod with its scripts present.
+            if (revertingToggle) {
+                return;
+            }
+            boolean was = mod.enabled;
             mod.enabled = checked;
+            if (!syncScriptsBackup()) {
+                mod.enabled = was;
+                revertingToggle = true;
+                button.setChecked(was);
+                revertingToggle = false;
+                return;
+            }
             if (checked) {
                 ModManager.noteEnabled(this, mod);
             }
@@ -532,6 +631,9 @@ public class ModManagerActivity extends Activity {
                 mod.enabled = true;
             }
         }
+        // GeneralsX @feature Android port 07/11/2026 It is switched on now, so the scripts folder
+        // follows the same rule as any other mod being switched on.
+        syncScriptsBackup();
         Toast.makeText(this, getString(R.string.mods_legacy_moved, archive), Toast.LENGTH_LONG).show();
         changed();
     }
@@ -913,9 +1015,13 @@ public class ModManagerActivity extends Activity {
         for (int i = 0; i < mods.size(); i++) {
             ModManager.Mod mod = mods.get(i);
             if (mod.dir.getAbsolutePath().equals(dir.getAbsolutePath())) {
-                mods.remove(i);
                 mod.enabled = true;
-                ModManager.noteEnabled(this, mod);
+                if (!syncScriptsBackup()) {
+                    mod.enabled = false;
+                } else {
+                    ModManager.noteEnabled(this, mod);
+                }
+                mods.remove(i);
                 mods.add(0, mod);
                 changed();
                 return;

@@ -330,6 +330,11 @@ public class SetupActivity extends Activity {
         refreshGeneralsOnlineStatus();
         loadDxvkConfigIntoEditor();
         refreshDiagnosticsSwitches();
+        // GeneralsX @feature Android port 07/11/2026 The optional scripts backup (ModScriptsBackup):
+        // with the option on and a mod switched on, the game folder's data/scripts is moved aside
+        // here, and put back when the last mod is switched off or the option is turned off. This is
+        // the launch path as well as the return path, so it runs before the game can read either.
+        ModScriptsBackup.recover(this);
     }
 
     // GeneralsX @feature Android port launcher-ui-2026 08/09/2026 The launcher
