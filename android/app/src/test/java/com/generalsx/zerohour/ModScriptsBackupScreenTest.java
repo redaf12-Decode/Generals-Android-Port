@@ -239,6 +239,28 @@ public class ModScriptsBackupScreenTest {
         controller.pause().stop().destroy();
     }
 
+    /**
+     * A rename that cannot be done must not block the mod: the folder is left alone and the mod
+     * switches on anyway. A plain file sits where the backup directory would go.
+     */
+    @Test
+    public void aModStillSwitchesOnWhenTheFolderCannotBeMoved() throws IOException {
+        try (FileOutputStream out = new FileOutputStream(new File(data, ModScriptsBackup.BACKUP_DIR))) {
+            out.write("in the way".getBytes(StandardCharsets.US_ASCII));
+        }
+        ActivityController<ModManagerActivity> controller = openScreen();
+        View root = controller.get().findViewById(android.R.id.content);
+
+        ((CompoundButton) findModToggle(root, MOD_NAME)).setChecked(true);
+
+        assertTrue("the mod switched on regardless", ModManager.anyEnabled(app));
+        assertTrue("the folder is left exactly where it was", scripts().isDirectory());
+        assertEquals("AI", new String(readFile(new File(scripts(), "SkirmishScripts.scb")),
+            StandardCharsets.US_ASCII));
+
+        controller.pause().stop().destroy();
+    }
+
     private static byte[] readFile(File file) {
         try {
             byte[] bytes = new byte[(int) file.length()];

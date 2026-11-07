@@ -46,15 +46,23 @@ Safety, exactly as asked:
 - **Never overwrites**: `rename()` returns false when the target already exists; the caller reports
   it and changes nothing.
 - **Both folders present** → `Result.CONFLICT`, filesystem untouched, a message on the screen.
-- **Rename fails** → `Result.FAILED`; the caller aborts the switch (`mustStopActivation()`), so
-  activation never continues in an inconsistent state. A mod switched on and then failing is put
-  back where it was.
+- **Rename fails** → `Result.FAILED`, the filesystem untouched and a message; the mod still switches
+  on, because the folder move is a convenience and never a precondition (see below).
 - **Already backed up** → recognised (the backup exists, the scripts folder does not) and *not*
   renamed again; the marker is refreshed instead.
 - **Any letter case** → the `data` directory and the `scripts`/`scriptsbackup` folder are found by
   comparing names case-insensitively (`findDataDir`/`findChild`), so `Data\Scripts`, `data\Scripts`
   and `Data\scripts` all work; the folder is moved and restored under the spelling it really has.
+  When neither spelling holds a scripts folder yet, the retail `Data` spelling is preferred over the
+  launcher's lower-case `data` (the latter holds only language packs), so the message and the
+  operation point at the folder the game's own `Scripts` would be in.
 - **Interrupted** → the marker survives; the next `recover`/`sync` re-derives the end state.
+
+**The folder never gates the mod.** `syncScriptsBackup()` moves the folder and only ever warns: a
+failed rename or a both-present conflict leaves the filesystem as it was and the mod still switches
+on (the toggle and "turn on now" no longer revert on it). `Result` therefore has no
+`mustStopActivation()`. `syncScriptsBackup()` is called from `refresh()` (before drawing) and from
+the mod toggle and `enableOnTop`.
 
 Ordering, which is the part that is easy to get wrong: `syncScriptsBackup()` in
 `ModManagerActivity` runs **between** the switch moving and `changed()` saving the list, and it
@@ -170,3 +178,23 @@ New/updated tests: `theOptionFollowsTheMods`, `withNoModOnNothingIsRenamed`,
 
 After follow-up 2: `testDebugUnitTest` 297 tests / 0 failures, `lintDebug` 0 errors,
 `assembleLauncherOnly` `BUILD SUCCESSFUL`, `check-translations.py` green (702 strings × 13).
+
+## Follow-up 3 (07/11/2026): retail spelling preferred, and the folder never blocks the mod
+
+Two owner requests:
+
+1. **Prefer the capital `Data\Scripts` path when the lower-case `data\scripts` is not found.** When
+   neither spelling holds a scripts folder yet (a fresh install, or one whose scripts were removed),
+   `findDataDir` now returns the retail `Data` spelling rather than the launcher's lower-case
+   `data` — the latter is the launcher's own and holds only language packs. So `dataDir()`,
+   `backupPathOf()` and the operation all point at the folder the game's own `Scripts` would live in.
+   Test: `theRetailDataSpellingIsPreferredWhenNeitherHoldsScripts`.
+2. **Do not make mod activation conditional on the folder having been changed.** A rename that cannot
+   be done (or a both-present conflict) now only warns: the filesystem is left exactly as it was and
+   the mod switches on regardless. `Result.mustStopActivation()` and the toggle/`enableOnTop` revert
+   paths were removed; `syncScriptsBackup()` is best-effort. Tests:
+   `aModStillSwitchesOnWhenTheFolderCannotBeMoved` (screen) and the reworded
+   `aFailedRenameIsReportedAndNothingIsChanged` (unit).
+
+After follow-up 3: `testDebugUnitTest` 299 tests / 0 failures, `lintDebug` 0 errors,
+`assembleLauncherOnly` `BUILD SUCCESSFUL`, `check-translations.py` green.

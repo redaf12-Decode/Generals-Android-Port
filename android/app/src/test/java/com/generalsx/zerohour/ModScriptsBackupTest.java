@@ -269,7 +269,7 @@ public class ModScriptsBackupTest {
         assertEquals("the backup is untouched", "OLD", read(new File(backup(), "old.scb")));
     }
 
-    /** Scenario 7: a rename that cannot be done stops the activation and changes nothing. */
+    /** Scenario 7: a rename that cannot be done is reported and changes nothing. */
     @Test
     public void aFailedRenameIsReportedAndNothingIsChanged() throws IOException {
         makeScripts();
@@ -281,7 +281,6 @@ public class ModScriptsBackupTest {
         ModScriptsBackup.Result result = ModScriptsBackup.apply(app);
 
         assertTrue("the failure is reported", result.failed);
-        assertTrue(result.mustStopActivation());
         assertTrue("the scripts folder is still there", scripts().isDirectory());
         assertEquals("AI-SCRIPTS", read(new File(scripts(), "SkirmishScripts.scb")));
         assertNull("no marker is written for a move that did not happen",
@@ -467,6 +466,28 @@ public class ModScriptsBackupTest {
 
         assertFalse(scripts().exists());
         assertTrue("the backup is in the folder that held the scripts", backup().isDirectory());
+    }
+
+    /**
+     * With neither spelling holding a scripts folder yet (a fresh install, or one whose scripts
+     * were removed), the retail {@code Data} spelling is the one acted on -- it is where the game's
+     * own {@code Scripts} live -- not the launcher's lower-case {@code data}, which holds only its
+     * language packs.
+     */
+    @Test
+    public void theRetailDataSpellingIsPreferredWhenNeitherHoldsScripts() throws IOException {
+        File retail = new File(game, "Data");
+        File launcherData = new File(game, "data");
+        assertTrue(retail.mkdirs() || retail.isDirectory());
+        assertTrue(launcherData.mkdirs() || launcherData.isDirectory());
+        File language = new File(launcherData, "english");
+        assertTrue(language.mkdirs() || language.isDirectory());
+        write(new File(language, "generals.str"), "STR".getBytes(StandardCharsets.US_ASCII));
+
+        assertEquals("the retail Data spelling is the folder acted on",
+            retail.getAbsolutePath(), ModScriptsBackup.dataDir(app).getAbsolutePath());
+        assertEquals(retail.getAbsolutePath() + File.separator + ModScriptsBackup.BACKUP_DIR,
+            ModScriptsBackup.backupPathOf(app));
     }
 
     /**

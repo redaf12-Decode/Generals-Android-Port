@@ -40,7 +40,8 @@ import java.nio.charset.StandardCharsets;
  * aside and what it was called; that is kept in a small marker file next to the launcher's other
  * markers ({@link #STATE_FILE}), and {@link #sync} re-derives the right end state from it on the
  * next launch. A rename that fails, and a folder pair that a player has left in a conflicting
- * state by hand, both leave the filesystem untouched and are reported to the caller.
+ * state by hand, both leave the filesystem untouched and are reported to the caller -- and neither
+ * blocks the mod: moving the folder is a convenience, never a precondition for switching a mod on.
  *
  * <p>Ownership follows the mods: the folder is put aside only while the game that owns it has at
  * least one mod switched on ({@link ModManager#anyEnabled}). Switching the option off, or the
@@ -51,6 +52,14 @@ final class ModScriptsBackup {
     /** The game folder's loose scripts directory, and the name it is moved aside to. */
     static final String SCRIPTS_DIR = "scripts";
     static final String BACKUP_DIR = "scriptsbackup";
+
+    /**
+     * The two spellings of the game's {@code data} directory the port meets. Retail is
+     * {@code Data} (Windows), the launcher's own language-pack folder is lower-case {@code data},
+     * and the engine matches either; the retail spelling is preferred when both are present.
+     */
+    private static final String DATA_DIR = "data";
+    private static final String DATA_DIR_CAPITAL = "Data";
 
     private static final String PREF_ENABLED = "mods_scripts_backup";
     private static final String STATE_FILE = "mods_scripts_backup_state";
@@ -75,11 +84,6 @@ final class ModScriptsBackup {
         static final Result RESTORED = new Result(false, true, false, false);
         static final Result CONFLICT = new Result(false, false, true, false);
         static final Result FAILED = new Result(false, false, false, true);
-
-        /** True when the folder could not be moved and the caller must not carry on. */
-        boolean mustStopActivation() {
-            return failed;
-        }
     }
 
     private ModScriptsBackup() {}
@@ -116,8 +120,12 @@ final class ModScriptsBackup {
      * {@code data} beside it, and the engine matches either spelling. So the two can be present at
      * once, and the one to act on is the one that actually holds the scripts: taking the exact
      * lower-case match blindly renamed the launcher's language folder and left the real
-     * {@code Data/Scripts} untouched, which is why the folder was never disabled. Falls back to the
-     * backup holder, then to the first {@code data} found, so a plain install still works.
+     * {@code Data/Scripts} untouched, which is why the folder was never disabled.
+     *
+     * <p>When neither spelling holds a scripts folder yet (nothing to move, or a fresh install),
+     * the retail {@code Data} spelling is preferred over the launcher's lower-case {@code data},
+     * because that is where the game's own {@code Scripts} live; the lower-case folder is the
+     * launcher's own and holds only language packs.
      */
     private static File findDataDir(File game) {
         File[] children = game.listFiles();
@@ -125,14 +133,18 @@ final class ModScriptsBackup {
             return null;
         }
         File first = null;
+        File retail = null;
         File withScripts = null;
         File withBackup = null;
         for (File child : children) {
-            if (!child.isDirectory() || !child.getName().equalsIgnoreCase("data")) {
+            if (!child.isDirectory() || !child.getName().equalsIgnoreCase(DATA_DIR)) {
                 continue;
             }
             if (first == null) {
                 first = child;
+            }
+            if (retail == null && child.getName().equals(DATA_DIR_CAPITAL)) {
+                retail = child;
             }
             if (withScripts == null && findChild(child, SCRIPTS_DIR) != null) {
                 withScripts = child;
@@ -144,19 +156,24 @@ final class ModScriptsBackup {
         if (withScripts != null) {
             return withScripts;
         }
-        return withBackup != null ? withBackup : first;
+        if (withBackup != null) {
+            return withBackup;
+        }
+        return retail != null ? retail : first;
     }
 
-    /** {@code <game>/data/scripts} as it exists on disk (any letter case), or null. */
+    /** {@code <game>/data/scripts} as a directory on disk (any letter case), or null. */
     static File scriptsDir(Context ctx) {
         File data = dataDir(ctx);
-        return data == null ? null : findChild(data, SCRIPTS_DIR);
+        File found = data == null ? null : findChild(data, SCRIPTS_DIR);
+        return found != null && found.isDirectory() ? found : null;
     }
 
-    /** {@code <game>/data/scriptsbackup} as it exists on disk (any letter case), or null. */
+    /** {@code <game>/data/scriptsbackup} as a directory on disk (any letter case), or null. */
     static File backupDir(Context ctx) {
         File data = dataDir(ctx);
-        return data == null ? null : findChild(data, BACKUP_DIR);
+        File found = data == null ? null : findChild(data, BACKUP_DIR);
+        return found != null && found.isDirectory() ? found : null;
     }
 
     /** The folder the backup will be renamed back to: the recorded name, else "scripts". */

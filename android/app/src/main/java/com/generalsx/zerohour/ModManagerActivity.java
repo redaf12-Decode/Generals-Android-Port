@@ -76,7 +76,6 @@ public class ModManagerActivity extends Activity {
     private AlertDialog importProgress;
     private ModImportService.CancellationSignal importCancellation;
     private Thread importThread;
-    private boolean revertingToggle;
 
     @Override
     protected void attachBaseContext(Context newBase) {
@@ -368,25 +367,25 @@ public class ModManagerActivity extends Activity {
 
     /**
      * Puts the scripts folder in the state the switches now call for, before the change is saved:
-     * a mod switched on with the option on renames data/scripts away first, and a failure stops
-     * the switch from being remembered, so activation never continues in an inconsistent state.
+     * a mod switched on renames data/scripts away first, and the last mod switched off brings it
+     * back.
      *
      * <p>Whether a mod is on is read from the list in memory, not from the saved list: this runs
      * between the switch moving and {@link #changed()} saving it, and asking the saved list here
      * would always see the state the player is leaving rather than the one they chose.
+     *
+     * <p>The folder move never blocks the mod. A rename that cannot be done, or both folders
+     * present at once, leaves the filesystem exactly as it was and only warns, so the mod switches
+     * on regardless; the folder is not a precondition for activation.
      */
-    private boolean syncScriptsBackup() {
-        if (anyModEnabled()) {
-            ModScriptsBackup.Result result = ModScriptsBackup.apply(this);
-            if (result.mustStopActivation() || result.conflict) {
-                Toast.makeText(this, scriptsBackupStatus(result), Toast.LENGTH_LONG).show();
-                return false;
-            }
-        } else {
+    private void syncScriptsBackup() {
+        ModScriptsBackup.Result result = anyModEnabled()
+            ? ModScriptsBackup.apply(this)
             // The last mod is going off: put the folder back before the switch is saved.
-            ModScriptsBackup.restore(this);
+            : ModScriptsBackup.restore(this);
+        if (result.failed || result.conflict) {
+            Toast.makeText(this, scriptsBackupStatus(result), Toast.LENGTH_LONG).show();
         }
-        return true;
     }
 
     private void renderMod(int index) {
@@ -420,21 +419,11 @@ public class ModManagerActivity extends Activity {
         toggle.setContentDescription(mod.name);
         toggle.setEnabled(!busy);
         toggle.setOnCheckedChangeListener((button, checked) -> {
-            // GeneralsX @feature Android port 07/11/2026 With the scripts backup on, the folder is
-            // moved aside before the switch is remembered: if the rename cannot be done, the switch
-            // goes back to where it was rather than leaving an active mod with its scripts present.
-            if (revertingToggle) {
-                return;
-            }
-            boolean was = mod.enabled;
+            // GeneralsX @feature Android port 07/11/2026 The scripts folder is moved aside first,
+            // but it never gates the mod: whatever the move does, the switch is saved as the player
+            // set it. The folder move only ever warns (see syncScriptsBackup).
             mod.enabled = checked;
-            if (!syncScriptsBackup()) {
-                mod.enabled = was;
-                revertingToggle = true;
-                button.setChecked(was);
-                revertingToggle = false;
-                return;
-            }
+            syncScriptsBackup();
             if (checked) {
                 ModManager.noteEnabled(this, mod);
             }
@@ -1014,11 +1003,9 @@ public class ModManagerActivity extends Activity {
             ModManager.Mod mod = mods.get(i);
             if (mod.dir.getAbsolutePath().equals(dir.getAbsolutePath())) {
                 mod.enabled = true;
-                if (!syncScriptsBackup()) {
-                    mod.enabled = false;
-                } else {
-                    ModManager.noteEnabled(this, mod);
-                }
+                // The folder move never blocks the mod; it only warns (see syncScriptsBackup).
+                syncScriptsBackup();
+                ModManager.noteEnabled(this, mod);
                 mods.remove(i);
                 mods.add(0, mod);
                 changed();
