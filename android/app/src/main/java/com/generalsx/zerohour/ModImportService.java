@@ -54,6 +54,8 @@ final class ModImportService {
     private static final int MAX_ENTRIES = 100000;
     private static final int MAX_DEPTH = 64;
     private static final int BUFFER_SIZE = 64 * 1024;
+    /** Staging sub-folder of a mods/ or Maps/ root; removed once an import is old. */
+    static final String INSTALLING_DIR = ".installing";
 
     // GeneralsX @feature Android port 04/10/2026 Cooperative transactional cancellation.
     static final class CancellationSignal {
@@ -463,7 +465,7 @@ final class ModImportService {
     }
 
     private static File stagingRoot(File modsRoot) throws IOException {
-        File staging = new File(modsRoot, ".installing").getCanonicalFile();
+        File staging = new File(modsRoot, INSTALLING_DIR).getCanonicalFile();
         if (!isInside(modsRoot, staging)) {
             throw new IOException("Invalid staging path");
         }
@@ -618,7 +620,7 @@ final class ModImportService {
         }
     }
 
-    private static String normalizeZipPath(String raw) throws IOException {
+    static String normalizeZipPath(String raw) throws IOException {
         if (raw == null || raw.indexOf(0) >= 0) {
             throw new IOException("ZIP contains an invalid path");
         }
@@ -632,7 +634,7 @@ final class ModImportService {
         return path;
     }
 
-    private static File resolveSafeRelative(File root, String relative) throws IOException {
+    static File resolveSafeRelative(File root, String relative) throws IOException {
         if (relative == null || relative.indexOf(0) >= 0) {
             throw new IOException("Invalid mod path");
         }
@@ -663,7 +665,7 @@ final class ModImportService {
         return canonical;
     }
 
-    private static String validateSegment(String segment) throws IOException {
+    static String validateSegment(String segment) throws IOException {
         if (segment == null) {
             throw new IOException("Mod contains an unnamed file");
         }
@@ -679,7 +681,7 @@ final class ModImportService {
         return value;
     }
 
-    private static String sanitizeInstallName(String input, boolean keepBigExtension)
+    static String sanitizeInstallName(String input, boolean keepBigExtension)
             throws IOException {
         if (input == null) {
             throw new IOException("Mod name is missing");
@@ -721,7 +723,7 @@ final class ModImportService {
         return result;
     }
 
-    private static File uniqueTarget(File root, String requestedName, boolean file)
+    static File uniqueTarget(File root, String requestedName, boolean file)
             throws IOException {
         File target = new File(root, requestedName).getCanonicalFile();
         if (!isInside(root, target)) {
@@ -755,7 +757,7 @@ final class ModImportService {
         }
     }
 
-    private static boolean isInside(File root, File child) throws IOException {
+    static boolean isInside(File root, File child) throws IOException {
         File canonicalRoot = root.getCanonicalFile();
         File parent = child.getCanonicalFile().getParentFile();
         while (parent != null) {
@@ -771,8 +773,8 @@ final class ModImportService {
         return root.getCanonicalFile().equals(child.getCanonicalFile()) || isInside(root, child);
     }
 
-    private static void cleanupStaleStaging(File modsRoot) {
-        File staging = new File(modsRoot, ".installing");
+    static void cleanupStaleStaging(File modsRoot) {
+        File staging = new File(modsRoot, INSTALLING_DIR);
         File[] entries = staging.listFiles();
         if (entries == null) {
             return;
@@ -785,7 +787,7 @@ final class ModImportService {
         }
     }
 
-    private static void deleteRecursively(File file) {
+    static void deleteRecursively(File file) {
         if (file == null || !file.exists()) {
             return;
         }

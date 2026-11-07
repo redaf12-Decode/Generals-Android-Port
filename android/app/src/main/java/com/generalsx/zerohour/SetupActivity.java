@@ -485,6 +485,7 @@ public class SetupActivity extends Activity {
                 buildTouchControlsSection(page);
                 break;
             case TAB_TOOLS:
+                buildToolsSection(page);
                 buildLogsSection(page);
                 buildDiagnosticsSection(page);
                 break;
@@ -677,6 +678,26 @@ public class SetupActivity extends Activity {
         } catch (Exception e) {
             return "";
         }
+    }
+
+    // ------------------------------------------------------------ Tools entries
+
+    // GeneralsX @feature Android port 07/11/2026 Tools -> Map Manager and ControlBar BIG Importer.
+    // Both screens reuse the importer's safety checks (ModImportService) and the mod loading
+    // infrastructure (ModManager/ModPacker) rather than a second archive parser or a second mod list.
+    private void buildToolsSection(LinearLayout page) {
+        LinearLayout card = UiKit.card(page);
+        UiKit.sectionHeader(card, R.drawable.ic_gzh_toolbox,
+            getString(R.string.setup_card_tools), false);
+        UiKit.listRow(card, R.drawable.ic_gzh_folder,
+            getString(R.string.setup_tools_map_manager),
+            getString(R.string.setup_tools_map_manager_note),
+            () -> startActivity(new Intent(this, MapManagerActivity.class)));
+        UiKit.divider(card);
+        UiKit.listRow(card, R.drawable.ic_gzh_download,
+            getString(R.string.setup_tools_cbbig),
+            getString(R.string.setup_tools_cbbig_note),
+            () -> startActivity(new Intent(this, ControlBarBigActivity.class)));
     }
 
     // ------------------------------------------------------------ Logs entry

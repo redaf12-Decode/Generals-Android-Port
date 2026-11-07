@@ -183,6 +183,22 @@
             android:theme="@style/Theme.GeneralsZHSettings"
             android:configChanges="orientation|screenSize|keyboardHidden" />
 
+        <!-- GeneralsX @feature Android port 07/11/2026 Tools: Map Manager (custom map
+             import/export under <user data>/Maps) and ControlBar BIG Importer (reads a
+             .big and imports just its control bar files as a mod). Both are launcher-only
+             screens reached from Setup -> Tools. -->
+        <activity
+            android:name=".MapManagerActivity"
+            android:exported="false"
+            android:theme="@style/Theme.GeneralsZHSettings"
+            android:configChanges="orientation|screenSize|keyboardHidden" />
+
+        <activity
+            android:name=".ControlBarBigActivity"
+            android:exported="false"
+            android:theme="@style/Theme.GeneralsZHSettings"
+            android:configChanges="orientation|screenSize|keyboardHidden" />
+
         <activity
             android:name=".NetworkDiagnosticsActivity"
             android:exported="false"

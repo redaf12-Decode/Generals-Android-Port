@@ -134,6 +134,13 @@ android {
         // the classpath; without this Robolectric throws Resources$NotFoundException for every
         // label. It is the standard setting for testing views that read resources.
         unitTests.includeAndroidResources = true
+        // GeneralsX @build Android port 07/11/2026 The Map Manager's export goes through
+        // ContentResolver.openOutputStream(), which Robolectric backs with a ParcelFileDescriptor.
+        // Closing one reflects into java.io.FileDescriptor.fd, which JDK 17+ refuses unless java.io
+        // is opened to the unnamed module. A no-op where it is already open.
+        unitTests.all {
+            jvmArgs '--add-opens=java.base/java.io=ALL-UNNAMED'
+        }
     }
 
     packagingOptions {
