@@ -682,7 +682,7 @@ public class SetupActivity extends Activity {
 
     // ------------------------------------------------------------ Tools entries
 
-    // GeneralsX @feature Android port 07/11/2026 Tools -> Map Manager and ControlBar BIG Importer.
+    // GeneralsX @feature Android port 07/11/2026 Tools -> Map Packs and ControlBar BIG Importer.
     // Both screens reuse the importer's safety checks (ModImportService) and the mod loading
     // infrastructure (ModManager/ModPacker) rather than a second archive parser or a second mod list.
     private void buildToolsSection(LinearLayout page) {
@@ -692,7 +692,7 @@ public class SetupActivity extends Activity {
         UiKit.listRow(card, R.drawable.ic_gzh_folder,
             getString(R.string.setup_tools_map_manager),
             getString(R.string.setup_tools_map_manager_note),
-            () -> startActivity(new Intent(this, MapManagerActivity.class)));
+            () -> startActivity(new Intent(this, MapPackActivity.class)));
         UiKit.divider(card);
         UiKit.listRow(card, R.drawable.ic_gzh_download,
             getString(R.string.setup_tools_cbbig),

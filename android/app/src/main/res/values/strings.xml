@@ -639,46 +639,66 @@
     <!-- GeneralsX @feature Android port 07/11/2026 Tools: Map Manager and ControlBar BIG Importer. -->
     <string name="setup_card_tools">Tools</string>
     <string name="setup_tools_map_manager">Map Manager</string>
-    <string name="setup_tools_map_manager_note">Install custom maps from a folder or a ZIP, export one as a folder or a ZIP, and see the maps the game has found.</string>
+    <string name="setup_tools_map_manager_note">Import map packs, then switch one on to copy its maps into the game\'s Maps folder. Original packs are kept, and up to 200 maps can be active at once.</string>
     <string name="setup_tools_cbbig">ControlBar BIG Importer</string>
     <string name="setup_tools_cbbig_note">Read a .big archive, show what it holds for the control bar, and import just those files as a mod.</string>
 
-    <string name="mapman_title">Map Manager</string>
-    <string name="mapman_refresh">Refresh</string>
-    <string name="mapman_import">Import maps</string>
-    <string name="mapman_import_folder">From folder</string>
-    <string name="mapman_import_zip">From ZIP</string>
-    <string name="mapman_import_help">Choose a map folder (with its .map file and picture), a folder holding several maps, or a ZIP of either. Everything is copied and checked first; nothing is installed until the check succeeds, and an incomplete or corrupt map is refused.</string>
-    <string name="mapman_installed">Installed maps</string>
-    <string name="mapman_none">No custom maps are installed yet.</string>
-    <string name="mapman_row_supporting">%1$d files · %2$s</string>
-    <string name="mapman_location_help">Maps folder: %1$s. The game scans it every time the map list opens, so an imported map appears without restarting.</string>
-    <string name="mapman_working_title">Working…</string>
-    <string name="mapman_import_working">Copying and checking the selected maps. Nothing is installed until the check succeeds.</string>
-    <string name="mapman_install_working">Installing the checked maps.</string>
-    <string name="mapman_import_done_title">Maps imported</string>
-    <string name="mapman_import_done">%1$d map(s) installed. Existing maps replaced or kept beside: %2$d.</string>
-    <string name="mapman_import_failed_title">Import failed</string>
-    <string name="mapman_invalid_map">No map was found. A map is a folder with a .map file inside it.</string>
-    <string name="mapman_invalid_map_file">That .map file is not a readable map.</string>
-    <string name="mapman_conflict_title">Map already installed</string>
-    <string name="mapman_conflict_message">%1$s is already installed. Replace it, or keep both copies?</string>
-    <string name="mapman_conflict_replace">Replace</string>
-    <string name="mapman_conflict_keep_both">Keep both</string>
-    <string name="mapman_map_detail">%1$s · %2$d files · %3$s</string>
-    <string name="mapman_map_preview">Preview picture: %1$s</string>
-    <string name="mapman_map_no_preview">none</string>
-    <string name="mapman_export_folder">Export as folder</string>
-    <string name="mapman_export_zip">Export as ZIP</string>
-    <string name="mapman_export_working">Writing the selected map.</string>
-    <string name="mapman_export_done_title">Map exported</string>
-    <string name="mapman_export_done">%1$s exported (%2$d files).</string>
-    <string name="mapman_export_failed_title">Export failed</string>
-    <string name="mapman_delete">Delete</string>
-    <string name="mapman_delete_title">Delete map</string>
-    <string name="mapman_delete_message">Delete %1$s from the Maps folder?</string>
-    <string name="mapman_delete_done">Map deleted.</string>
-    <string name="mapman_delete_failed">Could not delete the map.</string>
+
+    <!-- GeneralsX @feature Android port 07/11/2026 Tools -> Map Packs: imported packs
+         live in <user data>/maps-manager; activating one copies its maps into
+         <user data>/Maps, where the engine's MapCache finds them. -->
+    <string name="mappack_title">Map Packs</string>
+    <string name="mappack_refresh">Refresh</string>
+    <string name="mappack_import">Import map packs</string>
+    <string name="mappack_import_folder">From folder</string>
+    <string name="mappack_import_zip">From ZIP</string>
+    <string name="mappack_import_help">Choose a folder holding one or more maps, or a ZIP of them. The pack is copied and checked first; nothing reaches the game\'s Maps folder until you switch the pack on. Original packs are kept in maps-manager and can be switched on or off at any time.</string>
+    <string name="mappack_active_title">Active maps</string>
+    <string name="mappack_active_count">%1$d / %2$d active</string>
+    <string name="mappack_active_help">The maps of every active pack are copied into the game\'s Maps folder. The 200-map limit counts each map once, so a map shared by two packs is not counted twice.</string>
+    <string name="mappack_installed_count">The game\'s Maps folder holds %1$d maps right now.</string>
+    <string name="mappack_location_help">Packs: %1$s · Game maps: %2$s</string>
+    <string name="mappack_packs_title">Imported packs</string>
+    <string name="mappack_none">No map packs imported yet.</string>
+    <string name="mappack_row_supporting">%1$d maps · %2$s</string>
+    <string name="mappack_state_active">Active</string>
+    <string name="mappack_state_inactive">Inactive</string>
+    <string name="mappack_chip_active">Maps copied into the game</string>
+    <string name="mappack_activate">Activate</string>
+    <string name="mappack_deactivate">Deactivate</string>
+    <string name="mappack_details_button">Details</string>
+    <string name="mappack_delete_button">Delete</string>
+    <string name="mappack_export">Export</string>
+    <string name="mappack_export_title">Export map pack</string>
+    <string name="mappack_export_folder">As a folder</string>
+    <string name="mappack_export_zip">As a ZIP</string>
+    <string name="mappack_export_working">Copying the pack to the place you picked.</string>
+    <string name="mappack_export_done_title">Map pack exported</string>
+    <string name="mappack_export_done">%1$s was exported with %2$d files.</string>
+    <string name="mappack_export_failed_title">Export failed</string>
+    <string name="mappack_detail">%1$d maps · from %2$s
+
+%3$s</string>
+    <string name="mappack_working_title">Working…</string>
+    <string name="mappack_import_working">Copying and checking the selected maps.</string>
+    <string name="mappack_activating">Copying the maps into the game\'s Maps folder.</string>
+    <string name="mappack_deactivating">Removing the maps this pack no longer needs.</string>
+    <string name="mappack_import_done_title">Map pack imported</string>
+    <string name="mappack_import_done">%1$s was imported with %2$d maps. Switch it on to make its maps playable.</string>
+    <string name="mappack_import_failed_title">Import failed</string>
+    <string name="mappack_activated_title">Map pack activated</string>
+    <string name="mappack_activated">%1$s activated. Active maps: %2$d / %3$d.</string>
+    <string name="mappack_deactivated_title">Map pack deactivated</string>
+    <string name="mappack_deactivated">%1$s deactivated. Active maps: %2$d / %3$d.</string>
+    <string name="mappack_failed_title">Map pack change failed</string>
+    <string name="mappack_no_maps">No map was found in the selection. A map is a folder with a .map file inside it.</string>
+    <string name="mappack_invalid_map_file">A .map file in this pack is not a readable map.</string>
+    <string name="mappack_limit_title">200-map limit reached</string>
+    <string name="mappack_limit_message">تم تخطي الحاجز 200 خريطة، يرجى إلغاء تفعيل الحزمة التي لا تنوي اللعب بها وإعادة المحاولة.</string>
+    <string name="mappack_delete_title">Delete map pack</string>
+    <string name="mappack_delete_message">Delete the pack %1$s from maps-manager? Its maps are removed from the game too.</string>
+    <string name="mappack_delete_done">Map pack deleted.</string>
+    <string name="mappack_delete_failed">Could not delete the map pack.</string>
 
     <string name="cbbig_title">ControlBar BIG Importer</string>
     <string name="cbbig_select">Select BIG archive</string>

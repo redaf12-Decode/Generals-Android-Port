@@ -1,12 +1,16 @@
 // GeneralsX @build Android port 07/11/2026
 //
 // The two Tools screens both parse user-supplied bytes before the game ever sees them, so this
-// drives the real code paths (no mocks): MapManager against a real Maps/ folder and real ZIPs,
-// ControlBarBig against a real BIG archive built byte for byte the way ModPacker writes one.
+// drives the real code paths (no mocks): MapPackManager against a real maps-manager folder and a
+// real Maps folder, ControlBarBig against a real BIG archive built byte for byte the way ModPacker
+// writes one.
 //
 // What matters here and nowhere else:
 //   - the layout the engine accepts (<name>/<name>.map, MapCache::hasValidMapLeafLayout);
-//   - that a hostile ZIP cannot escape the staging folder;
+//   - that importing a pack never installs anything until the pack is activated;
+//   - that a map shared by two active packs is installed once and removed only when both are off;
+//   - that a map the manager did not install is never deleted;
+//   - that the 200-map limit counts unique maps and refuses with the exact Arabic message;
 //   - that only the ControlBar entries of an archive are selected, and unrelated INIs are not.
 
 package com.generalsx.zerohour;
@@ -47,151 +51,220 @@ public class MapAndControlBarToolsTest {
         return new File(app().getCacheDir(), name + "-" + System.nanoTime());
     }
 
-    // ------------------------------------------------------------------ map manager
+    // ------------------------------------------------------------------ map packs
+
+    private File newPack(String name, String... mapNames) {
+        File dir = new File(MapPackManager.packsDir(app()), name);
+        assertTrue(dir.mkdirs() || dir.isDirectory());
+        for (String map : mapNames) {
+            File mapDir = new File(dir, map);
+            assertTrue(mapDir.mkdirs() || mapDir.isDirectory());
+            write(new File(mapDir, map + ".map"), mapBytes());
+            write(new File(mapDir, map + ".tga"), new byte[16]);
+        }
+        return dir;
+    }
+
+    private MapPackManager.Pack pack(String name) {
+        for (MapPackManager.Pack p : MapPackManager.listPacks(app())) {
+            if (p.name.equals(name)) {
+                return p;
+            }
+        }
+        throw new AssertionError("pack not found: " + name);
+    }
+
+    private File installed(String map) {
+        return new File(MapManager.mapsDir(app()), map);
+    }
 
     @Test
-    public void describeAndListFindTheMapsTheEngineWould() throws IOException {
-        File maps = MapManager.mapsDir(app());
-        assertTrue(maps.isDirectory() || maps.mkdirs());
+    public void aPackIsStoredInMapsManagerAndItsMapsAreNotInstalledUntilActivated() throws IOException {
+        newPack("Desert Maps", "MapA", "MapB");
+        assertEquals(MapPackManager.PACKS_DIR,
+            new File(SetupActivity.userDataDir(app()), MapPackManager.PACKS_DIR).getName());
 
-        File good = new File(maps, "TestMap");
-        assertTrue(good.mkdirs());
-        write(new File(good, "TestMap.map"), mapBytes());
-        write(new File(good, "TestMap.tga"), new byte[32]);
-        write(new File(good, "readme.txt"), new byte[4]);
-
-        File notAMap = new File(maps, "NotAMap");
-        assertTrue(notAMap.mkdirs());
-        write(new File(notAMap, "something.map"), mapBytes());
-
-        MapManager.Map described = MapManager.describe(good);
-        assertNotNull(described);
-        assertEquals("TestMap", described.name);
-        assertEquals("TestMap.map", described.mapFile.getName());
-        assertNotNull("the preview picture is found", described.preview);
-        assertEquals(3, described.fileCount);
-
-        // The folder must be named after the .map inside it; a mismatched pair is not a map.
-        assertNull(MapManager.describe(notAMap));
-
-        boolean found = false;
+        // Importing a pack never reaches the game: the manager shows the pack, not its maps.
+        MapPackManager.sync(app());
+        assertEquals("no map is installed before the pack is switched on",
+            false, installed("MapA").exists());
         for (MapManager.Map map : MapManager.listMaps(app())) {
-            found |= "TestMap".equals(map.name);
-        }
-        assertTrue("an installed map is listed", found);
-    }
-
-    @Test
-    public void onlyACompressedOrChunkedMapFileIsAccepted() throws IOException {
-        File ear = cache("ear.map");
-        byte[] earBytes = new byte[32];
-        earBytes[0] = 'E';
-        earBytes[1] = 'A';
-        earBytes[2] = 'R';
-        write(ear, earBytes);
-        assertTrue(MapManager.isMapFile(ear));
-
-        File junk = cache("junk.map");
-        write(junk, "not a map at all, honestly".getBytes(StandardCharsets.US_ASCII));
-        assertFalse(MapManager.isMapFile(junk));
-    }
-
-    @Test
-    public void importingAZipInstallsTheMapAndTheGameCanFindIt() throws IOException {
-        File zip = cache("import.zip");
-        try (ZipOutputStream out = new ZipOutputStream(new FileOutputStream(zip))) {
-            entry(out, "Imported/Imported.map", mapBytes());
-            entry(out, "Imported/Imported.tga", new byte[16]);
-            entry(out, "Imported/readme.txt", "hello".getBytes(StandardCharsets.US_ASCII));
+            assertFalse("a packed map is not listed as an installed map",
+                map.name.equals("MapA") || map.name.equals("MapB"));
         }
 
         ModImportService.CancellationSignal signal = new ModImportService.CancellationSignal();
-        MapManager.Plan plan = MapManager.prepareZip(app(), Uri.fromFile(zip), signal);
-        assertEquals(1, plan.entries.size());
-        assertEquals("Imported", plan.entries.get(0).name);
-
-        MapManager.Result result = MapManager.commit(app(), plan, MapManager.Policy.REPLACE);
-        assertEquals(1, result.installed.size());
-
-        File installed = new File(MapManager.mapsDir(app()), "Imported");
-        assertTrue(new File(installed, "Imported.map").isFile());
-        assertTrue(new File(installed, "readme.txt").isFile());
-        File[] staging = new File(installed.getParentFile(),
-            ModImportService.INSTALLING_DIR).listFiles();
-        assertTrue("the staging folder is empty after a commit",
-            staging == null || staging.length == 0);
+        MapPackManager.activate(app(), pack("Desert Maps"), signal);
+        assertTrue(installed("MapA").isDirectory());
+        assertTrue(installed("MapB").isDirectory());
+        assertEquals(2, MapPackManager.activeMapCount(app()));
     }
 
     @Test
-    public void aZipThatTriesToEscapeTheStagingFolderIsRefused() throws IOException {
-        File zip = cache("traversal.zip");
+    public void importingAZipCreatesItsOwnPackAndKeepsTheMapLayout() throws IOException {
+        File zip = cache("pack.zip");
         try (ZipOutputStream out = new ZipOutputStream(new FileOutputStream(zip))) {
-            entry(out, "../../evil/evil.map", mapBytes());
+            entry(out, "Multiplayer Maps/Map_04/Map_04.map", mapBytes());
+            entry(out, "Multiplayer Maps/Map_05/Map_05.map", mapBytes());
+            entry(out, "Multiplayer Maps/Map_05/Map_05.tga", new byte[8]);
         }
         ModImportService.CancellationSignal signal = new ModImportService.CancellationSignal();
-        assertThrows(IOException.class,
-            () -> MapManager.prepareZip(app(), Uri.fromFile(zip), signal));
+        MapPackManager.Plan plan = MapPackManager.prepareZip(app(), Uri.fromFile(zip),
+            "Multiplayer Maps.zip", signal);
+        assertEquals(2, plan.mapCount);
+        MapPackManager.Pack imported = MapPackManager.commit(app(), plan);
+
+        assertEquals("Multiplayer Maps", imported.name);
+        assertEquals(2, imported.mapCount());
+        assertTrue(new File(imported.dir, "Multiplayer Maps/Map_04/Map_04.map").isFile());
+        assertTrue(new File(imported.dir, "Multiplayer Maps/Map_05/Map_05.map").isFile());
+        assertTrue("the pack metadata is written",
+            new File(imported.dir, MapPackManager.METADATA_FILE).isFile());
+        assertTrue("the pack is stored under maps-manager",
+            imported.dir.getParentFile().getName().equals(MapPackManager.PACKS_DIR));
     }
 
     @Test
-    public void aZipWithoutAnyMapFileIsRefusedWithAMessageThePlayerCanActOn() throws IOException {
-        File zip = cache("empty.zip");
-        try (ZipOutputStream out = new ZipOutputStream(new FileOutputStream(zip))) {
-            entry(out, "notes.txt", "nothing to see".getBytes(StandardCharsets.US_ASCII));
-        }
+    public void aSharedMapIsKeptUntilEveryPackThatProvidesItIsDeactivated() throws IOException {
+        newPack("Pack One", "Shared", "OnlyOne");
+        newPack("Pack Two", "Shared", "OnlyTwo");
         ModImportService.CancellationSignal signal = new ModImportService.CancellationSignal();
+
+        MapPackManager.activate(app(), pack("Pack One"), signal);
+        MapPackManager.activate(app(), pack("Pack Two"), signal);
+        assertEquals("the shared map is counted once", 3, MapPackManager.activeMapCount(app()));
+
+        MapPackManager.deactivate(app(), pack("Pack One"), signal);
+        assertTrue("the shared map survives while another pack still needs it",
+            installed("Shared").isDirectory());
+        assertFalse("a map only that pack provided is removed", installed("OnlyOne").exists());
+        assertTrue(installed("OnlyTwo").isDirectory());
+
+        MapPackManager.deactivate(app(), pack("Pack Two"), signal);
+        assertFalse("the shared map goes once its last provider is off",
+            installed("Shared").exists());
+        assertEquals(0, MapPackManager.activeMapCount(app()));
+    }
+
+    @Test
+    public void aMapThePlayerInstalledByHandIsNeverRemoved() throws IOException {
+        File hand = installed("HandMade");
+        assertTrue(hand.mkdirs() || hand.isDirectory());
+        write(new File(hand, "HandMade.map"), mapBytes());
+
+        newPack("Temp", "TempMap");
+        ModImportService.CancellationSignal signal = new ModImportService.CancellationSignal();
+        MapPackManager.activate(app(), pack("Temp"), signal);
+        MapPackManager.deactivate(app(), pack("Temp"), signal);
+
+        assertTrue("a map the manager did not install is left alone", hand.isDirectory());
+        assertFalse("the map the manager did install is removed", installed("TempMap").exists());
+    }
+
+    @Test
+    public void theTwoHundredMapLimitIsCountedOnUniqueMaps() throws IOException {
+        String[] many = new String[200];
+        for (int i = 0; i < 200; i++) {
+            many[i] = String.format(Locale.US, "Map%03d", i);
+        }
+        newPack("Big", many);
+        newPack("Overflow", "Map000", "Extra");
+
+        ModImportService.CancellationSignal signal = new ModImportService.CancellationSignal();
+        MapPackManager.activate(app(), pack("Big"), signal);
+        assertEquals("200 unique maps is the allowed maximum", 200,
+            MapPackManager.activeMapCount(app()));
+        assertEquals("a pack sharing maps does not simply add its own count", 201,
+            MapPackManager.activeCountWith(app(), "Overflow"));
+    }
+
+    @Test
+    public void activatingPastTheLimitIsRefusedWithTheExactArabicMessageAndNothingIsCopied()
+            throws IOException {
+        String[] many = new String[200];
+        for (int i = 0; i < 200; i++) {
+            many[i] = String.format(Locale.US, "Limit%03d", i);
+        }
+        newPack("Full", many);
+        newPack("Over", "Limit000", "Extra");
+
+        ModImportService.CancellationSignal signal = new ModImportService.CancellationSignal();
+        MapPackManager.activate(app(), pack("Full"), signal);
+        assertEquals(200, MapPackManager.activeMapCount(app()));
+
         ModImportService.ImportProblem problem = assertThrows(ModImportService.ImportProblem.class,
-            () -> MapManager.prepareZip(app(), Uri.fromFile(zip), signal));
-        assertEquals(R.string.mapman_invalid_map, problem.messageRes);
+            () -> MapPackManager.activate(app(), pack("Over"), signal));
+        assertEquals(R.string.mappack_limit_message, problem.messageRes);
+
+        String message = app().getString(problem.messageRes);
+        assertEquals("تم تخطي الحاجز 200 خريطة، يرجى إلغاء تفعيل الحزمة التي لا تنوي اللعب بها"
+            + " وإعادة المحاولة.", message);
+
+        assertFalse("a refused activation copies nothing", installed("Extra").exists());
+        assertEquals("the refused pack is not left active", 200,
+            MapPackManager.activeMapCount(app()));
+
+        // Deactivating always works, and frees room for the pack that did not fit.
+        MapPackManager.deactivate(app(), pack("Full"), signal);
+        MapPackManager.activate(app(), pack("Over"), signal);
+        assertTrue(installed("Extra").isDirectory());
+        assertTrue(installed("Limit000").isDirectory());
+        assertEquals("Over provides Limit000 and Extra", 2, MapPackManager.activeMapCount(app()));
     }
 
     @Test
-    public void exportingAMapAsZipKeepsItsFolderAndFiles() throws IOException {
-        File maps = MapManager.mapsDir(app());
-        File mapDir = new File(maps, "ExportMe");
-        assertTrue(mapDir.mkdirs() || mapDir.isDirectory());
-        write(new File(mapDir, "ExportMe.map"), mapBytes());
-        write(new File(mapDir, "ExportMe.tga"), new byte[8]);
-        MapManager.Map map = MapManager.describe(mapDir);
-        assertNotNull(map);
+    public void theActiveSetIsRebuiltAfterARestartAndLooseFilesAreNotTouched() throws IOException {
+        newPack("Persist", "Kept");
+        ModImportService.CancellationSignal signal = new ModImportService.CancellationSignal();
+        MapPackManager.activate(app(), pack("Persist"), signal);
+        assertTrue(installed("Kept").isDirectory());
+
+        // Simulate the game's Maps folder losing a map between sessions.
+        ModImportService.deleteRecursively(installed("Kept"));
+        assertFalse(installed("Kept").exists());
+
+        File unrelated = new File(MapManager.mapsDir(app()), "MapCache.ini");
+        write(unrelated, "auto-generated".getBytes(StandardCharsets.US_ASCII));
+
+        MapPackManager.sync(app());
+        assertTrue("the saved active list restores the missing map", installed("Kept").isDirectory());
+        assertTrue("an unrelated file in Maps is left alone", unrelated.isFile());
+        assertEquals(1, MapPackManager.activeMapCount(app()));
+    }
+
+    @Test
+    public void deletingAPackKeepsTheOtherPacksAndRemovesItsInstalledMaps() throws IOException {
+        newPack("Keep", "KeepMap");
+        newPack("Drop", "DropMap");
+        ModImportService.CancellationSignal signal = new ModImportService.CancellationSignal();
+        MapPackManager.activate(app(), pack("Drop"), signal);
+        assertTrue(installed("DropMap").isDirectory());
+
+        assertTrue(MapPackManager.delete(app(), pack("Drop")));
+        MapPackManager.sync(app());
+        assertFalse(installed("DropMap").exists());
+        assertTrue("the other pack is untouched", pack("Keep").dir.isDirectory());
+    }
+
+    @Test
+    public void exportingAPackAsZipKeepsItsFolderLayoutAndCanBeImportedAgain() throws IOException {
+        newPack("Export Me", "Outer", "Inner");
+        MapPackManager.Pack pack = pack("Export Me");
+        assertEquals(2, pack.mapCount());
 
         File destination = cache("export.zip");
         ModImportService.CancellationSignal signal = new ModImportService.CancellationSignal();
-        int count = MapManager.exportZip(app(), map, Uri.fromFile(destination), signal);
-        assertEquals(2, count);
+        int count = MapPackManager.exportZip(app(), pack, Uri.fromFile(destination), signal);
+        assertTrue("the pack's files are written", count >= 4);
 
-        List<String> names = new ArrayList<>();
-        try (java.util.zip.ZipInputStream in =
-                 new java.util.zip.ZipInputStream(new java.io.FileInputStream(destination))) {
-            ZipEntry entry;
-            while ((entry = in.getNextEntry()) != null) {
-                names.add(entry.getName());
-            }
-        }
-        assertTrue(names.toString(), names.contains("ExportMe/ExportMe.map"));
-        assertTrue(names.toString(), names.contains("ExportMe/ExportMe.tga"));
-    }
-
-    @Test
-    public void deleteOnlyRemovesAMapThatLivesInTheMapsFolder() {
-        File maps = MapManager.mapsDir(app());
-        File mapDir = new File(maps, "DeleteMe");
-        assertTrue(mapDir.mkdirs() || mapDir.isDirectory());
-        write(new File(mapDir, "DeleteMe.map"), mapBytes());
-        MapManager.Map map = MapManager.describe(mapDir);
-        assertNotNull(map);
-
-        assertTrue(MapManager.delete(app(), map));
-        assertFalse(mapDir.exists());
-
-        // A folder elsewhere in user data is not a map the launcher may delete.
-        File elsewhere = new File(SetupActivity.userDataDir(app()), "NotInMaps");
-        assertTrue(elsewhere.mkdirs() || elsewhere.isDirectory());
-        write(new File(elsewhere, "NotInMaps.map"), mapBytes());
-        MapManager.Map outside = new MapManager.Map(elsewhere, "NotInMaps",
-            new File(elsewhere, "NotInMaps.map"), null, 0, 1);
-        assertFalse(MapManager.delete(app(), outside));
-        assertTrue(elsewhere.exists());
+        // The ZIP it writes is a map pack again: prepareZip reads back the same two maps.
+        MapPackManager.Plan plan = MapPackManager.prepareZip(app(), Uri.fromFile(destination),
+            "Export Me.zip", signal);
+        assertEquals(2, plan.mapCount);
+        MapPackManager.Pack again = MapPackManager.commit(app(), plan);
+        assertEquals(2, again.mapCount());
+        assertTrue(new File(again.dir, "Outer/Outer.map").isFile());
+        assertTrue(new File(again.dir, "Inner/Inner.map").isFile());
     }
 
     // ------------------------------------------------------------------ control bar big
