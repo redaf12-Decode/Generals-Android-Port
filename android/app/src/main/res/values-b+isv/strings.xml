@@ -456,8 +456,8 @@
     <string name="mods_folder_help">Papka modov: %1$s. Každy mod je papka v njej so svojimi .big; mod.ini (Name, Version, Author, Description, Image, Url) i kartina cover, preview, logo ili icon se pokazujut tut, ako mod jih imaje.</string>
     <string name="mods_scripts_backup_title">Papka skriptov</string>
     <string name="mods_scripts_backup_switch">Avtomatično izključiti papku data/scripts</string>
-    <string name="mods_scripts_backup_switch_desc">Kogda vključeno, papka igry data/scripts se avtomatično prěimenuje v scriptsbackup dokolě mod jest vključen, i vrača se kogda mod jest izključen.</string>
-    <string name="mods_scripts_backup_help">Odložena na stranu dokolě mod jest vključen: %1$s. Ničto se ne izbrisuje i existujuča papka scriptsbackup se nikogda ne prěpisuje. Vrača se kogda poslědnji mod toj igry jest izključen ili kogda toj opcija jest izključena.</string>
+    <string name="mods_scripts_backup_switch_desc">Vključa se avtomatično kogda mod jest vključen, i izključa se jedino kogda poslědnji mod jest izključen. Dokolě jest vključena, papka igry data/scripts se prěimenuje v scriptsbackup i vrača se kogda se izključi.</string>
+    <string name="mods_scripts_backup_help">Odložena na stranu dokolě mod jest vključen: %1$s. Ničto se ne izbrisuje i existujuča papka scriptsbackup se nikogda ne prěpisuje. Vrača se avtomatično kogda poslědnji mod toj igry jest izključen.</string>
     <string name="mods_scripts_backup_done">data/scripts jest nyně %1$s.</string>
     <string name="mods_scripts_backup_restored">data/scripts jest nazad na svom městu.</string>
     <string name="mods_scripts_backup_active">data/scripts jest odložena kako scriptsbackup.</string>

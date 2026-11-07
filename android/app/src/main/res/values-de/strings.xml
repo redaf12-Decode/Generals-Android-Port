@@ -456,8 +456,8 @@
     <string name="mods_folder_help">Mod-Ordner: %1$s. Jede Mod ist ein Ordner darin mit ihren .big-Dateien; eine mod.ini (Name, Version, Author, Description, Image, Url) und ein Bild namens cover, preview, logo oder icon werden hier gezeigt, wenn die Mod sie hat.</string>
     <string name="mods_scripts_backup_title">Skript-Ordner</string>
     <string name="mods_scripts_backup_switch">data/scripts-Ordner automatisch deaktivieren</string>
-    <string name="mods_scripts_backup_switch_desc">Wenn aktiviert, wird der data/scripts-Ordner des Spiels automatisch in scriptsbackup umbenannt, solange ein Mod aktiv ist, und beim Deaktivieren des Mods wiederhergestellt.</string>
-    <string name="mods_scripts_backup_help">Beiseitegelegt, solange ein Mod an ist: %1$s. Es wird nichts gelöscht und ein vorhandener scriptsbackup-Ordner nie überschrieben. Zurückgelegt, wenn der letzte Mod dieses Spiels ausgeschaltet wird oder diese Option aus ist.</string>
+    <string name="mods_scripts_backup_switch_desc">Schaltet sich automatisch ein, sobald ein Mod eingeschaltet wird, und erst aus, wenn der letzte Mod ausgeschaltet wird. Solange sie an ist, wird der data/scripts-Ordner des Spiels in scriptsbackup umbenannt und beim Ausschalten wiederhergestellt.</string>
+    <string name="mods_scripts_backup_help">Beiseitegelegt, solange ein Mod an ist: %1$s. Es wird nichts gelöscht und ein vorhandener scriptsbackup-Ordner nie überschrieben. Er wird automatisch zurückgelegt, wenn der letzte Mod dieses Spiels ausgeschaltet wird.</string>
     <string name="mods_scripts_backup_done">data/scripts ist jetzt %1$s.</string>
     <string name="mods_scripts_backup_restored">data/scripts ist wieder an seinem Platz.</string>
     <string name="mods_scripts_backup_active">data/scripts liegt als scriptsbackup beiseite.</string>

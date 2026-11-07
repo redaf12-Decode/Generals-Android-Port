@@ -456,8 +456,8 @@
     <string name="mods_folder_help">پوشه مادها: %1$s. هر ماد پوشه‌ای در آن با فایل‌های .big خودش است؛ فایل mod.ini (Name، Version، Author، Description، Image, Url) و تصویری با نام cover، preview، logo یا icon در صورت وجود اینجا نمایش داده می‌شوند.</string>
     <string name="mods_scripts_backup_title">پوشه اسکریپت‌ها</string>
     <string name="mods_scripts_backup_switch">غیرفعال‌سازی خودکار پوشه data/scripts</string>
-    <string name="mods_scripts_backup_switch_desc">وقتی فعال باشد، پوشه data/scripts بازی هنگام فعال بودن یک ماد به‌طور خودکار به scriptsbackup تغییر نام می‌دهد و هنگام غیرفعال شدن ماد بازگردانده می‌شود.</string>
-    <string name="mods_scripts_backup_help">هنگام فعال بودن یک ماد کنار گذاشته می‌شود: %1$s. چیزی حذف نمی‌شود و پوشه موجود scriptsbackup هرگز بازنویسی نمی‌شود. با خاموش شدن آخرین ماد این بازی یا خاموش کردن این گزینه بازگردانده می‌شود.</string>
+    <string name="mods_scripts_backup_switch_desc">با فعال کردن هر ماد به‌طور خودکار روشن می‌شود و تنها با غیرفعال کردن آخرین ماد خاموش می‌شود. تا وقتی روشن است، پوشه data/scripts بازی به scriptsbackup تغییر نام می‌دهد و هنگام خاموش شدن بازگردانده می‌شود.</string>
+    <string name="mods_scripts_backup_help">هنگام فعال بودن یک ماد کنار گذاشته می‌شود: %1$s. چیزی حذف نمی‌شود و پوشه موجود scriptsbackup هرگز بازنویسی نمی‌شود. با خاموش شدن آخرین ماد این بازی به‌طور خودکار بازگردانده می‌شود.</string>
     <string name="mods_scripts_backup_done">data/scripts اکنون %1$s است.</string>
     <string name="mods_scripts_backup_restored">data/scripts به جای خود بازگشت.</string>
     <string name="mods_scripts_backup_active">data/scripts به نام scriptsbackup کنار گذاشته شده است.</string>

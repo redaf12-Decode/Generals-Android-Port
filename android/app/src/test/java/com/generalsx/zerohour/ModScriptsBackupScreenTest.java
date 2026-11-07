@@ -139,7 +139,7 @@ public class ModScriptsBackupScreenTest {
     }
 
     @Test
-    public void theOptionIsOnTheModsScreenAndItsStateIsSaved() {
+    public void theOptionFollowsTheModsOnTheScreen() {
         ActivityController<ModManagerActivity> controller = openScreen();
         View root = controller.get().findViewById(android.R.id.content);
 
@@ -147,19 +147,27 @@ public class ModScriptsBackupScreenTest {
         View option = findSwitch(root, label);
         assertNotNull("the option is on the Mods screen", option);
         assertTrue("it is the switch row's own switch", option instanceof MaterialSwitch);
-        assertFalse("off by default", ((CompoundButton) option).isChecked());
+        assertFalse("off while no mod is on", ((CompoundButton) option).isChecked());
+        assertFalse("not a free choice: it follows the mods", option.isEnabled());
 
-        ((CompoundButton) option).setChecked(true);
+        // Switching the mod on turns the option on by itself, and moves the folder aside.
+        ((CompoundButton) findModToggle(root, MOD_NAME)).setChecked(true);
+        assertTrue("the option turned on with the mod", ModScriptsBackup.isEnabled(app));
+        assertTrue("the folder is aside", backup().isDirectory());
+        View again = findSwitch(root, label);
+        assertTrue("the screen now shows it on", ((CompoundButton) again).isChecked());
 
-        assertTrue("the choice is saved", ModScriptsBackup.isEnabled(app));
-        assertTrue("no mod is on yet, so the folder stays", scripts().isDirectory());
+        // Switching the mod off turns the option off and brings the folder back.
+        ((CompoundButton) findModToggle(root, MOD_NAME)).setChecked(false);
+        assertFalse("the option turned off with the last mod", ModScriptsBackup.isEnabled(app));
+        assertTrue("the folder is back", scripts().isDirectory());
+        assertFalse(backup().exists());
 
         controller.pause().stop().destroy();
     }
 
     @Test
     public void switchingAModOnMovesTheFolderAndSwitchingItOffPutsItBack() {
-        ModScriptsBackup.setEnabled(app, true);
         ActivityController<ModManagerActivity> controller = openScreen();
         View root = controller.get().findViewById(android.R.id.content);
 
@@ -171,36 +179,62 @@ public class ModScriptsBackupScreenTest {
         assertFalse("data/scripts is moved aside", scripts().exists());
         assertTrue("data/scriptsbackup is there", backup().isDirectory());
         assertTrue("the mod is switched on", ModManager.anyEnabled(app));
+        assertTrue("the option followed the mod", ModScriptsBackup.isEnabled(app));
 
         ((CompoundButton) toggle).setChecked(false);
         assertTrue("data/scripts is back", scripts().isDirectory());
         assertFalse("data/scriptsbackup is gone", backup().exists());
         assertFalse("the mod is switched off", ModManager.anyEnabled(app));
+        assertFalse("the option followed it off", ModScriptsBackup.isEnabled(app));
         assertEquals("AI", new String(readFile(new File(scripts(), "SkirmishScripts.scb")),
             StandardCharsets.US_ASCII));
 
         controller.pause().stop().destroy();
     }
 
-    /** Turning the option off with a mod still on brings the folder back at once. */
+    /** Two mods on the screen: the option stays on until both are switched off. */
     @Test
-    public void turningTheOptionOffRestoresTheFolder() {
-        ModScriptsBackup.setEnabled(app, true);
+    public void theOptionStaysOnUntilTheLastModIsOff() throws IOException {
+        final String second = MOD_NAME + " 2";
+        File dir = new File(ModManager.modsRoot(app), second);
+        assertTrue(dir.mkdirs() || dir.isDirectory());
+        try (FileOutputStream out = new FileOutputStream(new File(dir, "mod.big"))) {
+            out.write(new byte[64]);
+        }
+        prefs().edit().putString("mods_order", "0|" + MOD_NAME + "\n0|" + second).commit();
+
+        ActivityController<ModManagerActivity> controller = openScreen();
+        View root = controller.get().findViewById(android.R.id.content);
+
+        ((CompoundButton) findModToggle(root, MOD_NAME)).setChecked(true);
+        ((CompoundButton) findModToggle(root, second)).setChecked(true);
+        assertTrue("on with a mod on", ModScriptsBackup.isEnabled(app));
+        assertTrue("the folder is aside", backup().isDirectory());
+
+        ((CompoundButton) findModToggle(root, MOD_NAME)).setChecked(false);
+        assertTrue("still on while the second mod is on", ModScriptsBackup.isEnabled(app));
+        assertTrue("still aside", backup().isDirectory());
+
+        ((CompoundButton) findModToggle(root, second)).setChecked(false);
+        assertFalse("off with the last mod", ModScriptsBackup.isEnabled(app));
+        assertTrue("the folder is back", scripts().isDirectory());
+        assertFalse(backup().exists());
+
+        controller.pause().stop().destroy();
+    }
+
+    /** The option is not a free choice: the player cannot switch it off while a mod is on. */
+    @Test
+    public void theOptionCannotBeSwitchedOffWhileAModIsOn() {
         prefs().edit().putString("mods_order", "1|" + MOD_NAME).commit();
-        assertTrue(ModScriptsBackup.apply(app).renamed);
-        assertTrue(backup().isDirectory());
 
         ActivityController<ModManagerActivity> controller = openScreen();
         View root = controller.get().findViewById(android.R.id.content);
         View option = findSwitch(root, app.getString(R.string.mods_scripts_backup_switch));
         assertNotNull(option);
-        assertTrue("the switch reflects the saved choice", ((CompoundButton) option).isChecked());
-
-        ((CompoundButton) option).setChecked(false);
-
-        assertTrue("the folder is back though the mod is still on", scripts().isDirectory());
-        assertFalse(backup().exists());
-        assertFalse(ModScriptsBackup.isEnabled(app));
+        assertTrue("the switch reflects the mods", ((CompoundButton) option).isChecked());
+        assertFalse("it is not the player's to turn off", option.isEnabled());
+        assertTrue("and the folder is aside", backup().isDirectory());
 
         controller.pause().stop().destroy();
     }

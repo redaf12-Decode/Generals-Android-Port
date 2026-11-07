@@ -116,7 +116,7 @@ public class ModScriptsBackupTest {
 
     // ------------------------------------------------------------- the option
 
-    /** Scenario 1/4: the preference is kept, and survives a fresh read of the store. */
+    /** The preference is kept, and survives a fresh read of the store. */
     @Test
     public void theOptionIsRemembered() {
         assertFalse("off by default", ModScriptsBackup.isEnabled(app));
@@ -126,18 +126,56 @@ public class ModScriptsBackupTest {
         assertFalse(ModScriptsBackup.isEnabled(app));
     }
 
+    /**
+     * The option follows the mods: it is on exactly while at least one mod is on, so several mods
+     * keep it on and only the last one switched off turns it off.
+     */
+    @Test
+    public void theOptionFollowsTheMods() throws IOException {
+        makeScripts();
+
+        // No mod on: the option is off and the folder is where it was.
+        ModScriptsBackup.sync(app);
+        assertFalse("off with no mod on", ModScriptsBackup.isEnabled(app));
+        assertTrue(scripts().isDirectory());
+
+        // A mod switched on: the option comes on with it and the folder moves aside.
+        setModsOn(1);
+        assertTrue(ModScriptsBackup.sync(app).renamed);
+        assertTrue("on with a mod on", ModScriptsBackup.isEnabled(app));
+
+        // A second mod on: still on, not renamed again.
+        setModsOn(2);
+        assertFalse(ModScriptsBackup.sync(app).renamed);
+        assertTrue("still on with two mods", ModScriptsBackup.isEnabled(app));
+        assertTrue(backup().isDirectory());
+
+        // One of the two off: still one on, so the option stays on and the folder aside.
+        prefs().edit().putString("mods_order", "1|" + MOD + "0\n0|" + MOD + "1").commit();
+        assertFalse(ModScriptsBackup.sync(app).restored);
+        assertTrue("on while a mod is on", ModScriptsBackup.isEnabled(app));
+        assertTrue(backup().isDirectory());
+
+        // The last one off: the option turns off with it and the folder comes back.
+        setModsAllOff(2);
+        assertTrue(ModScriptsBackup.sync(app).restored);
+        assertFalse("off once every mod is off", ModScriptsBackup.isEnabled(app));
+        assertTrue(scripts().isDirectory());
+    }
+
     // --------------------------------------------------------- the two moves
 
-    /** Scenario 2: switching a mod on with the option on moves the folder aside. */
+    /** Switching a mod on moves the folder aside and turns the option on with it. */
     @Test
     public void activatingAModMovesTheScriptsFolderAside() throws IOException {
         makeScripts();
-        ModScriptsBackup.setEnabled(app, true);
+        ModScriptsBackup.setEnabled(app, false);
         setModsOn(1);
 
         ModScriptsBackup.Result result = ModScriptsBackup.apply(app);
 
         assertTrue("the rename is reported", result.renamed);
+        assertTrue("the option turned on with the mod", ModScriptsBackup.isEnabled(app));
         assertFalse(scripts().exists());
         assertTrue("data/scriptsbackup exists", backup().isDirectory());
         assertEquals("AI-SCRIPTS", read(new File(backup(), "SkirmishScripts.scb")));
@@ -145,7 +183,7 @@ public class ModScriptsBackupTest {
         assertEquals(game.getAbsolutePath(), ModScriptsBackup.recordedGamePath(app));
     }
 
-    /** Scenario 3: switching the last mod off puts the folder back, with its contents. */
+    /** Switching the last mod off puts the folder back and turns the option off. */
     @Test
     public void deactivatingTheLastModRestoresTheScriptsFolder() throws IOException {
         makeScripts();
@@ -158,6 +196,7 @@ public class ModScriptsBackupTest {
         ModScriptsBackup.Result result = ModScriptsBackup.sync(app);
 
         assertTrue("the restore is reported", result.restored);
+        assertFalse("the option turned off with the last mod", ModScriptsBackup.isEnabled(app));
         assertTrue(scripts().isDirectory());
         assertFalse(backup().exists());
         assertEquals("the original file is intact", "AI-SCRIPTS",
@@ -165,17 +204,16 @@ public class ModScriptsBackupTest {
         assertNull("no marker is left behind", ModScriptsBackup.recordedName(app));
     }
 
-    /** Scenario 4: with the option off, activation changes nothing. */
+    /** No mod on: the option is off and nothing is renamed. */
     @Test
-    public void withTheOptionOffNothingIsRenamed() throws IOException {
+    public void withNoModOnNothingIsRenamed() throws IOException {
         makeScripts();
-        ModScriptsBackup.setEnabled(app, false);
-        setModsOn(1);
 
         ModScriptsBackup.Result result = ModScriptsBackup.sync(app);
 
         assertFalse(result.renamed);
         assertFalse(result.restored);
+        assertFalse(ModScriptsBackup.isEnabled(app));
         assertTrue(scripts().isDirectory());
         assertFalse(backup().exists());
     }
@@ -264,8 +302,8 @@ public class ModScriptsBackupTest {
         assertTrue(backup().isDirectory());
         assertFalse(scripts().exists());
 
-        // The player turns the option off before the process is torn down; the next launch heals.
-        ModScriptsBackup.setEnabled(app, false);
+        // The player turns every mod off before the process is torn down; the next launch heals.
+        setModsAllOff(1);
         ModScriptsBackup.recover(app);
         assertTrue(scripts().isDirectory());
         assertFalse(backup().exists());
@@ -429,6 +467,40 @@ public class ModScriptsBackupTest {
 
         assertFalse(scripts().exists());
         assertTrue("the backup is in the folder that held the scripts", backup().isDirectory());
+    }
+
+    /**
+     * Any letter case of either name is matched: {@code Data\Scripts}, {@code data\Scripts},
+     * {@code Data\scripts} are all the same folder to the engine and to this feature. On a
+     * case-sensitive filesystem (Android) only the spelling that is really on disk can be opened,
+     * so the folder is found by comparing names, not by constructing a path.
+     */
+    @Test
+    public void theScriptsFolderIsFoundInAnyLetterCase() throws IOException {
+        for (String[] spelling : new String[][] {
+                { "Data", "Scripts" }, { "data", "Scripts" },
+                { "Data", "scripts" }, { "DATA", "SCRIPTS" } }) {
+            File g = new File(app.getCacheDir(), "case-game-" + System.nanoTime());
+            assertTrue(g.mkdirs() || g.isDirectory());
+            File d = new File(g, spelling[0]);
+            File s = new File(d, spelling[1]);
+            assertTrue(s.mkdirs() || s.isDirectory());
+            write(new File(s, "SkirmishScripts.scb"), "AI".getBytes(StandardCharsets.US_ASCII));
+            prefs().edit().putString(SetupActivity.PREF_GAME_PATH, g.getAbsolutePath())
+                .putString("mods_order", "1|" + MOD).commit();
+
+            assertTrue(spelling[0] + "/" + spelling[1] + ": found and moved aside",
+                ModScriptsBackup.apply(app).renamed);
+            assertFalse("the original spelling is gone", s.exists());
+            assertTrue("the backup sits beside it",
+                new File(d, ModScriptsBackup.BACKUP_DIR).isDirectory());
+
+            prefs().edit().putString("mods_order", "0|" + MOD).commit();
+            assertTrue(ModScriptsBackup.sync(app).restored);
+            assertTrue("restored under its own spelling", s.isDirectory());
+            assertEquals("AI", read(new File(s, "SkirmishScripts.scb")));
+        }
+        prefs().edit().putString(SetupActivity.PREF_GAME_PATH, game.getAbsolutePath()).commit();
     }
 
     /**

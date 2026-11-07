@@ -456,8 +456,8 @@
     <string name="mods_folder_help">Папка модів: %1$s. Кожен мод — папка в ній зі своїми .big; mod.ini (Name, Version, Author, Description, Image, Url) і картинка cover, preview, logo або icon показуються тут, якщо вони є в мода.</string>
     <string name="mods_scripts_backup_title">Папка скриптів</string>
     <string name="mods_scripts_backup_switch">Автоматично вимикати папку data/scripts</string>
-    <string name="mods_scripts_backup_switch_desc">Коли ввімкнено, папка data/scripts гри автоматично перейменовується на scriptsbackup, поки мод активний, і повертається при його вимкненні.</string>
-    <string name="mods_scripts_backup_help">Прибирається, поки мод увімкнено: %1$s. Нічого не видаляється, а наявна папка scriptsbackup ніколи не перезаписується. Повертається, коли вимикається останній мод цієї гри або цей параметр.</string>
+    <string name="mods_scripts_backup_switch_desc">Вмикається автоматично при ввімкненні будь-якого моду й вимикається лише при вимкненні останнього моду. Поки вона ввімкнена, папка data/scripts гри перейменовується на scriptsbackup і повертається при вимкненні.</string>
+    <string name="mods_scripts_backup_help">Прибирається, поки мод увімкнено: %1$s. Нічого не видаляється, а наявна папка scriptsbackup ніколи не перезаписується. Повертається автоматично, коли вимикається останній мод цієї гри.</string>
     <string name="mods_scripts_backup_done">data/scripts тепер %1$s.</string>
     <string name="mods_scripts_backup_restored">data/scripts повернулася на місце.</string>
     <string name="mods_scripts_backup_active">data/scripts прибрано як scriptsbackup.</string>

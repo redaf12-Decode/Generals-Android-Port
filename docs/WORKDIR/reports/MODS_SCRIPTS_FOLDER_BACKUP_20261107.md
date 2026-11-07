@@ -29,14 +29,20 @@ aside and *what it was called before*. It is written to a two-line marker,
 
 | Method | When | What |
 |---|---|---|
-| `sync(ctx)` | Mods screen resume, game launch | Bring the selected game's folder in line with the option and its mods |
+| `sync(ctx)` | Mods screen open/resume, game launch | Bring the selected game's folder in line with its mods |
 | `apply(ctx)` | A mod switch goes on | Move `data/scripts` aside now, before the switch is saved |
-| `restore(ctx)` | The last mod switch goes off, or the option is turned off | Move `data/scriptsbackup` back now |
+| `restore(ctx)` | The last mod switch goes off | Move `data/scriptsbackup` back now |
 | `recover(ctx)` | `SetupActivity.onResume()` | Repair a folder left aside by the *other* game's last session, then `sync` |
+
+The option is **not a free choice** — it follows the mods. `sync` sets the saved preference to
+`ModManager.anyEnabled(ctx)`, `apply` sets it on and `restore` sets it off, so any mod switched on
+turns it on (and moves the folder aside) and only the *last* mod switched off turns it off again.
+Several mods on therefore keep it on, and the Mods-screen switch shows the state and is not
+togglable while a mod is on.
 
 Safety, exactly as asked:
 
-- **Never deletes**: only `renameTo`, no `deleteRecursively`, no `delete` on either folder.
+- **Never deletes**: only a same-directory move, no `deleteRecursively`, no `delete` on either folder.
 - **Never overwrites**: `rename()` returns false when the target already exists; the caller reports
   it and changes nothing.
 - **Both folders present** → `Result.CONFLICT`, filesystem untouched, a message on the screen.
@@ -45,13 +51,17 @@ Safety, exactly as asked:
   back where it was.
 - **Already backed up** → recognised (the backup exists, the scripts folder does not) and *not*
   renamed again; the marker is refreshed instead.
+- **Any letter case** → the `data` directory and the `scripts`/`scriptsbackup` folder are found by
+  comparing names case-insensitively (`findDataDir`/`findChild`), so `Data\Scripts`, `data\Scripts`
+  and `Data\scripts` all work; the folder is moved and restored under the spelling it really has.
 - **Interrupted** → the marker survives; the next `recover`/`sync` re-derives the end state.
 
 Ordering, which is the part that is easy to get wrong: `syncScriptsBackup()` in
 `ModManagerActivity` runs **between** the switch moving and `changed()` saving the list, and it
 decides "is any mod on?" from the **in-memory** list, not the saved one (which would still show the
 state being left). The folder therefore moves before the switch is remembered, and a failure can
-cancel the switch.
+cancel the switch. `refresh()` calls it before drawing, so the switch, the status line and the disk
+never disagree.
 
 ## Modified files
 
@@ -136,3 +146,27 @@ off through `ModManager.switchOff`, outside the Mods screen, so it now follows t
 
 After the follow-up: `testDebugUnitTest` 286 tests / 0 failures, `lintDebug` 0 errors,
 `assembleLauncherOnly` `BUILD SUCCESSFUL`.
+
+## Follow-up 2 (07/11/2026): the option follows the mods
+
+Owner's request: the switch should **turn itself on** when any mod is switched on, and turn off only
+when **all** mods are off — with several mods on it must stay on. It is therefore no longer a
+free-standing preference a player sets by hand; it is a function of the mods:
+
+- `sync()` sets the saved preference to `ModManager.anyEnabled(ctx)` and reconciles the folder from
+  that.
+- `apply()` (a mod switched on) sets it on; `restore()` (the last mod switched off) sets it off.
+- The Mods-screen switch shows the state (`anyModEnabled()` from the in-memory list) and is
+  disabled, so it cannot be turned off while a mod is on. The description and help strings were
+  updated in all 13 locales to say this.
+
+The letter-case requirement was already satisfied by `findDataDir`/`findChild` (both compare names
+case-insensitively, so `Data\Scripts`, `data\Scripts`, `Data\scripts` are all found and moved, and
+restored under the spelling they really have). A test now pins every one of those spellings.
+
+New/updated tests: `theOptionFollowsTheMods`, `withNoModOnNothingIsRenamed`,
+`theScriptsFolderIsFoundInAnyLetterCase` (unit), and `theOptionFollowsTheModsOnTheScreen`,
+`theOptionStaysOnUntilTheLastModIsOff`, `theOptionCannotBeSwitchedOffWhileAModIsOn` (screen).
+
+After follow-up 2: `testDebugUnitTest` 297 tests / 0 failures, `lintDebug` 0 errors,
+`assembleLauncherOnly` `BUILD SUCCESSFUL`, `check-translations.py` green (702 strings × 13).

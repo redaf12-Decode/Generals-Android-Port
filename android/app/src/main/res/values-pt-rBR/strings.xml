@@ -456,8 +456,8 @@
     <string name="mods_folder_help">Pasta de mods: %1$s. Cada mod é uma pasta nela com seus .big; um mod.ini (Name, Version, Author, Description, Image, Url) e uma imagem chamada cover, preview, logo ou icon aparecem aqui se o mod tiver.</string>
     <string name="mods_scripts_backup_title">Pasta de scripts</string>
     <string name="mods_scripts_backup_switch">Desativar automaticamente a pasta data/scripts</string>
-    <string name="mods_scripts_backup_switch_desc">Quando ativado, a pasta data/scripts do jogo é renomeada automaticamente para scriptsbackup enquanto um mod está ativo e restaurada ao desativá-lo.</string>
-    <string name="mods_scripts_backup_help">Posta de lado enquanto um mod está ligado: %1$s. Nada é apagado e uma pasta scriptsbackup existente nunca é sobrescrita. Volta quando o último mod deste jogo é desligado ou quando esta opção é desligada.</string>
+    <string name="mods_scripts_backup_switch_desc">Ativa-se automaticamente ao ativar um mod e só se desativa ao desativar o último mod. Enquanto está ativa, a pasta data/scripts do jogo é renomeada para scriptsbackup e restaurada ao desativar.</string>
+    <string name="mods_scripts_backup_help">Posta de lado enquanto um mod está ligado: %1$s. Nada é apagado e uma pasta scriptsbackup existente nunca é sobrescrita. Volta automaticamente quando o último mod deste jogo é desligado.</string>
     <string name="mods_scripts_backup_done">data/scripts agora é %1$s.</string>
     <string name="mods_scripts_backup_restored">data/scripts voltou ao lugar.</string>
     <string name="mods_scripts_backup_active">data/scripts está posta de lado como scriptsbackup.</string>

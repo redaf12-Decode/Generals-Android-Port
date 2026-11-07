@@ -456,8 +456,8 @@
     <string name="mods_folder_help">مجلد المودات: %1$s. كل مود مجلد داخله بملفات .big الخاصة به؛ يُعرض هنا ملف mod.ini (Name وVersion وAuthor وDescription وImage, Url) وصورة باسم cover أو preview أو logo أو icon إن وُجدت لدى المود.</string>
     <string name="mods_scripts_backup_title">مجلد السكربتات</string>
     <string name="mods_scripts_backup_switch">تعطيل مجلد data/scripts تلقائيًا</string>
-    <string name="mods_scripts_backup_switch_desc">عند التفعيل، يُعاد تسمية مجلد data/scripts في اللعبة تلقائيًا إلى scriptsbackup أثناء تفعيل أي مود، ويُستعاد عند تعطيل المود.</string>
-    <string name="mods_scripts_backup_help">يُنقل جانبًا أثناء تفعيل مود: %1$s. لا يُحذف أي شيء ولا يُستبدل مجلد scriptsbackup الموجود. يُعاد عند إيقاف آخر مود لهذه اللعبة أو عند إيقاف هذا الخيار.</string>
+    <string name="mods_scripts_backup_switch_desc">يُفعّل تلقائيًا عند تفعيل أي مود، ولا يُعطّل إلا عند تعطيل آخر مود. أثناء تفعيله يُعاد تسمية مجلد data/scripts في اللعبة إلى scriptsbackup ويُستعاد عند إيقافه.</string>
+    <string name="mods_scripts_backup_help">يُنقل جانبًا أثناء تفعيل مود: %1$s. لا يُحذف أي شيء ولا يُستبدل مجلد scriptsbackup الموجود. يُعاد تلقائيًا عند إيقاف آخر مود لهذه اللعبة.</string>
     <string name="mods_scripts_backup_done">أصبح data/scripts الآن %1$s.</string>
     <string name="mods_scripts_backup_restored">أُعيد data/scripts إلى مكانه.</string>
     <string name="mods_scripts_backup_active">data/scripts موضوع جانبًا باسم scriptsbackup.</string>

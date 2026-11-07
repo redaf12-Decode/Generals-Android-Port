@@ -465,8 +465,8 @@
     <string name="mods_folder_help">Mods folder: %1$s. Each mod is a folder in it with its .big files; a mod.ini (Name, Version, Author, Description, Image, Url) and a picture named cover, preview, logo or icon are shown here if the mod has them.</string>
     <string name="mods_scripts_backup_title">Scripts folder</string>
     <string name="mods_scripts_backup_switch">Automatically disable data/scripts folder</string>
-    <string name="mods_scripts_backup_switch_desc">When enabled, the game\'s data/scripts folder is automatically renamed to scriptsbackup while a mod is active and restored when the mod is deactivated.</string>
-    <string name="mods_scripts_backup_help">Moved aside while a mod is on: %1$s. Nothing is deleted and an existing scriptsbackup folder is never overwritten. It is put back when the last mod of this game is switched off, or when this option is turned off.</string>
+    <string name="mods_scripts_backup_switch_desc">Turns on automatically when a mod is switched on and turns off only when the last mod is switched off. While it is on, the game\'s data/scripts folder is renamed to scriptsbackup and restored when it turns off.</string>
+    <string name="mods_scripts_backup_help">Moved aside while a mod is on: %1$s. Nothing is deleted and an existing scriptsbackup folder is never overwritten. It is put back automatically when the last mod of this game is switched off.</string>
     <string name="mods_scripts_backup_done">data/scripts is now %1$s.</string>
     <string name="mods_scripts_backup_restored">data/scripts is back in place.</string>
     <string name="mods_scripts_backup_active">data/scripts is set aside as scriptsbackup.</string>

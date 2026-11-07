@@ -456,8 +456,8 @@
     <string name="mods_folder_help">Carpeta de mods: %1$s. Cada mod es una carpeta dentro con sus .big; aquí se muestran un mod.ini (Name, Version, Author, Description, Image, Url) y una imagen llamada cover, preview, logo o icon si el mod los tiene.</string>
     <string name="mods_scripts_backup_title">Carpeta de scripts</string>
     <string name="mods_scripts_backup_switch">Desactivar automáticamente la carpeta data/scripts</string>
-    <string name="mods_scripts_backup_switch_desc">Cuando está activado, la carpeta data/scripts del juego se renombra automáticamente a scriptsbackup mientras un mod está activo y se restaura al desactivarlo.</string>
-    <string name="mods_scripts_backup_help">Se aparta mientras un mod está activo: %1$s. No se borra nada y nunca se sobrescribe una carpeta scriptsbackup existente. Se devuelve al apagar el último mod de este juego o al desactivar esta opción.</string>
+    <string name="mods_scripts_backup_switch_desc">Se activa automáticamente al activar un mod y solo se desactiva al desactivar el último mod. Mientras está activa, la carpeta data/scripts del juego se renombra a scriptsbackup y se restaura al desactivarse.</string>
+    <string name="mods_scripts_backup_help">Se aparta mientras un mod está activo: %1$s. No se borra nada y nunca se sobrescribe una carpeta scriptsbackup existente. Se devuelve automáticamente al desactivar el último mod de este juego.</string>
     <string name="mods_scripts_backup_done">data/scripts ahora es %1$s.</string>
     <string name="mods_scripts_backup_restored">data/scripts vuelve a su sitio.</string>
     <string name="mods_scripts_backup_active">data/scripts está apartada como scriptsbackup.</string>

@@ -117,11 +117,9 @@ public class ModManagerActivity extends Activity {
     protected void onResume() {
         super.onResume();
         if (importThread == null) {
+            // refresh() also heals the scripts backup before drawing, so what the option shows and
+            // what is on disk agree.
             refresh();
-            // GeneralsX @feature Android port 07/11/2026 Heal an interrupted scripts backup (or a
-            // folder left aside by the other game) before the list is drawn, so what the option
-            // shows and what is on disk agree.
-            syncScriptsBackup();
         }
     }
 
@@ -144,6 +142,9 @@ public class ModManagerActivity extends Activity {
 
     private void refresh() {
         mods = ModManager.listMods(this);
+        // Heal an interrupted scripts backup (or a folder left aside by the other game) before the
+        // list is drawn, so what the option shows and what is on disk agree.
+        syncScriptsBackup();
         render();
         analyze(true);
     }
@@ -316,8 +317,10 @@ public class ModManagerActivity extends Activity {
     /**
      * GeneralsX @feature Android port 07/11/2026 The scripts-folder backup switch (ModScriptsBackup):
      * the game folder's data/scripts is renamed to data/scriptsbackup while a mod is on and back
-     * when the last one is switched off. The card explains what it does and, when it is on, what is
-     * on disk right now.
+     * when the last one is switched off. The switch is not a free choice -- it follows the mods:
+     * any mod switched on turns it on, and only the last mod switched off turns it off again, so
+     * with several mods on it stays on until they are all off. The card explains that and, while it
+     * is on, what is on disk right now.
      */
     private void renderScriptsBackup() {
         LinearLayout card = UiKit.card(list);
@@ -326,19 +329,21 @@ public class ModManagerActivity extends Activity {
         MaterialSwitch toggle = UiKit.switchRow(card,
             getString(R.string.mods_scripts_backup_switch),
             getString(R.string.mods_scripts_backup_switch_desc));
-        toggle.setChecked(ModScriptsBackup.isEnabled(this));
-        toggle.setEnabled(!busy);
-        toggle.setOnCheckedChangeListener((button, checked) -> {
-            ModScriptsBackup.setEnabled(this, checked);
-            ModScriptsBackup.Result result = ModScriptsBackup.sync(this);
-            Toast.makeText(this, scriptsBackupStatus(result), Toast.LENGTH_LONG).show();
-            render();
-        });
-        if (ModScriptsBackup.isEnabled(this)) {
-            UiKit.supporting(card, scriptsBackupStatus(ModScriptsBackup.Result.NONE));
-        }
+        toggle.setChecked(anyModEnabled());
+        toggle.setEnabled(false);
+        UiKit.supporting(card, scriptsBackupStatus(ModScriptsBackup.Result.NONE));
         UiKit.helpText(card, getString(R.string.mods_scripts_backup_help,
             ModScriptsBackup.backupPathOf(this)));
+    }
+
+    /** Whether at least one mod of the selected game is switched on, from the list in memory. */
+    private boolean anyModEnabled() {
+        for (ModManager.Mod mod : mods) {
+            if (mod.enabled) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /** A one-line account of where the scripts folder is now, for the card and the toast. */
@@ -371,14 +376,7 @@ public class ModManagerActivity extends Activity {
      * would always see the state the player is leaving rather than the one they chose.
      */
     private boolean syncScriptsBackup() {
-        if (!ModScriptsBackup.isEnabled(this)) {
-            return true;
-        }
-        boolean anyOn = false;
-        for (ModManager.Mod mod : mods) {
-            anyOn |= mod.enabled;
-        }
-        if (anyOn) {
+        if (anyModEnabled()) {
             ModScriptsBackup.Result result = ModScriptsBackup.apply(this);
             if (result.mustStopActivation() || result.conflict) {
                 Toast.makeText(this, scriptsBackupStatus(result), Toast.LENGTH_LONG).show();

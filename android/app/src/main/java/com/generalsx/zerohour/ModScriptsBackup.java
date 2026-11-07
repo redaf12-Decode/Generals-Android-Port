@@ -171,33 +171,37 @@ final class ModScriptsBackup {
     // ------------------------------------------------------------------- sync
 
     /**
-     * Brings the selected game's folder in line with the option and its switched-on mods. Safe to
-     * call at any time and the single entry point for both the Mods screen and the app start, so
-     * an interrupted operation heals instead of leaving a folder half moved.
+     * Brings the selected game's folder in line with its switched-on mods. Safe to call at any
+     * time and the single entry point for both the Mods screen and the app start, so an interrupted
+     * operation heals instead of leaving a folder half moved.
+     *
+     * <p>The option follows the mods rather than being set by hand: any mod switched on turns it on
+     * (and moves the folder aside), and only the <em>last</em> mod switched off turns it off again
+     * (and brings the folder back). Several mods on therefore keep it on until the final one goes
+     * off, which is what a player sees on the Mods screen.
      */
     static Result sync(Context ctx) {
-        String path = SetupActivity.getSavedGamePath(ctx);
-        boolean wantBackup = isEnabled(ctx) && ModManager.anyEnabled(ctx);
-        return reconcile(ctx, path, wantBackup);
+        boolean anyOn = ModManager.anyEnabled(ctx);
+        setEnabled(ctx, anyOn);
+        return reconcile(ctx, SetupActivity.getSavedGamePath(ctx), anyOn);
     }
 
     /**
      * Forces the folder aside now, for the moment a mod is switched on -- before the switch is
-     * saved, so a failure can stop the activation rather than leave it half done. Does nothing
-     * when the option is off.
+     * saved, so a failure can stop the activation rather than leave it half done. The option is
+     * switched on with it, because it follows the mods.
      */
     static Result apply(Context ctx) {
-        if (!isEnabled(ctx)) {
-            return Result.NONE;
-        }
+        setEnabled(ctx, true);
         return reconcile(ctx, SetupActivity.getSavedGamePath(ctx), true);
     }
 
     /**
-     * Forces the folder back now, for the moment the last mod is switched off (or the option is
-     * turned off) -- before the switch is saved, so the two never disagree.
+     * Forces the folder back now, for the moment the last mod is switched off -- before the switch
+     * is saved, so the two never disagree. The option is switched off with it.
      */
     static Result restore(Context ctx) {
+        setEnabled(ctx, false);
         return reconcile(ctx, SetupActivity.getSavedGamePath(ctx), false);
     }
 
@@ -211,8 +215,7 @@ final class ModScriptsBackup {
         String recorded = recordedGamePath(ctx);
         if (recorded != null && !recorded.equals(selected)) {
             // The folder belongs to the other game: restore it unless that game still has mods on.
-            boolean stillWanted = isEnabled(ctx) && ModManager.anyEnabledForPath(ctx, recorded);
-            if (!stillWanted) {
+            if (!ModManager.anyEnabledForPath(ctx, recorded)) {
                 reconcile(ctx, recorded, false);
             }
         }
