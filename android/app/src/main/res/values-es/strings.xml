@@ -388,6 +388,8 @@
     <string name="setup_accent_white">Blanco</string>
     <string name="setup_accent_yellow">Amarillo</string>
     <string name="setup_cursor_size_label">Tamaño del cursor: %1$d %%</string>
+    <string name="setup_switch_mouse_capture">Captura del ratón físico</string>
+    <string name="setup_switch_mouse_capture_desc">Confina el puntero del ratón a la ventana del juego y oculta el cursor del sistema, de modo que el puntero no puede salir de la pantalla ni quedarse atascado en un borde. Donde Android no lo admite, el ratón funciona como antes.</string>
     <string name="setup_switch_skip_intro">Omitir vídeos de introducción</string>
     <string name="setup_switch_skip_intro_desc">Los logotipos de EA, la introducción y otros vídeos antes del menú se omiten; el juego carga directamente. Para ambos juegos, también con mods.</string>
     <!-- GeneralsX @feature Android port 18/10/2026 Mods screen (ModManagerActivity), from realkot's GeneralsX fork. -->

@@ -33,6 +33,9 @@
 #include <cstring>
 #include <cstdlib>
 
+// GeneralsX @feature Android port 07/11/2026 GX_TRACE for the physical-mouse capture state changes.
+#include "GXTrace.h"
+
 // GeneralsX @bugfix felipebraz 18/02/2026 Include GameLogic for frame tracking
 #include "GameLogic/GameLogic.h"
 // GeneralsX @bugfix felipebraz 20/02/2026 Include Display to get internal resolution for coordinate scaling
@@ -167,7 +170,10 @@ SDL3Mouse::SDL3Mouse(SDL_Window* window)
 	  m_MiddleButtonDownTime(0),
 	  m_LastFrameNumber(0),  // GeneralsX @bugfix felipebraz 18/02/2026 Initialize frame tracking
 	  m_directionFrame(0),    // GeneralsX @bugfix BenderAI 22/02/2026 Initialize cursor direction frame
-	  m_touchpadPointer(FALSE)
+	  m_touchpadPointer(FALSE),
+	  m_RelativeMode(FALSE),        // GeneralsX @feature Android port 07/11/2026 Physical mouse capture
+	  m_RelativeWanted(FALSE),
+	  m_ButtonsHeld(0)              // GeneralsX @feature Android port 07/11/2026 No button held yet
 {
 	// GeneralsX @bugfix BenderAI 18/02/2026 Temporarily disable debug logging (Phase 1.8)
 	// fprintf(stderr, "DEBUG: SDL3Mouse::SDL3Mouse() created\n");
@@ -182,6 +188,13 @@ SDL3Mouse::SDL3Mouse(SDL_Window* window)
 	m_RightButtonDownPos.y = 0;
 	m_MiddleButtonDownPos.x = 0;
 	m_MiddleButtonDownPos.y = 0;
+
+#if (defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE) || defined(__ANDROID__)
+	// GeneralsX @feature Android port 07/11/2026 The launcher's "Physical mouse capture" switch
+	// (GXMouseMode.h). Read once, like the mouse mode itself: the marker is only rewritten by the
+	// launcher, which the player leaves before the game starts.
+	m_RelativeWanted = (GXMouseModeEnabled() && GXMouseCaptureEnabled()) ? TRUE : FALSE;
+#endif
 }
 
 /**
@@ -545,6 +558,13 @@ void SDL3Mouse::setVisibility(Bool visible)
 void SDL3Mouse::loseFocus()
 {
 	m_LostFocus = true;           // GeneralsX @bugfix felipebraz 18/02/2026 Set focus flag
+#if (defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE) || defined(__ANDROID__)
+	// GeneralsX @feature Android port 07/11/2026 A press in progress when the window loses focus
+	// never gets its release from Android (the up goes to whoever has focus now), so release every
+	// button the hardware mouse holds. releaseCapture() does this too for the captured case; here
+	// it also covers an uncaptured mouse, where releaseCapture() returns early. Both are idempotent.
+	releaseStuckButtons();
+#endif
 	releaseCapture();
 }
 
@@ -554,7 +574,9 @@ void SDL3Mouse::loseFocus()
 void SDL3Mouse::regainFocus()
 {
 	m_LostFocus = false;          // GeneralsX @bugfix felipebraz 18/02/2026 Clear focus flag
-	// Capture may be re-enabled by game logic
+	// Capture may be re-enabled by game logic: the focus-gained and foreground paths in
+	// SDL3GameEngine.cpp call refreshCursorCapture() right after this, which re-runs the engine's
+	// own capture rules (canCapture()) and so re-requests the physical mouse capture here.
 }
 
 #if (defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE) || defined(__ANDROID__)
@@ -652,7 +674,12 @@ static Image *gxCursorFrameImage(SDL_Surface *frame, TextureClass **outTexture)
 void SDL3Mouse::draw()
 {
 	Mouse::draw();
-	if (!GXMouseModeEnabled() || !m_touchpadPointer || TheDisplay == nullptr) {
+	// GeneralsX @feature Android port 07/11/2026 While the hardware mouse is captured, Android hides
+	// its own cursor (SDL hides it in relative mode, the same as Winlator does), so the game must
+	// draw the pointer. This is the same code the touchpad pointer uses; the two conditions are one
+	// "the game owns the pointer" test, and GXMouseModeEnabled() is still required for the touchpad.
+	const Bool gameOwnsPointer = (m_touchpadPointer && GXMouseModeEnabled()) || m_RelativeMode;
+	if (!gameOwnsPointer || TheDisplay == nullptr) {
 		return;
 	}
 	if (m_currentCursor == NONE) {
@@ -747,6 +774,27 @@ void SDL3Mouse::capture(void)
 
 	m_IsCaptured = true;
 
+#if (defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE) || defined(__ANDROID__)
+	// GeneralsX @feature Android port 07/11/2026 Physical mouse capture (see the header comment).
+	// SDL_SetWindowRelativeMouseMode() asks Android for the pointer itself: requestPointerCapture()
+	// in SDLGenericMotionListener_API26, then onCapturedPointerEvent() in SDLSurface delivers
+	// relative motion and the button/wheel events that go with it. Android then hides its own
+	// cursor and confines the pointer to the window, so it can neither leave the screen nor stall
+	// at an edge; the game draws the cursor from the accumulated position instead.
+	//
+	// A refusal (Android < 8.0, some DeX builds, supportsRelativeMouse() false) is not an error:
+	// the absolute path keeps working, with the mouse drawn by Android as before.
+	if (m_RelativeWanted) {
+		SDL_SetWindowRelativeMouseMode(m_Window, true);
+		m_RelativeMode = SDL_GetWindowRelativeMouseMode(m_Window) ? TRUE : FALSE;
+		if (m_RelativeMode) {
+			GX_TRACE("SDL3Mouse: physical mouse captured (relative mode)\n");
+		} else {
+			GX_TRACE("SDL3Mouse: pointer capture refused, absolute mouse stays in use\n");
+		}
+	}
+#endif
+
 	// @fix Notify base class so isCursorCaptured() returns true.
 	// This is required for edge scrolling (canScrollAtScreenEdge checks isCursorCaptured).
 	onCursorCaptured(true);
@@ -761,6 +809,18 @@ void SDL3Mouse::releaseCapture(void)
 		return;
 	}
 
+#if (defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE) || defined(__ANDROID__)
+	// GeneralsX @feature Android port 07/11/2026 Leave relative mode first: a button held down at
+	// this moment would otherwise never get its release once Android stops delivering captured
+	// events, and the game would act on a stuck press.
+	releaseStuckButtons();
+	if (m_RelativeMode) {
+		SDL_SetWindowRelativeMouseMode(m_Window, false);
+		m_RelativeMode = FALSE;
+		GX_TRACE("SDL3Mouse: physical mouse capture released\n");
+	}
+#endif
+
 	SDL_CaptureMouse(false);
 	if (m_Window) {
 		SDL_SetWindowMouseGrab(m_Window, false);
@@ -771,6 +831,46 @@ void SDL3Mouse::releaseCapture(void)
 	// @fix Notify base class so isCursorCaptured() returns false.
 	onCursorCaptured(false);
 }
+
+#if (defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE) || defined(__ANDROID__)
+
+void SDL3Mouse::releaseStuckButtons()
+{
+	if (m_ButtonsHeld == 0) {
+		return;
+	}
+
+	const Uint32 held = m_ButtonsHeld;
+	m_ButtonsHeld = 0;
+
+	// SDL's own pointer position: a captured mouse's position, in window pixels, which
+	// translateButtonEvent() and scaleMouseCoordinates() then convert as for any other event.
+	float posX = 0.0f, posY = 0.0f;
+	SDL_GetMouseState(&posX, &posY);
+
+	for (Uint8 button = 1; button <= 5; ++button) {
+		if ((held & SDL_BUTTON_MASK(button)) == 0) {
+			continue;
+		}
+
+		SDL_Event event;
+		SDL_zero(event);
+		event.type = SDL_EVENT_MOUSE_BUTTON_UP;
+		event.button.timestamp = SDL_GetTicksNS();
+		event.button.windowID = m_Window ? SDL_GetWindowID(m_Window) : 0;
+		event.button.which = HARDWARE_MOUSE_ID;
+		event.button.button = button;
+		event.button.down = false;
+		event.button.clicks = 1;
+		event.button.x = posX;
+		event.button.y = posY;
+
+		addSDLEvent(&event);
+		GX_TRACE("SDL3Mouse: released stuck button %u\n", (unsigned)button);
+	}
+}
+
+#endif // Android/iOS
 
 /**
  * Get next mouse event from buffer
@@ -1063,6 +1163,20 @@ void SDL3Mouse::addSDLEvent(SDL_Event *event)
 	if (event->type == SDL_EVENT_MOUSE_MOTION && event->motion.which != TOUCHPAD_MOUSE_ID
 	    && event->motion.which != SDL_TOUCH_MOUSEID) {
 		s_lastHardwareMouseMs = SDL_GetTicks();
+	}
+
+	// GeneralsX @feature Android port 07/11/2026 The buttons a hardware mouse holds down, so they
+	// can be released deliberately if a press is interrupted (see releaseStuckButtons).
+	if (event->type == SDL_EVENT_MOUSE_BUTTON_DOWN || event->type == SDL_EVENT_MOUSE_BUTTON_UP) {
+		if (event->button.which != TOUCHPAD_MOUSE_ID && event->button.which != SDL_TOUCH_MOUSEID
+		    && event->button.button != 0) {
+			const Uint32 mask = SDL_BUTTON_MASK(event->button.button);
+			if (event->type == SDL_EVENT_MOUSE_BUTTON_DOWN) {
+				m_ButtonsHeld |= mask;
+			} else {
+				m_ButtonsHeld &= ~mask;
+			}
+		}
 	}
 #endif
 

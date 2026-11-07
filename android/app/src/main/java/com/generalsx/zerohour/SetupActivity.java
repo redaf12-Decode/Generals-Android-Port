@@ -763,7 +763,9 @@ public class SetupActivity extends Activity {
         cursorSlider.addOnChangeListener((slider, value, fromUser) -> {
             cursorLabel.setText(getString(R.string.setup_cursor_size_label, (int) value));
             if (fromUser) {
-                writeMouseMode(marker, true, (int) value);
+                // GeneralsX @feature Android port 07/11/2026 Keep the capture flag (the marker's
+                // second line) as it is; it is rewritten by its own switch below.
+                writeMouseMode(marker, true, (int) value, readMouseCaptureEnabled(marker));
             }
         });
         cursorBox.addView(cursorSlider, new LinearLayout.LayoutParams(
@@ -772,14 +774,31 @@ public class SetupActivity extends Activity {
             LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
         cursorBox.setVisibility(marker.isFile() ? android.view.View.VISIBLE : android.view.View.GONE);
 
+        // GeneralsX @feature Android port 07/11/2026 Physical mouse capture: the pointer is confined
+        // to the window, Android's cursor is hidden and the game draws it, so the pointer can neither
+        // leave the screen nor stick at an edge (the same requestPointerCapture() path Winlator uses).
+        // The engine honours this only where Android supports it (Android 8+); elsewhere the mouse
+        // works normally, which is why this is a switch rather than a requirement.
+        final LinearLayout captureBox = new LinearLayout(this);
+        captureBox.setOrientation(LinearLayout.VERTICAL);
+        SwitchCompat capture = UiKit.switchRow(captureBox,
+            getString(R.string.setup_switch_mouse_capture), getString(R.string.setup_switch_mouse_capture_desc));
+        capture.setChecked(readMouseCaptureEnabled(marker));
+        capture.setOnCheckedChangeListener((button, checked) ->
+            writeMouseMode(marker, mouse.isChecked(), (int) cursorSlider.getValue(), checked));
+        content.addView(captureBox, new LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+        captureBox.setVisibility(marker.isFile() ? android.view.View.VISIBLE : android.view.View.GONE);
+
         mouse.setOnCheckedChangeListener((button, checked) -> {
-            writeMouseMode(marker, checked, (int) cursorSlider.getValue());
+            writeMouseMode(marker, checked, (int) cursorSlider.getValue(), capture.isChecked());
             cursorBox.setVisibility(checked ? android.view.View.VISIBLE : android.view.View.GONE);
+            captureBox.setVisibility(checked ? android.view.View.VISIBLE : android.view.View.GONE);
         });
         UiKit.helpText(content, getString(R.string.setup_mouse_mode_help));
     }
 
-    private static int readMouseCursorPercent(File marker) {
+    static int readMouseCursorPercent(File marker) {
         try (java.io.BufferedReader r = new java.io.BufferedReader(new java.io.FileReader(marker))) {
             String line = r.readLine();
             int value = line == null ? 100 : Integer.parseInt(line.trim());
@@ -789,13 +808,29 @@ public class SetupActivity extends Activity {
         }
     }
 
-    private static void writeMouseMode(File marker, boolean enabled, int cursorPercent) {
+    // GeneralsX @feature Android port 07/11/2026 The marker's second line is the physical-mouse
+    // capture flag; absent (a marker written before it existed) means on, so a connected mouse is
+    // captured without any setup. Mirrors GXMouseCaptureEnabled() in the engine.
+    static boolean readMouseCaptureEnabled(File marker) {
+        try (java.io.BufferedReader r = new java.io.BufferedReader(new java.io.FileReader(marker))) {
+            r.readLine(); // cursor percent
+            String line = r.readLine();
+            return line == null || !"0".equals(line.trim());
+        } catch (java.io.IOException e) {
+            return true;
+        }
+    }
+
+    static void writeMouseMode(File marker, boolean enabled, int cursorPercent, boolean captureEnabled) {
         if (!enabled) {
             marker.delete();
             return;
         }
         try (java.io.FileWriter w = new java.io.FileWriter(marker, false)) {
             w.write(Integer.toString(cursorPercent));
+            w.write("\n");
+            w.write(captureEnabled ? "1" : "0");
+            w.write("\n");
         } catch (java.io.IOException e) {
             android.util.Log.w("SetupActivity", "could not write the mouse mode marker", e);
         }

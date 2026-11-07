@@ -103,13 +103,24 @@ public:
 	static inline Uint64 s_lastHardwareMouseMs = 0;
 	static Bool hardwareMouseActive() { return s_lastHardwareMouseMs != 0 && SDL_GetTicks() - s_lastHardwareMouseMs < 3000; }
 	virtual void draw() override;
+
+	// GeneralsX @feature Android port 07/11/2026 Physical mouse capture (issue #60 follow-up).
+	//
+	// A real mouse can drive the game two ways. Uncaptured, Android delivers absolute hover
+	// positions and the pointer is Android's own, free to leave the window. Captured, Android
+	// hands us relative motion only (SDL's requestPointerCapture path, the one Winlator uses):
+	// the hardware pointer is confined to the window, Android's cursor is hidden, and the game
+	// draws the cursor itself -- so the pointer can never be lost off-screen and never sticks at
+	// a screen edge. capture()/releaseCapture() request it; SDL refuses on Android < 8.0, on some
+	// Samsung DeX versions and wherever supportsRelativeMouse() is false, and the absolute path
+	// stays in use there. m_RelativeMode is what was actually granted, for the log and for draw().
 #endif
 
 	// SDL3-specific methods
 	// Fighter19 pattern: addSDLEvent() accepts raw SDL_Event directly
 	// GeneralsX @refactor felipebraz 16/02/2026 Switch to fighter19 event model
 	void addSDLEvent(SDL_Event *event);
-	
+
 	// Legacy methods (kept for compatibility, will be removed after validation)
 	void addSDL3MouseMotionEvent(const SDL_MouseMotionEvent& event);
 	void addSDL3MouseButtonEvent(const SDL_MouseButtonEvent& event);
@@ -168,6 +179,31 @@ private:
 	// GeneralsX @feature Android port 05/10/2026 The pointer was last moved by the touchpad, not a
 	// real mouse: draw() draws it. See TOUCHPAD_MOUSE_ID.
 	Bool m_touchpadPointer;
+
+	// GeneralsX @feature Android port 07/11/2026 The mouse id SDL's Android layer stamps on a real
+	// mouse's events -- SDL's own SDL_DEFAULT_MOUSE_ID (1), which is private to SDL. Uncaptured
+	// events are relabelled SDL_GLOBAL_MOUSE_ID (0) by SDL, captured ones keep this id; either way
+	// it is not the touchpad's and not SDL_TOUCH_MOUSEID, which is all the checks below need.
+	static const SDL_MouseID HARDWARE_MOUSE_ID = (SDL_MouseID)1;
+
+	// GeneralsX @feature Android port 07/11/2026 Physical mouse capture state. m_RelativeMode is
+	// what SDL actually granted; m_RelativeWanted is what the launcher asked for, so the two can
+	// disagree on a device that refuses capture.
+	Bool m_RelativeMode;
+	Bool m_RelativeWanted;
+
+	// GeneralsX @feature Android port 07/11/2026 Buttons the hardware mouse currently holds down,
+	// as SDL button mask bits. SDL already reports a captured pointer's absolute position (it
+	// accumulates the relative axes itself and clamps them to the window), so nothing here has to
+	// track position -- but a press interrupted by a focus loss never gets its release from
+	// Android, so the buttons are tracked to be released deliberately (releaseStuckButtons).
+	Uint32 m_ButtonsHeld;
+
+#if (defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE) || defined(__ANDROID__)
+	// Inject a release for every button still held, so a press interrupted by a focus loss, a
+	// pause or the capture being dropped cannot stay down for the rest of the session.
+	void releaseStuckButtons();
+#endif
 };
 
 #endif // !_WIN32

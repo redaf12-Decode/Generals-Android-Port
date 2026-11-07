@@ -388,6 +388,8 @@
     <string name="setup_accent_white">Weiß</string>
     <string name="setup_accent_yellow">Gelb</string>
     <string name="setup_cursor_size_label">Zeigergröße: %1$d %%</string>
+    <string name="setup_switch_mouse_capture">Physische Maus erfassen</string>
+    <string name="setup_switch_mouse_capture_desc">Hält den Mauszeiger im Spielfenster fest und blendet den Systemzeiger aus, sodass der Zeiger den Bildschirm nicht verlassen und nicht am Rand hängen bleiben kann. Wo Android dies nicht unterstützt, funktioniert die Maus wie zuvor.</string>
     <string name="setup_switch_skip_intro">Intro-Videos überspringen</string>
     <string name="setup_switch_skip_intro_desc">EA-Logos, das Intro und andere Videos vor dem Menü werden übersprungen; das Spiel lädt sofort. Für beide Spiele, auch mit Mods.</string>
     <!-- GeneralsX @feature Android port 18/10/2026 Mods screen (ModManagerActivity), from realkot's GeneralsX fork. -->

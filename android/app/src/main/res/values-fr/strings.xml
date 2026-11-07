@@ -388,6 +388,8 @@
     <string name="setup_accent_white">Blanc</string>
     <string name="setup_accent_yellow">Jaune</string>
     <string name="setup_cursor_size_label">Taille du curseur : %1$d %%</string>
+    <string name="setup_switch_mouse_capture">Capture de la souris physique</string>
+    <string name="setup_switch_mouse_capture_desc">Confine le pointeur de la souris à la fenêtre du jeu et masque le curseur du système, afin que le pointeur ne puisse pas quitter l\'écran ni rester bloqué sur un bord. Là où Android ne le prend pas en charge, la souris fonctionne comme avant.</string>
     <string name="setup_switch_skip_intro">Passer les vidéos d\'introduction</string>
     <string name="setup_switch_skip_intro_desc">Les logos EA, l\'introduction et les autres vidéos avant le menu sont passés ; le jeu charge directement. Pour les deux jeux, mods compris.</string>
     <!-- GeneralsX @feature Android port 18/10/2026 Mods screen (ModManagerActivity), from realkot's GeneralsX fork. -->

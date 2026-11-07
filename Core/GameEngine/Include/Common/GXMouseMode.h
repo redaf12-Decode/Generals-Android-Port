@@ -76,3 +76,42 @@ inline bool GXMouseModeEnabled()
 	return false;
 #endif
 }
+
+// GeneralsX @feature Android port 07/11/2026 Whether a connected mouse should be *captured*: the
+// hardware pointer confined to the window, Android's cursor hidden, relative motion only, the game
+// drawing the cursor (SDL's requestPointerCapture path, the one Winlator uses). Read from the
+// second line of the same mouse_mode marker -- "0" turns it off, anything else (including a marker
+// written before this line existed) leaves it on, because a connected mouse should just work.
+//
+// Only meaningful while GXMouseModeEnabled() is on: with the pointer mode off the game is played by
+// touch and there is no cursor to capture.
+inline bool GXMouseCaptureEnabled()
+{
+#if defined(__ANDROID__)
+	static int state = -1;
+	if (state < 0)
+	{
+		state = 1;   // default on: a connected mouse works without any setup
+		char path[256];
+		const int userId = (int)(getuid() / 100000);
+		snprintf(path, sizeof(path), "/data/user/%d/com.generalsx.zerohour/files/mouse_mode", userId);
+		FILE *fp = fopen(path, "r");
+		if (fp != nullptr)
+		{
+			char line[64];
+			if (fgets(line, sizeof(line), fp) != nullptr &&           // line 1: cursor percent
+			    fgets(line, sizeof(line), fp) != nullptr)             // line 2: capture flag
+			{
+				int value = 1;
+				if (sscanf(line, "%d", &value) == 1)
+					state = (value != 0) ? 1 : 0;
+			}
+			fclose(fp);
+		}
+	}
+	return state == 1;
+#else
+	return false;
+#endif
+}
+

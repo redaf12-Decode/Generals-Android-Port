@@ -397,6 +397,8 @@
     <string name="setup_accent_white">White</string>
     <string name="setup_accent_yellow">Yellow</string>
     <string name="setup_cursor_size_label">Cursor size: %1$d%%</string>
+    <string name="setup_switch_mouse_capture">Physical mouse capture</string>
+    <string name="setup_switch_mouse_capture_desc">Confines the mouse pointer to the game window and hides the system cursor, so the pointer cannot leave the screen or stick at an edge. Where Android does not support it, the mouse works as before.</string>
     <string name="setup_switch_skip_intro">Skip intro movies</string>
     <string name="setup_switch_skip_intro_desc">EA logos, the intro and other movies before the menu are skipped; the game goes straight to loading. For both games, mods included.</string>
     <!-- GeneralsX @feature Android port 18/10/2026 Mods screen (ModManagerActivity), from realkot's GeneralsX fork. -->

@@ -388,6 +388,8 @@
     <string name="setup_accent_white">白色</string>
     <string name="setup_accent_yellow">黄色</string>
     <string name="setup_cursor_size_label">光标大小：%1$d%%</string>
+    <string name="setup_switch_mouse_capture">物理鼠标捕获</string>
+    <string name="setup_switch_mouse_capture_desc">将鼠标指针限制在游戏窗口内并隐藏系统光标，因此指针不会离开屏幕，也不会卡在边缘。在 Android 不支持的地方，鼠标照常工作。</string>
     <string name="setup_switch_skip_intro">跳过开场动画</string>
     <string name="setup_switch_skip_intro_desc">跳过 EA 标志、开场动画和菜单前的其他视频，游戏直接开始加载。适用于两款游戏，包括模组。</string>
     <!-- GeneralsX @feature Android port 18/10/2026 Mods screen (ModManagerActivity), from realkot's GeneralsX fork. -->

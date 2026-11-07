@@ -388,6 +388,8 @@
     <string name="setup_accent_white">Biały</string>
     <string name="setup_accent_yellow">Żółty</string>
     <string name="setup_cursor_size_label">Rozmiar kursora: %1$d%%</string>
+    <string name="setup_switch_mouse_capture">Przechwytywanie myszy fizycznej</string>
+    <string name="setup_switch_mouse_capture_desc">Utrzymuje wskaźnik myszy w oknie gry i ukrywa kursor systemowy, dzięki czemu wskaźnik nie może opuścić ekranu ani utknąć na krawędzi. Tam, gdzie Android tego nie obsługuje, mysz działa jak wcześniej.</string>
     <string name="setup_switch_skip_intro">Pomijaj filmy wprowadzające</string>
     <string name="setup_switch_skip_intro_desc">Logo EA, intro i inne filmy przed menu są pomijane — gra od razu przechodzi do wczytywania. Dla obu gier, także z modami.</string>
     <!-- GeneralsX @feature Android port 18/10/2026 Mods screen (ModManagerActivity), from realkot's GeneralsX fork. -->

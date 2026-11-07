@@ -388,6 +388,8 @@
     <string name="setup_accent_white">Branco</string>
     <string name="setup_accent_yellow">Amarelo</string>
     <string name="setup_cursor_size_label">Tamanho do cursor: %1$d%%</string>
+    <string name="setup_switch_mouse_capture">Captura do mouse físico</string>
+    <string name="setup_switch_mouse_capture_desc">Prende o ponteiro do mouse à janela do jogo e oculta o cursor do sistema, de modo que o ponteiro não pode sair da tela nem ficar preso em uma borda. Onde o Android não oferece suporte, o mouse funciona como antes.</string>
     <string name="setup_switch_skip_intro">Pular vídeos de introdução</string>
     <string name="setup_switch_skip_intro_desc">Logos da EA, a introdução e outros vídeos antes do menu são pulados; o jogo carrega direto. Para os dois jogos, com mods também.</string>
     <!-- GeneralsX @feature Android port 18/10/2026 Mods screen (ModManagerActivity), from realkot's GeneralsX fork. -->

@@ -388,6 +388,8 @@
     <string name="setup_accent_white">Білий</string>
     <string name="setup_accent_yellow">Жовтий</string>
     <string name="setup_cursor_size_label">Розмір курсора: %1$d%%</string>
+    <string name="setup_switch_mouse_capture">Захоплення фізичної миші</string>
+    <string name="setup_switch_mouse_capture_desc">Утримує курсор миші у вікні гри та ховає системний курсор, тож вказівник не може вийти за межі екрана чи застрягти біля краю. Там, де Android це не підтримує, миша працює як раніше.</string>
     <string name="setup_switch_skip_intro">Пропускати заставки</string>
     <string name="setup_switch_skip_intro_desc">Логотипи EA, вступне відео та інші ролики перед меню не показуються — гра одразу переходить до завантаження. Для обох ігор, і з модами теж.</string>
     <!-- GeneralsX @feature Android port 18/10/2026 Mods screen (ModManagerActivity), from realkot's GeneralsX fork. -->

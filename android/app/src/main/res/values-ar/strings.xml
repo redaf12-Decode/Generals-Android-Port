@@ -388,6 +388,8 @@
     <string name="setup_accent_white">أبيض</string>
     <string name="setup_accent_yellow">أصفر</string>
     <string name="setup_cursor_size_label">حجم المؤشر: %1$d%%</string>
+    <string name="setup_switch_mouse_capture">التقاط الفأرة الفعلية</string>
+    <string name="setup_switch_mouse_capture_desc">يحصر مؤشر الفأرة داخل نافذة اللعبة ويخفي مؤشر النظام، فلا يغادر المؤشر الشاشة ولا يعلق عند الحافة. حيث لا يدعم أندرويد ذلك، تعمل الفأرة كما كانت.</string>
     <string name="setup_switch_skip_intro">تخطي مقاطع المقدمة</string>
     <string name="setup_switch_skip_intro_desc">تُتخطى شعارات EA والمقدمة والمقاطع الأخرى قبل القائمة، وتبدأ اللعبة التحميل مباشرة. للعبتين، ومع التعديلات أيضًا.</string>
     <!-- GeneralsX @feature Android port 18/10/2026 Mods screen (ModManagerActivity), from realkot's GeneralsX fork. -->

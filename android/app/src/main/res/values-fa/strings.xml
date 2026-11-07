@@ -388,6 +388,8 @@
     <string name="setup_accent_white">سفید</string>
     <string name="setup_accent_yellow">زرد</string>
     <string name="setup_cursor_size_label">اندازهٔ نشانگر: %1$d%%</string>
+    <string name="setup_switch_mouse_capture">گرفتن ماوس فیزیکی</string>
+    <string name="setup_switch_mouse_capture_desc">نشانگر ماوس را در پنجره بازی نگه می‌دارد و نشانگر سیستم را پنهان می‌کند، بنابراین نشانگر نمی‌تواند از صفحه خارج شود یا در لبه گیر کند. در جایی که اندروید پشتیبانی نمی‌کند، ماوس مانند قبل کار می‌کند.</string>
     <string name="setup_switch_skip_intro">رد کردن ویدیوهای آغازین</string>
     <string name="setup_switch_skip_intro_desc">لوگوهای EA، ویدیوی آغازین و ویدیوهای دیگر پیش از منو رد می‌شوند و بازی مستقیم بارگذاری می‌شود. برای هر دو بازی، با مادها هم.</string>
     <!-- GeneralsX @feature Android port 18/10/2026 Mods screen (ModManagerActivity), from realkot's GeneralsX fork. -->
