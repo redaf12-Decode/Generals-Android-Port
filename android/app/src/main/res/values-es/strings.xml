@@ -642,7 +642,7 @@
     <string name="setup_tools_map_manager">Gestor de mapas</string>
     <string name="setup_tools_map_manager_note">Importa paquetes de mapas y activa uno para copiar sus mapas a la carpeta Maps del juego. Los paquetes originales se conservan; pueden estar activos hasta 200 mapas a la vez.</string>
     <string name="setup_tools_cbbig">Importador ControlBar BIG</string>
-    <string name="setup_tools_cbbig_note">Lee un archivo .big, muestra lo que contiene para la barra de control e importa solo esos archivos como mod.</string>
+    <string name="setup_tools_cbbig_note">Importa paquetes ControlBar desde una carpeta o un ZIP y activa uno para descomprimir sus archivos .big en la carpeta del juego. Solo uno está activo a la vez.</string>
     <!-- GeneralsX @feature Android port 07/11/2026 Tools -> Map Packs: imported packs
          live in <user data>/maps-manager; activating one copies its maps into
          <user data>/Maps, where the engine's MapCache finds them. -->
@@ -699,26 +699,49 @@
     <string name="mappack_delete_done">Paquete de mapas eliminado.</string>
     <string name="mappack_delete_failed">No se pudo eliminar el paquete de mapas.</string>
 
-    <string name="cbbig_title">Importador ControlBar BIG</string>
-    <string name="cbbig_select">Seleccionar archivo BIG</string>
-    <string name="cbbig_select_help">Elige un archivo .big. Se lee primero y solo se importan sus archivos de la barra de control; el resto del archivo se deja intacto.</string>
-    <string name="cbbig_none_selected">Aún no se ha seleccionado ningún archivo.</string>
-    <string name="cbbig_inspect">Inspeccionar archivo</string>
-    <string name="cbbig_archive_entries">%1$d archivos en el archivo.</string>
-    <string name="cbbig_cat_layout">Diseño de la barra de control</string>
-    <string name="cbbig_cat_scheme">Esquemas de la barra de control</string>
-    <string name="cbbig_cat_images">Definiciones de imágenes</string>
-    <string name="cbbig_cat_art">Texturas usadas</string>
-    <string name="cbbig_category_count">%1$s: %2$d</string>
-    <string name="cbbig_more">+%1$d más</string>
-    <string name="cbbig_import">Importar ControlBar</string>
-    <string name="cbbig_import_help">Los archivos anteriores se escriben en una nueva carpeta de mod y se empaquetan allí, de modo que el juego los monta igual que cualquier otro mod. Actívalo y ordénalo en Mods.</string>
-    <string name="cbbig_inspecting">Leyendo el archivo.</string>
-    <string name="cbbig_importing">Importando los archivos de la barra de control.</string>
-    <string name="cbbig_working_title">Trabajando…</string>
-    <string name="cbbig_import_done_title">ControlBar importado</string>
-    <string name="cbbig_import_done">%1$s se instaló como mod (%2$d archivos). Actívalo en Mods si aún no lo está.</string>
-    <string name="cbbig_failed_title">Error al importar ControlBar</string>
+    <!-- GeneralsX @feature Android port 07/11/2026 ControlBar Pack Manager (Tools). -->
+    <string name="cbpack_title">Importador ControlBar BIG</string>
+    <string name="cbpack_refresh">Actualizar</string>
+    <string name="cbpack_import">Importar paquete ControlBar</string>
+    <string name="cbpack_import_folder">Desde carpeta</string>
+    <string name="cbpack_import_zip">Desde ZIP</string>
+    <string name="cbpack_import_help">Elige una carpeta o un ZIP con uno o varios archivos .big. Cada archivo se lee y se guarda como su propio paquete; nada se descomprime hasta que actives un paquete.</string>
+    <string name="cbpack_import_working">Leyendo los archivos y buscando archivos de la barra de control.</string>
+    <string name="cbpack_import_done_title">Paquete ControlBar importado</string>
+    <string name="cbpack_import_done">%1$s se importó (%2$d archivo(s)). Actívalo para usarlo.</string>
+    <string name="cbpack_import_failed_title">Error al importar ControlBar</string>
+    <string name="cbpack_active_title">Barra de control activa</string>
+    <string name="cbpack_none_active">Ningún paquete ControlBar está activo. El juego usa su propia barra de control.</string>
+    <string name="cbpack_active_name">%1$s está activo; sus archivos están en la carpeta del juego.</string>
+    <string name="cbpack_active_help">Solo un paquete está activo a la vez. Al activar un paquete se quitan antes los archivos del anterior, así dos barras de control nunca se mezclan.</string>
+    <string name="cbpack_location_help">Paquetes: %1$s\nCarpeta de idioma que lee el juego: %2$s</string>
+    <string name="cbpack_packs_title">Paquetes importados</string>
+    <string name="cbpack_none">Todavía no se ha importado ningún paquete ControlBar.</string>
+    <string name="cbpack_row_supporting">%1$d archivo(s) · %2$s</string>
+    <string name="cbpack_state_active">activo</string>
+    <string name="cbpack_state_inactive">inactivo</string>
+    <string name="cbpack_chip_active">Activo</string>
+    <string name="cbpack_details_button">Detalles del paquete</string>
+    <string name="cbpack_delete_button">Eliminar</string>
+    <string name="cbpack_detail">%1$d archivo(s), importado desde %2$s:\n%3$s</string>
+    <string name="cbpack_activate">Activar</string>
+    <string name="cbpack_deactivate">Desactivar</string>
+    <string name="cbpack_working_title">Trabajando…</string>
+    <string name="cbpack_activating">Descomprimiendo los archivos de la barra de control en la carpeta del juego.</string>
+    <string name="cbpack_deactivating">Quitando los archivos de la barra de control de la carpeta del juego.</string>
+    <string name="cbpack_activated_title">ControlBar activado</string>
+    <string name="cbpack_activated">%1$s está activo; se escribieron %2$d archivo(s) en la carpeta del juego.</string>
+    <string name="cbpack_deactivated_title">ControlBar desactivado</string>
+    <string name="cbpack_deactivated">%1$s se desactivó y sus archivos se quitaron. El juego usa su propia barra de control.</string>
+    <string name="cbpack_failed_title">Error al cambiar ControlBar</string>
+    <string name="cbpack_delete_title">Eliminar paquete</string>
+    <string name="cbpack_delete_message">¿Eliminar el paquete «%1$s»? Si está activo, se desactiva primero. Los archivos propios del juego no se tocan.</string>
+    <string name="cbpack_delete_done">Paquete ControlBar eliminado.</string>
+    <string name="cbpack_delete_failed">No se pudo eliminar el paquete ControlBar.</string>
+    <string name="cbpack_no_big">No se encontró ningún archivo .big. Un paquete ControlBar es una carpeta o ZIP con uno o varios archivos .big.</string>
+    <string name="cbpack_invalid_big">No se pudo leer ninguno de los archivos .big. Puede que el paquete esté incompleto o dañado.</string>
+    <string name="cbpack_no_controlbar">No se encontraron archivos de la barra de control en ningún archivo (Window\\ControlBar.wnd o una INI ControlBarScheme).</string>
+    <string name="cbpack_conflict">Dos archivos aportan el mismo fichero con contenido distinto. Quita uno y vuelve a importar.</string>
     <string name="cbbig_unsupported">Ese archivo no es un archivo BIG legible.</string>
-    <string name="cbbig_no_controlbar">Este archivo no contiene archivos de la barra de control (Window\\ControlBar.wnd o un INI de ControlBarScheme).</string>
+    <string name="cbbig_no_controlbar">Este archivo no contiene archivos de la barra de control (Window\\ControlBar.wnd o una INI ControlBarScheme).</string>
 </resources>

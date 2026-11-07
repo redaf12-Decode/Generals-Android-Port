@@ -644,7 +644,7 @@
     <string name="setup_tools_map_manager">Менеджер карт</string>
     <string name="setup_tools_map_manager_note">Импортируйте наборы карт, затем включите нужный, чтобы скопировать его карты в папку Maps игры. Исходные наборы сохраняются; одновременно можно включить до 200 карт.</string>
     <string name="setup_tools_cbbig">Импорт ControlBar BIG</string>
-    <string name="setup_tools_cbbig_note">Прочитайте архив .big, посмотрите, что в нём есть для панели управления, и импортируйте только эти файлы как мод.</string>
+    <string name="setup_tools_cbbig_note">Импортируйте пакеты ControlBar из папки или ZIP, затем включите один, чтобы распаковать его архивы .big в папку игры. Одновременно активен только один.</string>
     <!-- GeneralsX @feature Android port 07/11/2026 Tools -> Map Packs: imported packs
          live in <user data>/maps-manager; activating one copies its maps into
          <user data>/Maps, where the engine's MapCache finds them. -->
@@ -701,26 +701,49 @@
     <string name="mappack_delete_done">Набор карт удалён.</string>
     <string name="mappack_delete_failed">Не удалось удалить набор карт.</string>
 
-    <string name="cbbig_title">Импорт ControlBar BIG</string>
-    <string name="cbbig_select">Выбрать архив BIG</string>
-    <string name="cbbig_select_help">Выберите архив .big. Сначала он читается, и импортируются только его файлы панели управления; остальное содержимое архива не трогается.</string>
-    <string name="cbbig_none_selected">Архив ещё не выбран.</string>
-    <string name="cbbig_inspect">Проверить архив</string>
-    <string name="cbbig_archive_entries">Файлов в архиве: %1$d.</string>
-    <string name="cbbig_cat_layout">Разметка панели управления</string>
-    <string name="cbbig_cat_scheme">Схемы панели управления</string>
-    <string name="cbbig_cat_images">Описания изображений</string>
-    <string name="cbbig_cat_art">Используемые текстуры</string>
-    <string name="cbbig_category_count">%1$s: %2$d</string>
-    <string name="cbbig_more">+%1$d ещё</string>
-    <string name="cbbig_import">Импорт ControlBar</string>
-    <string name="cbbig_import_help">Файлы выше записываются в новую папку мода и упаковываются там, поэтому игра подключает их точно так же, как любой другой мод. Включите его и задайте порядок в разделе «Моды».</string>
-    <string name="cbbig_inspecting">Чтение архива.</string>
-    <string name="cbbig_importing">Импорт файлов панели управления.</string>
-    <string name="cbbig_working_title">Работа…</string>
-    <string name="cbbig_import_done_title">ControlBar импортирован</string>
-    <string name="cbbig_import_done">%1$s установлен как мод (%2$d файлов). Включите его в разделе «Моды», если он ещё не включён.</string>
-    <string name="cbbig_failed_title">Импорт ControlBar не удался</string>
+    <!-- GeneralsX @feature Android port 07/11/2026 ControlBar Pack Manager (Tools). -->
+    <string name="cbpack_title">Импорт ControlBar BIG</string>
+    <string name="cbpack_refresh">Обновить</string>
+    <string name="cbpack_import">Импорт пакета ControlBar</string>
+    <string name="cbpack_import_folder">Из папки</string>
+    <string name="cbpack_import_zip">Из ZIP</string>
+    <string name="cbpack_import_help">Выберите папку или ZIP с одним или несколькими архивами .big. Каждый архив читается и сохраняется как отдельный пакет; ничего не распаковывается, пока вы не включите пакет.</string>
+    <string name="cbpack_import_working">Чтение архивов и поиск файлов панели управления.</string>
+    <string name="cbpack_import_done_title">Пакет ControlBar импортирован</string>
+    <string name="cbpack_import_done">%1$s импортирован (%2$d архивов). Включите его, чтобы использовать.</string>
+    <string name="cbpack_import_failed_title">Импорт ControlBar не удался</string>
+    <string name="cbpack_active_title">Активная панель управления</string>
+    <string name="cbpack_none_active">Ни один пакет ControlBar не включён. Игра использует свою панель управления.</string>
+    <string name="cbpack_active_name">%1$s включён; его файлы находятся в папке игры.</string>
+    <string name="cbpack_active_help">Одновременно включён только один пакет. При включении пакета файлы предыдущего удаляются, поэтому две панели управления не смешиваются.</string>
+    <string name="cbpack_location_help">Пакеты: %1$s\nПапка языка, которую читает игра: %2$s</string>
+    <string name="cbpack_packs_title">Импортированные пакеты</string>
+    <string name="cbpack_none">Ни один пакет ControlBar ещё не импортирован.</string>
+    <string name="cbpack_row_supporting">%1$d архивов · %2$s</string>
+    <string name="cbpack_state_active">включён</string>
+    <string name="cbpack_state_inactive">выключен</string>
+    <string name="cbpack_chip_active">Включён</string>
+    <string name="cbpack_details_button">Сведения о пакете</string>
+    <string name="cbpack_delete_button">Удалить</string>
+    <string name="cbpack_detail">%1$d архивов, импортировано из %2$s:\n%3$s</string>
+    <string name="cbpack_activate">Включить</string>
+    <string name="cbpack_deactivate">Выключить</string>
+    <string name="cbpack_working_title">Работа…</string>
+    <string name="cbpack_activating">Распаковка файлов панели управления в папку игры.</string>
+    <string name="cbpack_deactivating">Удаление файлов панели управления из папки игры.</string>
+    <string name="cbpack_activated_title">ControlBar включён</string>
+    <string name="cbpack_activated">%1$s включён; в папку игры записано файлов: %2$d.</string>
+    <string name="cbpack_deactivated_title">ControlBar выключен</string>
+    <string name="cbpack_deactivated">%1$s выключен, его файлы удалены. Игра использует свою панель управления.</string>
+    <string name="cbpack_failed_title">Не удалось изменить ControlBar</string>
+    <string name="cbpack_delete_title">Удалить пакет</string>
+    <string name="cbpack_delete_message">Удалить пакет «%1$s»? Если он включён, сначала он будет выключен. Собственные файлы игры не затрагиваются.</string>
+    <string name="cbpack_delete_done">Пакет ControlBar удалён.</string>
+    <string name="cbpack_delete_failed">Не удалось удалить пакет ControlBar.</string>
+    <string name="cbpack_no_big">Архив .big не найден. Пакет ControlBar — это папка или ZIP с одним или несколькими архивами .big.</string>
+    <string name="cbpack_invalid_big">Ни один архив .big не удалось прочитать. Возможно, пакет неполный или повреждён.</string>
+    <string name="cbpack_no_controlbar">В архивах не найдено файлов панели управления (Window\\ControlBar.wnd или INI ControlBarScheme).</string>
+    <string name="cbpack_conflict">Два архива содержат один и тот же файл с разным содержимым. Удалите один и импортируйте снова.</string>
     <string name="cbbig_unsupported">Этот файл не читается как архив BIG.</string>
     <string name="cbbig_no_controlbar">В этом архиве нет файлов панели управления (Window\\ControlBar.wnd или INI ControlBarScheme).</string>
 </resources>

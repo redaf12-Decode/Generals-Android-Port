@@ -10,16 +10,12 @@
 
 package com.generalsx.zerohour;
 
-import android.content.Context;
-import android.net.Uri;
-
 import java.io.BufferedInputStream;
 import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.RandomAccessFile;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -29,29 +25,44 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 
 /**
- * GeneralsX @feature Android port 07/11/2026 ControlBar BIG importer (Tools).
+ * GeneralsX @feature Android port 07/11/2026 The ControlBar side of a BIG archive: its file table,
+ * which of those files the control bar actually needs, and how to read one entry out.
  *
- * <p>The engine reads control bar layouts from the archive file system: {@code Window\ControlBar.wnd}
- * (the layout itself), the schemes under {@code Data\INI\ControlBarScheme\*} and
- * {@code Data\INI\Default\ControlBarScheme\*} (ControlBarSchemeManager::init), and the image
- * definitions under {@code Data\INI\MappedImages\*} that name the textures a scheme draws with.
- * All of those are ordinary archives entries, so a mod that ships them in a {@code .big} only has
- * to be mounted -- no extraction into the game folder is needed.
+ * <p>This is the reader {@link ControlBarPackManager} uses; it invents no second archive format.
+ * The table is BIGF/BIG4 ("BIGF" or "BIG4", a little-endian declared size, a big-endian file count
+ * and header size, then per file a big-endian offset and size and a NUL-terminated path) -- the
+ * same layout {@code StdBIGFileSystem::openArchiveFile} and {@code ModPacker} read and write, and
+ * the bounds are the ones {@code ModHealthCheck.checkBigTable} already applies.
  *
- * <p>This importer reads the archive's directory table, keeps only the ControlBar-related entries
- * (and the textures those entries reference), writes them as loose files into a managed mod folder
- * and lets {@link ModPacker} pack them into the folder's own archive. From then on the mod is
- * switched on and ordered exactly like any other in the Mods screen -- it reuses the existing mod
- * loading infrastructure rather than inventing a second one -- and nothing unrelated in the
- * archive is mounted.
+ * <p><b>What the engine reads for the control bar</b> (read out of the engine, not guessed):
+ * <ul>
+ *   <li>the layout, {@code Window\ControlBar.wnd} -- {@code winCreateFromScript}, through
+ *       {@code FileSystem::openFile}, which asks the local file system (the game folder, the
+ *       engine's working directory) before the archives;</li>
+ *   <li>the schemes, {@code Data\INI\Default\ControlBarScheme\*} then
+ *       {@code Data\INI\ControlBarScheme\*} -- {@code ControlBarSchemeManager::init};</li>
+ *   <li>the mapped-image definitions, {@code Data\INI\MappedImages\*} -- {@code Image.cpp};</li>
+ *   <li>the textures those name, under {@code Data\<language>\Art\Textures\} then
+ *       {@code Art\Textures\} -- {@code W3DFileSystem}, which is why a language directory may
+ *       appear in an archive's paths.</li>
+ * </ul>
+ *
+ * <p>An archive is a ControlBar archive when it carries a layout or a scheme; a bare
+ * MappedImages/texture archive is refused as ambiguous (it could be a unit-skin pack), which is
+ * what "do not assume every BIG archive contains ControlBar assets" asks for.
  */
 final class ControlBarBig {
     private static final int MAX_ENTRIES = 200000;
     private static final int MAX_NAME_BYTES = 4096;
     private static final int BUFFER_SIZE = 64 * 1024;
+    private static final long MAX_TEXT_BYTES = 4L * 1024L * 1024L;
+
+    /** The language folders the engine can look in: {@code Data\<token>\Art\Textures\}. */
+    private static final Set<String> LANGUAGE_DIRS = new LinkedHashSet<>(java.util.Arrays.asList(
+        "english", "german", "french", "spanish", "italian", "chinese", "korean", "polish",
+        "brazilian", "russian", "ukrainian", "interslavic", "arabic", "persian", "japanese"));
 
     /** One archive entry: its path exactly as stored (backslashes) and where its data lives. */
     static final class Entry {
@@ -98,63 +109,22 @@ final class ControlBarBig {
 
     private ControlBarBig() {}
 
-    // ------------------------------------------------------------------ inspection
+    // ------------------------------------------------------------------ reading
 
-    /** Copies the selected document into the cache and reads its directory table. */
-    static Detection inspect(Context ctx, Uri uri, String displayName,
-                             ModImportService.CancellationSignal cancellation) throws IOException {
-        String name = displayName == null || displayName.trim().isEmpty() ? "archive.big" : displayName;
-        File temp = new File(ctx.getCacheDir(), "cb-" + UUID.randomUUID() + ".big");
-        try {
-            copyDocument(ctx, uri, temp, cancellation);
-            if (!isBig(temp)) {
-                throw new ModImportService.ImportProblem(R.string.cbbig_unsupported);
-            }
-            List<Entry> entries = readTable(temp, cancellation);
-            Detection detection = new Detection(temp, name, entries.size());
-            classify(temp, entries, detection, cancellation);
-            if (!detection.hasControlBar()) {
-                throw new ModImportService.ImportProblem(R.string.cbbig_no_controlbar);
-            }
-            return detection;
-        } catch (IOException | RuntimeException e) {
-            temp.delete();
-            throw e;
-        }
+    /** Whether a file starts with a readable BIGF/BIG4 table (no payload is read). */
+    static boolean isBig(File archive) {
+        return ModHealthCheck.checkBigTable(archive) >= 0;
     }
 
-    static void discard(Detection detection) {
-        if (detection != null && detection.archive != null) {
-            detection.archive.delete();
-        }
-    }
-
-    private static void copyDocument(Context ctx, Uri uri, File dest,
-                                     ModImportService.CancellationSignal cancellation) throws IOException {
-        try (InputStream in = ctx.getContentResolver().openInputStream(uri);
-             FileOutputStream out = new FileOutputStream(dest)) {
-            if (in == null) {
-                throw new IOException("Could not open the selected BIG archive");
-            }
-            byte[] buffer = new byte[BUFFER_SIZE];
-            int n;
-            while ((n = in.read(buffer)) > 0) {
-                cancellation.throwIfCancelled();
-                out.write(buffer, 0, n);
-            }
-        }
-    }
-
-    private static boolean isBig(File file) {
-        return file.isFile() && file.length() >= 16;
-    }
-
-    /** The archive's file table: BIGF/BIG4 magic, then per file offset, size and a NUL path. */
-    private static List<Entry> readTable(File file, ModImportService.CancellationSignal cancellation)
-            throws IOException {
+    /**
+     * The archive's file table, with the bounds {@code ModHealthCheck.checkBigTable} uses: entry
+     * count, name length and every offset+size inside the file. Throws
+     * {@link ModImportService.ImportProblem} with {@link R.string#cbbig_unsupported} otherwise.
+     */
+    static List<Entry> readEntries(File archive) throws IOException {
         List<Entry> entries = new ArrayList<>();
         try (DataInputStream in = new DataInputStream(new BufferedInputStream(
-                new FileInputStream(file), BUFFER_SIZE))) {
+                new FileInputStream(archive), BUFFER_SIZE))) {
             byte[] magic = new byte[4];
             in.readFully(magic);
             if (magic[0] != 'B' || magic[1] != 'I' || magic[2] != 'G'
@@ -164,14 +134,12 @@ final class ControlBarBig {
             in.readInt(); // declared archive size, little-endian; not trusted
             int count = in.readInt();
             int headerSize = in.readInt();
-            if (count < 0 || count > MAX_ENTRIES || headerSize < 16 || headerSize > file.length()) {
+            long length = archive.length();
+            if (count < 0 || count > MAX_ENTRIES || headerSize < 16 || headerSize > length) {
                 throw new ModImportService.ImportProblem(R.string.cbbig_unsupported);
             }
             long tableBytes = 16;
             for (int i = 0; i < count; i++) {
-                if ((i & 255) == 0) {
-                    cancellation.throwIfCancelled();
-                }
                 if (tableBytes + 9 > headerSize) {
                     throw new ModImportService.ImportProblem(R.string.cbbig_unsupported);
                 }
@@ -193,8 +161,8 @@ final class ControlBarBig {
                         path.append((char) c);
                     }
                 } while (c != 0);
-                if (offset > file.length() || size > file.length()
-                        || offset + size < offset || offset + size > file.length()) {
+                if (offset > length || size > length
+                        || offset + size < offset || offset + size > length) {
                     throw new ModImportService.ImportProblem(R.string.cbbig_unsupported);
                 }
                 entries.add(new Entry(path.toString().replace('/', '\\'), offset, size));
@@ -203,17 +171,27 @@ final class ControlBarBig {
         return entries;
     }
 
-    // ------------------------------------------------------------------ detection
-
     /**
-     * Keeps the entries the control bar actually needs, following the chain the engine uses:
-     * a scheme ({@code ControlBarScheme}) names the mapped images it draws with, and a MappedImages
-     * INI defines a mapped image and the texture behind it ({@code Image.cpp}). So the import
-     * carries the layout, the schemes, the image definitions those schemes need and their
-     * textures -- never the rest of the archive.
+     * Reads the archive and keeps the entries the control bar needs, following the chain the
+     * engine uses: a scheme names the mapped images it draws with, a MappedImages INI defines an
+     * image and the texture behind it ({@code Image.cpp}). Everything else in the archive is left
+     * alone.
      */
-    private static void classify(File archive, List<Entry> entries, Detection detection,
-                                 ModImportService.CancellationSignal cancellation) throws IOException {
+    static Detection detect(File archive) throws IOException {
+        if (!isBig(archive)) {
+            throw new ModImportService.ImportProblem(R.string.cbbig_unsupported);
+        }
+        List<Entry> entries = readEntries(archive);
+        Detection detection = new Detection(archive, archive.getName(), entries.size());
+        classify(archive, entries, detection);
+        if (!detection.hasControlBar()) {
+            throw new ModImportService.ImportProblem(R.string.cbbig_no_controlbar);
+        }
+        return detection;
+    }
+
+    private static void classify(File archive, List<Entry> entries, Detection detection)
+            throws IOException {
         List<Entry> mappedImageInis = new ArrayList<>();
         for (Entry entry : entries) {
             String path = lower(entry.path);
@@ -227,36 +205,45 @@ final class ControlBarBig {
         }
 
         Set<String> wantedImages = new LinkedHashSet<>();
-        Set<String> wantedTextures = new LinkedHashSet<>();
+        Set<String> schemeTextures = new LinkedHashSet<>();
         for (Entry entry : detection.schemes) {
-            collectNames(readEntry(archive, entry, cancellation), wantedImages, wantedTextures);
+            collectSchemeNames(readEntry(archive, entry), wantedImages, schemeTextures);
         }
+
+        // Which MappedImages INIs to keep. With a scheme in the archive, only the definitions of
+        // images the scheme actually names -- an unrelated image definition shipped alongside (a
+        // unit skin's) is not a control bar file. With no scheme (a layout-only retexture), every
+        // definition is kept, because the images it redefines are the game's own scheme's.
+        Set<String> wantedTextures = new LinkedHashSet<>(schemeTextures);
         for (Entry entry : mappedImageInis) {
-            for (Map.Entry<String, Set<String>> image
-                    : parseMappedImages(readEntry(archive, entry, cancellation)).entrySet()) {
-                if (wantedImages.contains(image.getKey())) {
-                    detection.images.add(entry);
+            Map<String, Set<String>> defined = parseMappedImages(readEntry(archive, entry));
+            boolean keep = detection.schemes.isEmpty();
+            for (Map.Entry<String, Set<String>> image : defined.entrySet()) {
+                if (detection.schemes.isEmpty() || wantedImages.contains(image.getKey())) {
+                    keep = true;
                     wantedTextures.addAll(image.getValue());
-                    break;
                 }
+            }
+            if (keep) {
+                detection.images.add(entry);
             }
         }
 
-        if (wantedImages.isEmpty() && wantedTextures.isEmpty()) {
-            // A scheme that names nothing resolvable still needs its art: take the control-bar art
-            // folder only (never the whole archive's models, maps or sounds).
-            for (Entry entry : entries) {
-                String path = lower(entry.path);
-                if (path.startsWith("art\\") && isTexture(path)) {
-                    detection.art.add(entry);
-                }
-            }
-            return;
-        }
         for (Entry entry : entries) {
             String path = lower(entry.path);
-            if (isTexture(path) && wantedTextures.contains(stem(baseName(path)))) {
+            if (isTexture(path) && isArtPath(path) && matchesAnyStem(path, wantedTextures)) {
                 detection.art.add(entry);
+            }
+        }
+        if (detection.art.isEmpty()) {
+            // A scheme that names only the game's own images (or an archive with no resolvable
+            // texture name) still needs its art: take the archive's own art folders, and nothing
+            // else -- never its models, maps or sounds.
+            for (Entry entry : entries) {
+                String path = lower(entry.path);
+                if (isTexture(path) && isArtPath(path)) {
+                    detection.art.add(entry);
+                }
             }
         }
     }
@@ -281,9 +268,33 @@ final class ControlBarBig {
         return path.endsWith(".ini") && path.startsWith("data\\ini\\mappedimages\\");
     }
 
+    /** The engine's texture folders: {@code Art\...} and {@code Data\<language>\Art\...}. */
+    private static boolean isArtPath(String path) {
+        return path.startsWith("art\\") || isLocalizedArtPath(path);
+    }
+
+    private static boolean isLocalizedArtPath(String path) {
+        if (!path.startsWith("data\\")) {
+            return false;
+        }
+        int cut = path.indexOf('\\', 5);
+        return cut > 5 && LANGUAGE_DIRS.contains(path.substring(5, cut))
+            && path.startsWith("art\\", cut + 1);
+    }
+
     private static boolean isTexture(String path) {
         return path.endsWith(".tga") || path.endsWith(".dds") || path.endsWith(".jpg")
             || path.endsWith(".png");
+    }
+
+    /** A texture whose stem is one of the wanted names, or that name with the engine's suffix. */
+    private static boolean matchesAnyStem(String path, Set<String> wanted) {
+        String stem = stem(baseName(path));
+        if (wanted.contains(stem)) {
+            return true;
+        }
+        int cut = stem.indexOf('_');
+        return cut > 0 && wanted.contains(stem.substring(0, cut));
     }
 
     /**
@@ -291,7 +302,7 @@ final class ControlBarBig {
      * image, and a {@code Texture =} value is a texture. Coordinates, colours and durations are
      * numbers and are skipped; a name no MappedImages INI defines is simply never used.
      */
-    private static void collectNames(String text, Set<String> images, Set<String> textures) {
+    private static void collectSchemeNames(String text, Set<String> images, Set<String> textures) {
         for (String[] pair : assignments(text)) {
             String key = pair[0];
             String value = pair[1];
@@ -377,8 +388,7 @@ final class ControlBarBig {
         if (value.startsWith("0x") || value.startsWith("$")) {
             return false;
         }
-        char first = value.charAt(0);
-        return !Character.isDigit(first);
+        return !Character.isDigit(value.charAt(0));
     }
 
     private static String stem(String name) {
@@ -387,12 +397,10 @@ final class ControlBarBig {
     }
 
     /** The text of one archive entry, bounded so a hostile table cannot exhaust memory. */
-    private static String readEntry(File archive, Entry entry,
-                                    ModImportService.CancellationSignal cancellation) throws IOException {
-        if (entry.size > 4L * 1024L * 1024L) {
+    private static String readEntry(File archive, Entry entry) throws IOException {
+        if (entry.size > MAX_TEXT_BYTES) {
             return "";
         }
-        cancellation.throwIfCancelled();
         byte[] bytes = new byte[(int) entry.size];
         try (RandomAccessFile in = new RandomAccessFile(archive, "r")) {
             in.seek(entry.offset);
@@ -401,78 +409,17 @@ final class ControlBarBig {
         return new String(bytes, StandardCharsets.ISO_8859_1);
     }
 
-    // ------------------------------------------------------------------ import
+    // ------------------------------------------------------------------ extraction
 
-    static final class Imported {
-        final File modDir;
-        final int fileCount;
-
-        Imported(File modDir, int fileCount) {
-            this.modDir = modDir;
-            this.fileCount = fileCount;
+    /** Writes one entry out, preserving its bytes exactly. */
+    static void extract(File archive, Entry entry, File dest,
+                        ModImportService.CancellationSignal cancellation) throws IOException {
+        File parent = dest.getParentFile();
+        if (parent != null && !parent.isDirectory() && !parent.mkdirs()) {
+            throw new IOException("Could not create the destination folder");
         }
-    }
-
-    /**
-     * Writes the detected entries into a new managed mod folder, packed by ModPacker, so the
-     * engine mounts exactly those files through the same path as every other mod.
-     */
-    static Imported importAsMod(Context ctx, Detection detection,
-                                ModImportService.CancellationSignal cancellation) throws IOException {
-        File modsRoot = ModManager.modsRoot(ctx);
-        if (modsRoot == null) {
-            throw new ModImportService.ImportProblem(R.string.mods_no_game_message);
-        }
-        if (!modsRoot.isDirectory() && !modsRoot.mkdirs()) {
-            throw new IOException("Could not create the mods directory");
-        }
-        File staging = new File(modsRoot, ModImportService.INSTALLING_DIR);
-        if (!staging.isDirectory() && !staging.mkdirs()) {
-            throw new IOException("Could not create the mod staging directory");
-        }
-        File stage = new File(staging, UUID.randomUUID().toString());
-        if (!stage.mkdirs()) {
-            throw new IOException("Could not create the mod staging directory");
-        }
-
-        String base = detection.archiveName.toLowerCase(Locale.US).endsWith(".big")
-            ? detection.archiveName.substring(0, detection.archiveName.length() - 4)
-            : detection.archiveName;
-        String name = ModImportService.sanitizeInstallName("ControlBar " + base, false);
-
-        int written = 0;
-        try {
-            try (RandomAccessFile in = new RandomAccessFile(detection.archive, "r")) {
-                for (Entry entry : detection.selected()) {
-                    cancellation.throwIfCancelled();
-                    File dest = ModImportService.resolveSafeRelative(stage, entry.path);
-                    File parent = dest.getParentFile();
-                    if (parent != null && !parent.isDirectory() && !parent.mkdirs()) {
-                        throw new IOException("Could not create a mod folder");
-                    }
-                    extract(in, entry, dest, cancellation);
-                    written++;
-                }
-            }
-            ModPacker.ensurePacked(stage);
-            File target = ModImportService.uniqueTarget(modsRoot, name, false);
-            cancellation.throwIfCancelled();
-            if (!stage.renameTo(target)) {
-                throw new IOException("Could not finish the ControlBar import");
-            }
-            return new Imported(target, written);
-        } catch (IOException | RuntimeException e) {
-            ModImportService.deleteRecursively(stage);
-            if (cancellation.isCancelled()) {
-                throw new ModImportService.ImportCancelledException();
-            }
-            throw e;
-        }
-    }
-
-    private static void extract(RandomAccessFile in, Entry entry, File dest,
-                                ModImportService.CancellationSignal cancellation) throws IOException {
-        try (FileOutputStream out = new FileOutputStream(dest)) {
+        try (RandomAccessFile in = new RandomAccessFile(archive, "r");
+             FileOutputStream out = new FileOutputStream(dest)) {
             in.seek(entry.offset);
             byte[] buffer = new byte[BUFFER_SIZE];
             long remaining = entry.size;
@@ -487,6 +434,41 @@ final class ControlBarBig {
                 remaining -= n;
             }
         }
+    }
+
+    // ------------------------------------------------------------------ paths
+
+    /**
+     * Where an archive entry is installed in the game folder. The internal path is preserved,
+     * except that a leading language folder -- {@code Data\<token>\...} -- is rewritten to the
+     * language the game actually reads, {@code Data\<gameLanguage>\...}, when the archive's token
+     * differs. That is the one place a path may change, and only for the folders the engine
+     * resolves per language ({@code W3DFileSystem}); every other entry keeps its own path.
+     */
+    static String installPath(String entryPath, String gameLanguage) {
+        if (gameLanguage == null || gameLanguage.isEmpty()) {
+            return entryPath;
+        }
+        String[] parts = entryPath.replace('/', '\\').split("\\\\", -1);
+        if (parts.length > 2 && parts[0].equalsIgnoreCase("data")
+                && LANGUAGE_DIRS.contains(parts[1].toLowerCase(Locale.US))
+                && !parts[1].equalsIgnoreCase(gameLanguage)) {
+            parts[1] = gameLanguage;
+            StringBuilder sb = new StringBuilder();
+            for (int i = 0; i < parts.length; i++) {
+                if (i > 0) {
+                    sb.append('\\');
+                }
+                sb.append(parts[i]);
+            }
+            return sb.toString();
+        }
+        return entryPath;
+    }
+
+    /** Whether a folder name is one the engine resolves per language ({@code Data\<name>\}). */
+    static boolean isLanguageFolder(String name) {
+        return name != null && LANGUAGE_DIRS.contains(name.toLowerCase(Locale.US));
     }
 
     private static String baseName(String path) {

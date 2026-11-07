@@ -702,7 +702,7 @@ public class SetupActivity extends Activity {
         UiKit.listRow(card, R.drawable.ic_gzh_download,
             getString(R.string.setup_tools_cbbig),
             getString(R.string.setup_tools_cbbig_note),
-            () -> startActivity(new Intent(this, ControlBarBigActivity.class)));
+            () -> startActivity(new Intent(this, ControlBarPackActivity.class)));
     }
 
     // ------------------------------------------------------------ Logs entry

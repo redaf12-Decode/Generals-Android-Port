@@ -642,7 +642,7 @@
     <string name="setup_tools_map_manager">مدیر نقشه</string>
     <string name="setup_tools_map_manager_note">بسته‌های نقشه را درون‌ریزی کنید، سپس یکی را فعال کنید تا نقشه‌هایش در پوشه Maps بازی کپی شود. بسته‌های اصلی حفظ می‌شوند؛ حداکثر ۲۰۰ نقشه می‌توانند همزمان فعال باشند.</string>
     <string name="setup_tools_cbbig">درون‌ریز ControlBar BIG</string>
-    <string name="setup_tools_cbbig_note">یک آرشیو .big را بخوانید، نشان دهید چه چیزی برای نوار کنترل دارد و فقط همان فایل‌ها را به‌عنوان ماد درون‌ریزی کنید.</string>
+    <string name="setup_tools_cbbig_note">بسته‌های ControlBar را از پوشه یا ZIP درون‌ریزی کنید، سپس یکی را روشن کنید تا آرشیوهای .big آن در پوشهٔ بازی باز شود. هر بار فقط یکی فعال است.</string>
     <!-- GeneralsX @feature Android port 07/11/2026 Tools -> Map Packs: imported packs
          live in <user data>/maps-manager; activating one copies its maps into
          <user data>/Maps, where the engine's MapCache finds them. -->
@@ -699,26 +699,49 @@
     <string name="mappack_delete_done">بسته نقشه حذف شد.</string>
     <string name="mappack_delete_failed">حذف بسته نقشه ممکن نشد.</string>
 
-    <string name="cbbig_title">درون‌ریز ControlBar BIG</string>
-    <string name="cbbig_select">انتخاب آرشیو BIG</string>
-    <string name="cbbig_select_help">یک آرشیو .big انتخاب کنید. ابتدا خوانده می‌شود و تنها فایل‌های نوار کنترل آن درون‌ریزی می‌شود؛ بقیه آرشیو دست‌نخورده می‌ماند.</string>
-    <string name="cbbig_none_selected">هنوز هیچ آرشیوی انتخاب نشده است.</string>
-    <string name="cbbig_inspect">بررسی آرشیو</string>
-    <string name="cbbig_archive_entries">%1$d فایل در آرشیو.</string>
-    <string name="cbbig_cat_layout">چیدمان نوار کنترل</string>
-    <string name="cbbig_cat_scheme">طرح‌واره‌های نوار کنترل</string>
-    <string name="cbbig_cat_images">تعریف‌های تصویر</string>
-    <string name="cbbig_cat_art">بافت‌های استفاده‌شده</string>
-    <string name="cbbig_category_count">%1$s: %2$d</string>
-    <string name="cbbig_more">+%1$d مورد دیگر</string>
-    <string name="cbbig_import">درون‌ریزی ControlBar</string>
-    <string name="cbbig_import_help">فایل‌های بالا در پوشه ماد جدیدی نوشته و همان‌جا بسته‌بندی می‌شوند، پس بازی آن‌ها را دقیقاً مانند هر ماد دیگری سوار می‌کند. آن را در «مادها» روشن و مرتب کنید.</string>
-    <string name="cbbig_inspecting">در حال خواندن آرشیو.</string>
-    <string name="cbbig_importing">در حال درون‌ریزی فایل‌های نوار کنترل.</string>
-    <string name="cbbig_working_title">در حال کار…</string>
-    <string name="cbbig_import_done_title">ControlBar درون‌ریزی شد</string>
-    <string name="cbbig_import_done">%1$s به‌عنوان ماد نصب شد (%2$d فایل). اگر روشن نیست، آن را در «مادها» روشن کنید.</string>
-    <string name="cbbig_failed_title">درون‌ریزی ControlBar ناموفق</string>
-    <string name="cbbig_unsupported">آن فایل آرشیو BIG خواندنی نیست.</string>
-    <string name="cbbig_no_controlbar">این آرشیو هیچ فایل نوار کنترلی ندارد (Window\\ControlBar.wnd یا یک INI از ControlBarScheme).</string>
+    <!-- GeneralsX @feature Android port 07/11/2026 ControlBar Pack Manager (Tools). -->
+    <string name="cbpack_title">درون‌ریزی ControlBar BIG</string>
+    <string name="cbpack_refresh">تازه‌سازی</string>
+    <string name="cbpack_import">درون‌ریزی بستهٔ ControlBar</string>
+    <string name="cbpack_import_folder">از پوشه</string>
+    <string name="cbpack_import_zip">از ZIP</string>
+    <string name="cbpack_import_help">پوشه یا ZIP دارای یک یا چند آرشیو .big را انتخاب کنید. هر آرشیو خوانده و به‌عنوان بستهٔ خودش نگه داشته می‌شود؛ تا زمانی که بسته‌ای را روشن نکنید هیچ‌چیز باز نمی‌شود.</string>
+    <string name="cbpack_import_working">خواندن آرشیوها و جست‌وجوی فایل‌های نوار کنترل.</string>
+    <string name="cbpack_import_done_title">بستهٔ ControlBar درون‌ریزی شد</string>
+    <string name="cbpack_import_done">%1$s درون‌ریزی شد (%2$d آرشیو). برای استفاده آن را روشن کنید.</string>
+    <string name="cbpack_import_failed_title">درون‌ریزی ControlBar ناموفق بود</string>
+    <string name="cbpack_active_title">نوار کنترل فعال</string>
+    <string name="cbpack_none_active">هیچ بستهٔ ControlBar فعال نیست. بازی از نوار کنترل خودش استفاده می‌کند.</string>
+    <string name="cbpack_active_name">%1$s فعال است؛ فایل‌هایش در پوشهٔ بازی هستند.</string>
+    <string name="cbpack_active_help">هر بار فقط یک بسته فعال است. با روشن کردن یک بسته، فایل‌های بستهٔ قبلی ابتدا برداشته می‌شود، پس دو نوار کنترل هرگز با هم قاطی نمی‌شوند.</string>
+    <string name="cbpack_location_help">بسته‌ها: %1$s\nپوشهٔ زبانی که بازی می‌خواند: %2$s</string>
+    <string name="cbpack_packs_title">بسته‌های درون‌ریزی‌شده</string>
+    <string name="cbpack_none">هنوز هیچ بستهٔ ControlBar درون‌ریزی نشده است.</string>
+    <string name="cbpack_row_supporting">%1$d آرشیو · %2$s</string>
+    <string name="cbpack_state_active">فعال</string>
+    <string name="cbpack_state_inactive">غیرفعال</string>
+    <string name="cbpack_chip_active">فعال</string>
+    <string name="cbpack_details_button">جزئیات بسته</string>
+    <string name="cbpack_delete_button">حذف</string>
+    <string name="cbpack_detail">%1$d آرشیو، درون‌ریزی‌شده از %2$s:\n%3$s</string>
+    <string name="cbpack_activate">فعال‌سازی</string>
+    <string name="cbpack_deactivate">غیرفعال‌سازی</string>
+    <string name="cbpack_working_title">در حال کار…</string>
+    <string name="cbpack_activating">باز کردن فایل‌های نوار کنترل در پوشهٔ بازی.</string>
+    <string name="cbpack_deactivating">برداشتن فایل‌های نوار کنترل از پوشهٔ بازی.</string>
+    <string name="cbpack_activated_title">ControlBar فعال شد</string>
+    <string name="cbpack_activated">%1$s فعال است؛ %2$d فایل در پوشهٔ بازی نوشته شد.</string>
+    <string name="cbpack_deactivated_title">ControlBar غیرفعال شد</string>
+    <string name="cbpack_deactivated">%1$s خاموش شد و فایل‌هایش برداشته شد. بازی از نوار کنترل خودش استفاده می‌کند.</string>
+    <string name="cbpack_failed_title">تغییر ControlBar ناموفق بود</string>
+    <string name="cbpack_delete_title">حذف بسته</string>
+    <string name="cbpack_delete_message">بستهٔ «%1$s» حذف شود؟ اگر فعال باشد ابتدا خاموش می‌شود. فایل‌های خود بازی دست‌نخورده می‌مانند.</string>
+    <string name="cbpack_delete_done">بستهٔ ControlBar حذف شد.</string>
+    <string name="cbpack_delete_failed">حذف بستهٔ ControlBar ممکن نشد.</string>
+    <string name="cbpack_no_big">هیچ آرشیو .big یافت نشد. بستهٔ ControlBar پوشه یا ZIP دارای یک یا چند آرشیو .big است.</string>
+    <string name="cbpack_invalid_big">هیچ‌یک از آرشیوهای .big خوانده نشد. ممکن است بسته ناقص یا خراب باشد.</string>
+    <string name="cbpack_no_controlbar">در هیچ آرشیوی فایل نوار کنترل یافت نشد (Window\\ControlBar.wnd یا INI ControlBarScheme).</string>
+    <string name="cbpack_conflict">دو آرشیو همان فایل را با محتوای متفاوت می‌دهند. یکی را بردارید و دوباره درون‌ریزی کنید.</string>
+    <string name="cbbig_unsupported">این فایل یک آرشیو BIG خواندنی نیست.</string>
+    <string name="cbbig_no_controlbar">این آرشیو فایل نوار کنترل ندارد (Window\\ControlBar.wnd یا INI ControlBarScheme).</string>
 </resources>

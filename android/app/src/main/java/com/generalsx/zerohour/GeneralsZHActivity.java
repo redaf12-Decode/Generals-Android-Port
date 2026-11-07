@@ -226,6 +226,11 @@ public class GeneralsZHActivity extends SDLActivity {
         // active packs into Maps when a pack is switched on; re-assert that here so a change made
         // while the game was running, or a launcher update, is in place before the engine scans.
         MapPackManager.sync(this);
+        // GeneralsX @feature Android port 07/11/2026 The ControlBar Pack Manager unpacks the active
+        // package's ControlBar files into the game folder; re-assert that here so a switch made
+        // while the game was running, or a launcher update, is in place before the engine reads
+        // Window\ControlBar.wnd and the ControlBarScheme INIs.
+        ControlBarPackManager.sync(this);
         SetupActivity.writeSubtitlesMarker(this);
         writeZeroHourArtPath();
         Intent intent = getIntent();

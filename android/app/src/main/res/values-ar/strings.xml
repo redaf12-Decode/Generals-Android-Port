@@ -642,7 +642,7 @@
     <string name="setup_tools_map_manager">مدير الخرائط</string>
     <string name="setup_tools_map_manager_note">استورد حزم الخرائط، ثم فعّل الحزمة لنسخ خرائطها إلى مجلد Maps الخاص باللعبة. تبقى الحزم الأصلية محفوظة، ويمكن تفعيل ما يصل إلى 200 خريطة في وقت واحد.</string>
     <string name="setup_tools_cbbig">مستورد ControlBar BIG</string>
-    <string name="setup_tools_cbbig_note">اقرأ أرشيف .big، واعرض ما يحتويه لشريط التحكم، واستورد تلك الملفات فقط كإضافة.</string>
+    <string name="setup_tools_cbbig_note">استورد حزم ControlBar من مجلد أو ZIP، ثم فعّل واحدة لفك أرشيفات .big الخاصة بها في مجلد اللعبة. تُفعّل واحدة فقط في كل مرة.</string>
     <!-- GeneralsX @feature Android port 07/11/2026 Tools -> Map Packs: imported packs
          live in <user data>/maps-manager; activating one copies its maps into
          <user data>/Maps, where the engine's MapCache finds them. -->
@@ -699,26 +699,49 @@
     <string name="mappack_delete_done">تم حذف حزمة الخرائط.</string>
     <string name="mappack_delete_failed">تعذّر حذف حزمة الخرائط.</string>
 
-    <string name="cbbig_title">مستورد ControlBar BIG</string>
-    <string name="cbbig_select">اختيار أرشيف BIG</string>
-    <string name="cbbig_select_help">اختر أرشيف .big. يُقرأ أولًا وتُستورد ملفات شريط التحكم فقط؛ ويُترك بقية الأرشيف دون مساس.</string>
-    <string name="cbbig_none_selected">لم يتم اختيار أي أرشيف بعد.</string>
-    <string name="cbbig_inspect">فحص الأرشيف</string>
-    <string name="cbbig_archive_entries">%1$d ملف في الأرشيف.</string>
-    <string name="cbbig_cat_layout">تخطيط شريط التحكم</string>
-    <string name="cbbig_cat_scheme">مخططات شريط التحكم</string>
-    <string name="cbbig_cat_images">تعريفات الصور</string>
-    <string name="cbbig_cat_art">الرسومات المستخدمة</string>
-    <string name="cbbig_category_count">%1$s: %2$d</string>
-    <string name="cbbig_more">+%1$d أخرى</string>
-    <string name="cbbig_import">استيراد ControlBar</string>
-    <string name="cbbig_import_help">تُكتب الملفات أعلاه في مجلد إضافة جديد وتُحزم هناك، فتُحمّلها اللعبة تمامًا كأي إضافة أخرى. شغّلها ورتّبها من شاشة الإضافات.</string>
-    <string name="cbbig_inspecting">جارٍ قراءة الأرشيف.</string>
-    <string name="cbbig_importing">جارٍ استيراد ملفات شريط التحكم.</string>
-    <string name="cbbig_working_title">جارٍ العمل…</string>
-    <string name="cbbig_import_done_title">تم استيراد ControlBar</string>
-    <string name="cbbig_import_done">تم تثبيت %1$s كإضافة (%2$d ملف). شغّلها من شاشة الإضافات إن لم تكن مشغّلة.</string>
-    <string name="cbbig_failed_title">فشل استيراد ControlBar</string>
+    <!-- GeneralsX @feature Android port 07/11/2026 ControlBar Pack Manager (Tools). -->
+    <string name="cbpack_title">مستورد ControlBar BIG</string>
+    <string name="cbpack_refresh">تحديث</string>
+    <string name="cbpack_import">استيراد حزمة ControlBar</string>
+    <string name="cbpack_import_folder">من مجلد</string>
+    <string name="cbpack_import_zip">من ملف ZIP</string>
+    <string name="cbpack_import_help">اختر مجلدًا أو ملف ZIP يحتوي على أرشيف .big واحد أو أكثر. يُقرأ كل أرشيف ويُحفظ كحزمة خاصة به؛ ولا يُفك أي شيء حتى تُفعّل حزمة.</string>
+    <string name="cbpack_import_working">قراءة الأرشيفات والبحث عن ملفات شريط التحكم.</string>
+    <string name="cbpack_import_done_title">تم استيراد حزمة ControlBar</string>
+    <string name="cbpack_import_done">تم استيراد %1$s (%2$d أرشيف). فعّلها لاستخدامها.</string>
+    <string name="cbpack_import_failed_title">فشل استيراد ControlBar</string>
+    <string name="cbpack_active_title">شريط التحكم المفعّل</string>
+    <string name="cbpack_none_active">لا توجد حزمة ControlBar مفعّلة. تستخدم اللعبة شريط التحكم الخاص بها.</string>
+    <string name="cbpack_active_name">%1$s مفعّلة؛ ملفاتها في مجلد اللعبة.</string>
+    <string name="cbpack_active_help">تُفعّل حزمة واحدة فقط في كل مرة. عند تفعيل حزمة تُزال ملفات الحزمة السابقة أولًا، لذا لا يختلط شريطا تحكم أبدًا.</string>
+    <string name="cbpack_location_help">الحزم: %1$s\nمجلد اللغة الذي تقرأه اللعبة: %2$s</string>
+    <string name="cbpack_packs_title">الحزم المستوردة</string>
+    <string name="cbpack_none">لم تُستورد أي حزمة ControlBar بعد.</string>
+    <string name="cbpack_row_supporting">%1$d أرشيف · %2$s</string>
+    <string name="cbpack_state_active">مفعّلة</string>
+    <string name="cbpack_state_inactive">غير مفعّلة</string>
+    <string name="cbpack_chip_active">مفعّلة</string>
+    <string name="cbpack_details_button">تفاصيل الحزمة</string>
+    <string name="cbpack_delete_button">حذف</string>
+    <string name="cbpack_detail">%1$d أرشيف، مستوردة من %2$s:\n%3$s</string>
+    <string name="cbpack_activate">تفعيل</string>
+    <string name="cbpack_deactivate">إلغاء التفعيل</string>
+    <string name="cbpack_working_title">جارٍ العمل…</string>
+    <string name="cbpack_activating">فك ملفات شريط التحكم إلى مجلد اللعبة.</string>
+    <string name="cbpack_deactivating">إزالة ملفات شريط التحكم من مجلد اللعبة.</string>
+    <string name="cbpack_activated_title">تم تفعيل ControlBar</string>
+    <string name="cbpack_activated">%1$s مفعّلة؛ كُتب %2$d ملفًا في مجلد اللعبة.</string>
+    <string name="cbpack_deactivated_title">تم إلغاء تفعيل ControlBar</string>
+    <string name="cbpack_deactivated">أُلغي تفعيل %1$s وأُزيلت ملفاته. تستخدم اللعبة شريط التحكم الخاص بها.</string>
+    <string name="cbpack_failed_title">فشل تغيير ControlBar</string>
+    <string name="cbpack_delete_title">حذف الحزمة</string>
+    <string name="cbpack_delete_message">حذف الحزمة \"%1$s\"؟ إذا كانت مفعّلة فسيُلغى تفعيلها أولًا. لا تُمس ملفات اللعبة الخاصة.</string>
+    <string name="cbpack_delete_done">تم حذف حزمة ControlBar.</string>
+    <string name="cbpack_delete_failed">تعذّر حذف حزمة ControlBar.</string>
+    <string name="cbpack_no_big">لم يُعثر على أرشيف .big. حزمة ControlBar هي مجلد أو ملف ZIP يحتوي على أرشيف .big واحد أو أكثر.</string>
+    <string name="cbpack_invalid_big">تعذّرت قراءة أي من أرشيفات .big. قد تكون الحزمة ناقصة أو تالفة.</string>
+    <string name="cbpack_no_controlbar">لم يُعثر على ملفات شريط تحكم في أي أرشيف (Window\\ControlBar.wnd أو INI ControlBarScheme).</string>
+    <string name="cbpack_conflict">يوفّر أرشيفان الملف نفسه بمحتوى مختلف. أزل أحدهما ثم استورد مرة أخرى.</string>
     <string name="cbbig_unsupported">هذا الملف ليس أرشيف BIG قابلًا للقراءة.</string>
-    <string name="cbbig_no_controlbar">لا يحتوي هذا الأرشيف على ملفات شريط التحكم (Window\\ControlBar.wnd أو ملف ControlBarScheme INI).</string>
+    <string name="cbbig_no_controlbar">هذا الأرشيف لا يحتوي على ملفات شريط تحكم (Window\\ControlBar.wnd أو INI ControlBarScheme).</string>
 </resources>

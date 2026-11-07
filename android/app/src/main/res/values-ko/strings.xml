@@ -642,7 +642,7 @@
     <string name="setup_tools_map_manager">맵 관리자</string>
     <string name="setup_tools_map_manager_note">맵 팩을 가져온 뒤 하나를 활성화하면 그 맵이 게임의 Maps 폴더로 복사됩니다. 원본 팩은 그대로 유지되며, 최대 200개 맵을 동시에 활성화할 수 있습니다.</string>
     <string name="setup_tools_cbbig">ControlBar BIG 가져오기</string>
-    <string name="setup_tools_cbbig_note">.big 압축 파일을 읽고 컨트롤 바에 무엇이 들어 있는지 보여 주며, 그 파일들만 모드로 가져옵니다.</string>
+    <string name="setup_tools_cbbig_note">폴더나 ZIP에서 ControlBar 패키지를 가져온 뒤 하나를 켜면 그 .big 압축 파일이 게임 폴더에 풀립니다. 한 번에 하나만 활성화됩니다.</string>
     <!-- GeneralsX @feature Android port 07/11/2026 Tools -> Map Packs: imported packs
          live in <user data>/maps-manager; activating one copies its maps into
          <user data>/Maps, where the engine's MapCache finds them. -->
@@ -699,26 +699,49 @@
     <string name="mappack_delete_done">맵 팩을 삭제했습니다.</string>
     <string name="mappack_delete_failed">맵 팩을 삭제하지 못했습니다.</string>
 
-    <string name="cbbig_title">ControlBar BIG 가져오기</string>
-    <string name="cbbig_select">BIG 압축 파일 선택</string>
-    <string name="cbbig_select_help">.big 압축 파일을 고르세요. 먼저 읽고 컨트롤 바 파일만 가져오며, 나머지 내용은 그대로 둡니다.</string>
-    <string name="cbbig_none_selected">아직 선택한 압축 파일이 없습니다.</string>
-    <string name="cbbig_inspect">압축 파일 검사</string>
-    <string name="cbbig_archive_entries">압축 파일 안의 파일 %1$d개.</string>
-    <string name="cbbig_cat_layout">컨트롤 바 배치</string>
-    <string name="cbbig_cat_scheme">컨트롤 바 스킴</string>
-    <string name="cbbig_cat_images">이미지 정의</string>
-    <string name="cbbig_cat_art">사용된 텍스처</string>
-    <string name="cbbig_category_count">%1$s: %2$d</string>
-    <string name="cbbig_more">+%1$d개 더</string>
-    <string name="cbbig_import">ControlBar 가져오기</string>
-    <string name="cbbig_import_help">위 파일들을 새 모드 폴더에 쓰고 그곳에서 묶으므로 게임이 다른 모드와 똑같이 불러옵니다. 모드 화면에서 켜고 순서를 정하세요.</string>
-    <string name="cbbig_inspecting">압축 파일을 읽는 중입니다.</string>
-    <string name="cbbig_importing">컨트롤 바 파일을 가져오는 중입니다.</string>
-    <string name="cbbig_working_title">작업 중…</string>
-    <string name="cbbig_import_done_title">ControlBar를 가져왔습니다</string>
-    <string name="cbbig_import_done">%1$s을(를) 모드로 설치했습니다(파일 %2$d개). 아직 켜지지 않았다면 모드 화면에서 켜세요.</string>
-    <string name="cbbig_failed_title">ControlBar 가져오기 실패</string>
-    <string name="cbbig_unsupported">그 파일은 읽을 수 있는 BIG 압축 파일이 아닙니다.</string>
+    <!-- GeneralsX @feature Android port 07/11/2026 ControlBar Pack Manager (Tools). -->
+    <string name="cbpack_title">ControlBar BIG 가져오기</string>
+    <string name="cbpack_refresh">새로 고침</string>
+    <string name="cbpack_import">ControlBar 패키지 가져오기</string>
+    <string name="cbpack_import_folder">폴더에서</string>
+    <string name="cbpack_import_zip">ZIP에서</string>
+    <string name="cbpack_import_help">하나 이상의 .big 압축 파일이 든 폴더나 ZIP을 선택하세요. 각 압축 파일은 읽혀서 별도의 패키지로 보관되며, 패키지를 켜기 전에는 아무것도 풀리지 않습니다.</string>
+    <string name="cbpack_import_working">압축 파일을 읽고 컨트롤 바 파일을 찾는 중입니다.</string>
+    <string name="cbpack_import_done_title">ControlBar 패키지를 가져왔습니다</string>
+    <string name="cbpack_import_done">%1$s을(를) 가져왔습니다(압축 파일 %2$d개). 사용하려면 켜세요.</string>
+    <string name="cbpack_import_failed_title">ControlBar 가져오기 실패</string>
+    <string name="cbpack_active_title">활성 컨트롤 바</string>
+    <string name="cbpack_none_active">활성화된 ControlBar 패키지가 없습니다. 게임은 자체 컨트롤 바를 사용합니다.</string>
+    <string name="cbpack_active_name">%1$s이(가) 활성입니다. 파일은 게임 폴더에 있습니다.</string>
+    <string name="cbpack_active_help">한 번에 하나의 패키지만 활성화됩니다. 패키지를 켜면 이전 패키지의 파일을 먼저 제거하므로 두 컨트롤 바가 섞이지 않습니다.</string>
+    <string name="cbpack_location_help">패키지: %1$s\n게임이 읽는 언어 폴더: %2$s</string>
+    <string name="cbpack_packs_title">가져온 패키지</string>
+    <string name="cbpack_none">아직 가져온 ControlBar 패키지가 없습니다.</string>
+    <string name="cbpack_row_supporting">압축 파일 %1$d개 · %2$s</string>
+    <string name="cbpack_state_active">활성</string>
+    <string name="cbpack_state_inactive">비활성</string>
+    <string name="cbpack_chip_active">활성</string>
+    <string name="cbpack_details_button">패키지 세부 정보</string>
+    <string name="cbpack_delete_button">삭제</string>
+    <string name="cbpack_detail">압축 파일 %1$d개, %2$s에서 가져옴:\n%3$s</string>
+    <string name="cbpack_activate">활성화</string>
+    <string name="cbpack_deactivate">비활성화</string>
+    <string name="cbpack_working_title">작업 중…</string>
+    <string name="cbpack_activating">컨트롤 바 파일을 게임 폴더로 푸는 중입니다.</string>
+    <string name="cbpack_deactivating">게임 폴더에서 컨트롤 바 파일을 제거하는 중입니다.</string>
+    <string name="cbpack_activated_title">ControlBar 활성화됨</string>
+    <string name="cbpack_activated">%1$s이(가) 활성입니다. 게임 폴더에 파일 %2$d개를 기록했습니다.</string>
+    <string name="cbpack_deactivated_title">ControlBar 비활성화됨</string>
+    <string name="cbpack_deactivated">%1$s을(를) 끄고 파일을 제거했습니다. 게임은 자체 컨트롤 바를 사용합니다.</string>
+    <string name="cbpack_failed_title">ControlBar 변경 실패</string>
+    <string name="cbpack_delete_title">패키지 삭제</string>
+    <string name="cbpack_delete_message">\"%1$s\" 패키지를 삭제할까요? 활성 상태면 먼저 꺼집니다. 게임 자체 파일은 건드리지 않습니다.</string>
+    <string name="cbpack_delete_done">ControlBar 패키지를 삭제했습니다.</string>
+    <string name="cbpack_delete_failed">ControlBar 패키지를 삭제할 수 없습니다.</string>
+    <string name="cbpack_no_big">.big 압축 파일을 찾지 못했습니다. ControlBar 패키지는 하나 이상의 .big 압축 파일이 든 폴더나 ZIP입니다.</string>
+    <string name="cbpack_invalid_big">.big 압축 파일을 하나도 읽지 못했습니다. 패키지가 불완전하거나 손상되었을 수 있습니다.</string>
+    <string name="cbpack_no_controlbar">어떤 압축 파일에서도 컨트롤 바 파일을 찾지 못했습니다(Window\\ControlBar.wnd 또는 ControlBarScheme INI).</string>
+    <string name="cbpack_conflict">두 압축 파일이 내용이 다른 같은 파일을 제공합니다. 하나를 제거하고 다시 가져오세요.</string>
+    <string name="cbbig_unsupported">이 파일은 읽을 수 있는 BIG 압축 파일이 아닙니다.</string>
     <string name="cbbig_no_controlbar">이 압축 파일에는 컨트롤 바 파일이 없습니다(Window\\ControlBar.wnd 또는 ControlBarScheme INI).</string>
 </resources>
