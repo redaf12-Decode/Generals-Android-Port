@@ -315,7 +315,7 @@ public class ModManagerActivity extends Activity {
 
     /**
      * GeneralsX @feature Android port 07/11/2026 The scripts-folder backup switch (ModScriptsBackup):
-     * the game folder's data/scripts is renamed to data/scriptsbackup while a mod is on and back
+     * the game folder's Data\Scripts is renamed to Data\scriptsbackup while a mod is on and back
      * when the last one is switched off. The switch is not a free choice -- it follows the mods:
      * any mod switched on turns it on, and only the last mod switched off turns it off again, so
      * with several mods on it stays on until they are all off. The card explains that and, while it
@@ -367,7 +367,7 @@ public class ModManagerActivity extends Activity {
 
     /**
      * Puts the scripts folder in the state the switches now call for, before the change is saved:
-     * a mod switched on renames data/scripts away first, and the last mod switched off brings it
+     * a mod switched on renames Data\Scripts away first, and the last mod switched off brings it
      * back.
      *
      * <p>Whether a mod is on is read from the list in memory, not from the saved list: this runs

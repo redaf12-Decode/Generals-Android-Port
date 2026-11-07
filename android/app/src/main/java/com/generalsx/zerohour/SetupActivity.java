@@ -331,7 +331,7 @@ public class SetupActivity extends Activity {
         loadDxvkConfigIntoEditor();
         refreshDiagnosticsSwitches();
         // GeneralsX @feature Android port 07/11/2026 The optional scripts backup (ModScriptsBackup):
-        // with the option on and a mod switched on, the game folder's data/scripts is moved aside
+        // with the option on and a mod switched on, the game folder's Data\Scripts is moved aside
         // here, and put back when the last mod is switched off or the option is turned off. This is
         // the launch path as well as the return path, so it runs before the game can read either.
         ModScriptsBackup.recover(this);
@@ -4472,7 +4472,7 @@ public class SetupActivity extends Activity {
                     ModManager.switchOff(this, null);
                     // GeneralsX @bugfix Android port 07/11/2026 Safe start switches the mods off
                     // outside the Mods screen, so it has to put the scripts folder back too --
-                    // otherwise starting without mods would leave data/scripts disabled.
+                    // otherwise starting without mods would leave Data\Scripts disabled.
                     ModScriptsBackup.sync(this);
                     showTab(currentTab);
                     launchGameNow();

@@ -198,3 +198,20 @@ Two owner requests:
 
 After follow-up 3: `testDebugUnitTest` 299 tests / 0 failures, `lintDebug` 0 errors,
 `assembleLauncherOnly` `BUILD SUCCESSFUL`, `check-translations.py` green.
+
+## Follow-up 4 (07/11/2026): show the retail `Data\Scripts` path, not the lower-case one
+
+The owner asked for the retail spelling to be shown instead of the lower-case one. Every string the
+Mods screen shows (`mods_scripts_backup_switch`, `_switch_desc`, `_done`, `_restored`, `_active`,
+`_idle`, `_conflict`, `_failed`) now reads **`Data\Scripts`** (and `Data\scriptsbackup`), in all 13
+locales. Only the display changed: the matching stays case-insensitive, so `Data\Scripts`,
+`data\scripts`, `DATA\SCRIPTS` are still found, moved and restored. `_failed` was also corrected —
+it still said the mod "was left switched off", which stopped being true in follow-up 3.
+
+Developer comments in `ModScriptsBackup`/`ModManagerActivity`/`GeneralsZHActivity`/`SetupActivity`
+were aligned to `Data\Scripts` too, except `SetupActivity.hasSkirmishScripts`'s
+`bigContainsEntry(dir, "data/scripts/skirmishscripts.scb")`, which is the **archive entry name** (a
+lookup inside a `.big`), not a folder on disk, and must stay as the engine writes it.
+
+After follow-up 4: `testDebugUnitTest` 299 tests / 0 failures, `lintDebug` 0 errors,
+`assembleLauncherOnly` `BUILD SUCCESSFUL`, `check-translations.py` green.

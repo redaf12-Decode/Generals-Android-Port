@@ -27,10 +27,10 @@ import java.nio.charset.StandardCharsets;
  * GeneralsX @feature Android port 07/11/2026 Optional scripts-folder backup for mods.
  *
  * <p>Some total conversions ship their own {@code Data\Scripts} content and break when the game
- * folder's loose {@code data/scripts} directory (the computer opponents' scripts,
+ * folder's loose {@code Data\Scripts} directory (the computer opponents' scripts,
  * {@code SkirmishScripts.scb} -- see SetupActivity.hasSkirmishScripts) is still there beside it.
  * With the option switched on, a mod being switched on <em>renames</em> the game folder's
- * {@code data/scripts} to {@code data/scriptsbackup} instead of deleting or overwriting anything,
+ * {@code Data\Scripts} to {@code Data\scriptsbackup} instead of deleting or overwriting anything,
  * and switching the last mod off renames it back. Nothing is ever deleted and an existing
  * {@code scriptsbackup} is never overwritten.
  *
@@ -162,14 +162,14 @@ final class ModScriptsBackup {
         return retail != null ? retail : first;
     }
 
-    /** {@code <game>/data/scripts} as a directory on disk (any letter case), or null. */
+    /** {@code <game>/Data\Scripts} as a directory on disk (any letter case), or null. */
     static File scriptsDir(Context ctx) {
         File data = dataDir(ctx);
         File found = data == null ? null : findChild(data, SCRIPTS_DIR);
         return found != null && found.isDirectory() ? found : null;
     }
 
-    /** {@code <game>/data/scriptsbackup} as a directory on disk (any letter case), or null. */
+    /** {@code <game>/Data\scriptsbackup} as a directory on disk (any letter case), or null. */
     static File backupDir(Context ctx) {
         File data = dataDir(ctx);
         File found = data == null ? null : findChild(data, BACKUP_DIR);
@@ -240,9 +240,9 @@ final class ModScriptsBackup {
     }
 
     /**
-     * The one filesystem step: with {@code wantBackup} set, {@code data/scripts} becomes
-     * {@code data/scriptsbackup} if it is there and no backup is; otherwise
-     * {@code data/scriptsbackup} becomes the scripts folder again if the backup is there and no
+     * The one filesystem step: with {@code wantBackup} set, {@code Data\Scripts} becomes
+     * {@code Data\scriptsbackup} if it is there and no backup is; otherwise
+     * {@code Data\scriptsbackup} becomes the scripts folder again if the backup is there and no
      * scripts folder is. Both present, or a rename that throws, changes nothing.
      */
     static Result reconcile(Context ctx, String gamePath, boolean wantBackup) {
