@@ -246,3 +246,44 @@ SDL3 Java glue staged by `scripts/build/android/stage-sdl-java.sh`.
 | `docs/WORKDIR/reports/android-port-analysis/BUILD_REQUIREMENTS.md` | namespace/applicationId now recorded as different |
 | `docs/DEV_BLOG/2026-11-DIARY.md` | this session's entry |
 | `docs/WORKDIR/reports/ANDROID_APP_IDENTITY_60HZ_ICON_THEME_20261108.md` | this report |
+
+---
+
+## Independent re-verification (second pass)
+
+Re-checked from the committed tree on a fresh machine (no prior session state), not from the
+earlier session's notes.
+
+- **Icon fidelity to the source, measured again:** committed foreground vs the 256×256 frame of
+  `https://cdn2.steamgriddb.com/icon/647a924986a26860d4813818f03672f5.ico` — silhouette IoU
+  **0.985**, mean absolute RGB difference **0.9/255** over the shared opaque area, 0 pixels added,
+  ~139 of 15390 lost. Against the repository's own retail icons (`Generals/Code/Main/Generals.ico`,
+  `Core/Tools/Launcher/GeneralsZH.ico`) the source scores IoU 0.83–0.89, confirming it is the
+  genuine Zero Hour emblem and not a redraw.
+- **Contrast on the navy background** (the one open question): mean |Δluminance| between emblem and
+  background is **112.7**; only 4.8% of emblem pixels fall below 25 and 2.1% below 12, and those sit
+  on the mid-tone edges of the metal, not on the black regions — the black (~22% of the emblem)
+  borders bright silver/gold/blue, not the background. Nothing is hidden.
+- **Safe zone:** farthest opaque pixel at **32.0–32.4 dp** from centre on all five densities —
+  inside the 33 dp safe circle of the 66 dp safe zone.
+- **Fresh `:app:assembleLauncherOnly` build** (JDK 21, Gradle 8.9, AGP 8.5.2, SDK 35):
+  `BUILD SUCCESSFUL`. `aapt2 dump badging` → `package: name='com.ports.generalsx'`,
+  `launchable-activity: name='com.generalsx.zerohour.SetupActivity'`, and every
+  `application-icon-*` → `res/mipmap-anydpi-v26/ic_launcher.xml`. The manifest carries
+  `com.ports.generalsx.fileprovider` and no bare `com.generalsx.zerohour` package string; the
+  variant still contains zero `.so` files. All ten packaged icon PNGs are byte-identical (sha256) to
+  the committed ones.
+- **Unit tests, re-run:** 314 tests, 0 failures, including the 61 covering these four changes
+  (`SetupActivityHelperTest`, `ThemeHelperTest`, `LauncherSmokeTest`, `NetworkTraceRedactTest`).
+- **Native app-id paths:** `grep -rn 'com\.generalsx\.zerohour' Core Generals GeneralsMD scripts
+  --include='*.cpp' --include='*.h' --include='*.sh'` returns nothing; the id lives only in
+  `GXAndroidApp.h`.
+
+### One open item (not a regression)
+
+The committed download artifact `apk/GeneralsXZH-android-generals-a48.apk` was **not** rebuilt by
+this change: `git diff 3602822 HEAD -- apk/` is empty, so that APK still reports the old
+`com.generalsx.zerohour` package and carries the previous icon. The branch sources and any APK built
+from them are correct; only a full `scripts/build/android/build-dual-hz.sh` run (NDK + vcpkg + DXVK,
+four engine builds) plus a commit of the result makes the shipped APK match. That build is out of
+scope for a launcher-only change and is left to the owner.
