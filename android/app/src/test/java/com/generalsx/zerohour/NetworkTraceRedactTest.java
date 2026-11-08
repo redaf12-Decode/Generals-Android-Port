@@ -101,9 +101,13 @@ public class NetworkTraceRedactTest {
 
     @Test
     public void logFileLivesUnderTheAppAndIsNamed() {
-        File log = NetworkTrace.logFile(org.robolectric.RuntimeEnvironment.getApplication());
+        android.app.Application app = org.robolectric.RuntimeEnvironment.getApplication();
+        File log = NetworkTrace.logFile(app);
         assertEquals("generals-network.log", log.getName());
-        assertTrue(log.getAbsolutePath().contains("com.generalsx.zerohour"));
+        // GeneralsX @tweak Android port 08/11/2026 The applicationId (and so the external
+        // files path) is no longer the Java package; assert against the id the app actually
+        // reports rather than a hardcoded string, which is what the device layout uses.
+        assertTrue(log.getAbsolutePath().contains(app.getPackageName()));
     }
 
     // ------------------------------------------------------------------ BIG directory table

@@ -177,14 +177,19 @@ public class SetupActivity extends Activity {
     // 30 Hz is what the port has always run and what Android-to-Android play is proven
     // on. 60 Hz is what the GeneralsOnline Windows client runs, so it is the only mode
     // that can stay in lockstep with a PC -- at the cost of twice the logic work per
-    // second on the device.
+    // second on the device. 60 Hz is the default for a fresh install; an existing
+    // install keeps whatever it stored.
     static final String PREF_SIM_HZ = "sim_hz";
     static final int SIM_HZ_RETAIL = 30;
     static final int SIM_HZ_CROSSPLAY = 60;
 
+    // GeneralsX @tweak Android port 08/11/2026 60 Hz is the default for a fresh install, so a
+    // new player is in lockstep with the Windows GeneralsOnline client out of the box. It is
+    // only the DEFAULT: an existing install keeps whatever it stored, and GeneralsZHActivity
+    // still falls back to the 30 Hz engine when the 60 Hz one is missing from the APK.
     static int getSimHz(android.content.Context ctx) {
         int hz = ctx.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-            .getInt(PREF_SIM_HZ, SIM_HZ_RETAIL);
+            .getInt(PREF_SIM_HZ, SIM_HZ_CROSSPLAY);
         return hz == SIM_HZ_CROSSPLAY ? SIM_HZ_CROSSPLAY : SIM_HZ_RETAIL;
     }
 

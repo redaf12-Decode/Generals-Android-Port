@@ -31,6 +31,8 @@
 // Read once per process. Always the retail behaviour off Android.
 #pragma once
 
+#include "Common/GXAndroidApp.h"
+
 #include <cstdio>
 #include <cstring>
 #if defined(__ANDROID__)
@@ -60,7 +62,7 @@ namespace GXControlScheme
 			static const char *const kNames[OPTION_COUNT] = { "attack_move", "army_buttons", "camera_high" };
 			char path[256];
 			const int userId = (int)(getuid() / 100000);
-			snprintf(path, sizeof(path), "/data/user/%d/com.generalsx.zerohour/files/control_scheme", userId);
+			snprintf(path, sizeof(path), "/data/user/%d/" GX_ANDROID_APP_ID "/files/control_scheme", userId);
 			FILE *fp = fopen(path, "r");
 			if (fp != nullptr)
 			{

@@ -168,9 +168,22 @@ public class SetupActivityHelperTest {
             SetupActivity.GAME_ZERO_HOUR.equals(SetupActivity.GAME_GENERALS));
     }
 
+    /**
+     * GeneralsX @tweak Android port 08/11/2026 The default is 60 Hz (the rate the Windows
+     * GeneralsOnline client runs), but only as a default: a stored value always wins, so an
+     * install that already picked 30 Hz keeps it. Anything that is not one of the two built
+     * rates resolves to 30 Hz rather than being stored and then failing to load.
+     */
     @Test
-    public void simulationRateDefaultsToRetailAndOnlyAcceptsTheTwoKnownValues() {
-        assertEquals(SetupActivity.SIM_HZ_RETAIL, SetupActivity.getSimHz(app()));
+    public void simulationRateDefaultsToCrossplayAndOnlyAcceptsTheTwoKnownValues() {
+        app().getSharedPreferences(SetupActivity.PREFS_NAME, Context.MODE_PRIVATE)
+            .edit().remove(SetupActivity.PREF_SIM_HZ).apply();
+        assertEquals("a fresh install defaults to the 60 Hz cross-play engine",
+            SetupActivity.SIM_HZ_CROSSPLAY, SetupActivity.getSimHz(app()));
+
+        SetupActivity.setSimHz(app(), SetupActivity.SIM_HZ_RETAIL);
+        assertEquals("a stored 30 Hz must be preserved", SetupActivity.SIM_HZ_RETAIL,
+            SetupActivity.getSimHz(app()));
 
         SetupActivity.setSimHz(app(), SetupActivity.SIM_HZ_CROSSPLAY);
         assertEquals(SetupActivity.SIM_HZ_CROSSPLAY, SetupActivity.getSimHz(app()));

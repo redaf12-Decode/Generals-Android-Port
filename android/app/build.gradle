@@ -27,7 +27,14 @@ android {
     }
 
     defaultConfig {
-        applicationId 'com.generalsx.zerohour'
+        // GeneralsX @tweak Android port 08/11/2026 The applicationId (the id the OS, the Play
+        // Store and other apps see) is deliberately DIFFERENT from the Java namespace below
+        // ('com.generalsx.zerohour'), which stays put: renaming the package would move every
+        // class and every manifest .Name reference for no functional gain. Only this line, the
+        // native paths in Core/GameEngine/Include/Common/GXAndroidApp.h and the comments in
+        // scripts/build/android/package-android-zh.sh name the id, and all four must agree --
+        // see GXAndroidApp.h for why the native side builds those paths by hand.
+        applicationId 'com.ports.generalsx'
         // API 28 (Android 9): floor that still covers the Redmi Note 8 Pro
         // line while giving bionic glob(3) and stable Vulkan loader behavior.
         // The real graphics gate is the GPU driver, not the OS version — see

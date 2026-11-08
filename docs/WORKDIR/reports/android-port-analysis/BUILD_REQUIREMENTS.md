@@ -319,7 +319,8 @@ gradle assembleDebug [-PandroidVersionCode=N] [-PandroidVersionName=X.Y.Z]
 * `android.useAndroidX=true`, `android.nonTransitiveRClass=true`
 
 `android/app/build.gradle`
-* namespace / applicationId `com.generalsx.zerohour`
+* namespace `com.generalsx.zerohour`, applicationId `com.ports.generalsx` (deliberately different:
+  the namespace is where `R` and the classes live, the applicationId is the id the OS sees)
 * `compileSdk 35`, `minSdk 28`, `targetSdk 35`, `abiFilters 'arm64-v8a'`
 * fixed `signingConfigs.debug` from the in-repo `debug.keystore` (`android`/`androiddebugkey`/`android`),
   used by **both** `debug` and `release` (sideload distribution; Play is out of scope)

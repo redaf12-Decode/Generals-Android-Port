@@ -26,6 +26,8 @@
 // Read once per process. Always empty off Android.
 #pragma once
 
+#include "Common/GXAndroidApp.h"
+
 #include <cstdio>
 #include <cstring>
 #include <string>
@@ -54,7 +56,7 @@ namespace GXManagedMods
 #if defined(__ANDROID__)
 			char path[256];
 			const int userId = (int)(getuid() / 100000);
-			snprintf(path, sizeof(path), "/data/user/%d/com.generalsx.zerohour/files/mods_active.txt", userId);
+			snprintf(path, sizeof(path), "/data/user/%d/" GX_ANDROID_APP_ID "/files/mods_active.txt", userId);
 			FILE *fp = fopen(path, "r");
 			if (fp != nullptr)
 			{

@@ -27,6 +27,8 @@
 // switch is flipped in the launcher, never while the game runs. Always FALSE off Android.
 #pragma once
 
+#include "Common/GXAndroidApp.h"
+
 #if defined(__ANDROID__)
 #include <cstdio>
 #include <unistd.h>
@@ -40,7 +42,7 @@ inline bool GXLoggingDisabled()
 	{
 		char path[256];
 		const int userId = (int)(getuid() / 100000);
-		snprintf(path, sizeof(path), "/data/user/%d/com.generalsx.zerohour/files/logging_off", userId);
+		snprintf(path, sizeof(path), "/data/user/%d/" GX_ANDROID_APP_ID "/files/logging_off", userId);
 		state = (access(path, F_OK) == 0) ? 1 : 0;
 	}
 	return state == 1;

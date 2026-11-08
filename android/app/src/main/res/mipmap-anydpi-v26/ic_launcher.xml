@@ -1,10 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- GeneralsX @tweak Android port 03/10/2026 The Zero Hour emblem from the game's own
-     GeneralsZH.ico at 256x256 (the copy in GeneralsMD/Code/Main/Generals.ico stops at 48x48, and
-     the old icon was that one blown up nine times). One PNG per density, the emblem sized so its
-     farthest pixel stays inside the 66dp safe circle: no launcher mask cuts a wing. The
-     monochrome layer is the emblem's shape for Android 13+ themed icons. minSdk 28, so this
-     adaptive icon is the only one any supported Android shows. -->
+<!-- GeneralsX @tweak Android port 08/11/2026 Adaptive launcher icon.
+     Foreground/monochrome artwork: "Icon for Command & Conquer: Generals - Zero Hour" by
+     pix0wl, from SteamGridDB (https://www.steamgriddb.com/icon/59649), described there as
+     "Official" and extracted from the game's own EXE. The .ico was fetched from its CDN
+     (https://cdn2.steamgriddb.com/icon/647a924986a26860d4813818f03672f5.ico), its 256x256
+     frame extracted, and scaled so the emblem's farthest pixel stays inside the 66dp
+     safe circle (33dp radius) of the 108dp canvas: no launcher mask cuts a wing. One PNG
+     per density (mdpi..xxxhdpi), plus the monochrome layer Android 13+ themed icons use.
+     minSdk 28, so this adaptive icon is the only one any supported Android shows. -->
 <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
     <background android:drawable="@drawable/ic_launcher_background" />
     <foreground android:drawable="@mipmap/ic_launcher_foreground" />

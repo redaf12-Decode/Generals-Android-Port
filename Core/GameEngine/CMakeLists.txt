@@ -137,6 +137,7 @@ set(GAMEENGINE_SRC
 #    Include/Common/WellKnownKeys.h
     Include/Common/WorkerProcess.h
     Include/Common/Xfer.h
+    Include/Common/GXAndroidApp.h
     Include/Common/GXCrcStream.h
     Include/Common/GXLogging.h
     Include/Common/GXRemoteConfig.h

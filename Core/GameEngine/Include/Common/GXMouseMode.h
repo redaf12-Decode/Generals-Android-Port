@@ -28,6 +28,8 @@
 // per process. Always FALSE off Android.
 #pragma once
 
+#include "Common/GXAndroidApp.h"
+
 #if defined(__ANDROID__)
 #include <cstdio>
 #include <unistd.h>
@@ -44,7 +46,7 @@ inline int GXMouseCursorPercent()
 		percent = 100;
 		char path[256];
 		const int userId = (int)(getuid() / 100000);
-		snprintf(path, sizeof(path), "/data/user/%d/com.generalsx.zerohour/files/mouse_mode", userId);
+		snprintf(path, sizeof(path), "/data/user/%d/" GX_ANDROID_APP_ID "/files/mouse_mode", userId);
 		FILE *fp = fopen(path, "r");
 		if (fp != nullptr)
 		{
@@ -68,7 +70,7 @@ inline bool GXMouseModeEnabled()
 	{
 		char path[256];
 		const int userId = (int)(getuid() / 100000);
-		snprintf(path, sizeof(path), "/data/user/%d/com.generalsx.zerohour/files/mouse_mode", userId);
+		snprintf(path, sizeof(path), "/data/user/%d/" GX_ANDROID_APP_ID "/files/mouse_mode", userId);
 		state = (access(path, F_OK) == 0) ? 1 : 0;
 	}
 	return state == 1;
@@ -94,7 +96,7 @@ inline bool GXMouseCaptureEnabled()
 		state = 1;   // default on: a connected mouse works without any setup
 		char path[256];
 		const int userId = (int)(getuid() / 100000);
-		snprintf(path, sizeof(path), "/data/user/%d/com.generalsx.zerohour/files/mouse_mode", userId);
+		snprintf(path, sizeof(path), "/data/user/%d/" GX_ANDROID_APP_ID "/files/mouse_mode", userId);
 		FILE *fp = fopen(path, "r");
 		if (fp != nullptr)
 		{

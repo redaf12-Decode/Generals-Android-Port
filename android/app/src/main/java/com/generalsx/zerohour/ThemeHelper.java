@@ -9,9 +9,10 @@ import androidx.core.view.WindowInsetsControllerCompat;
 
 /**
  * GeneralsX @feature Android port 18/10/2026 The launcher's appearance (Interface -> Appearance):
- * the standard dark look by default, or the "navy" (navy and gold) or "day" (light) palette of the
- * GeneralsX fork by realkot (used with permission), or "system", which follows the phone: day
- * when it is light, standard when it is dark. Launcher only; the game is never affected.
+ * the "navy" (navy and gold) or "day" (light) palette of the GeneralsX fork by realkot (used with
+ * permission), the standard dark look, or "system", which follows the phone: day when it is light,
+ * standard when it is dark. GeneralsX @tweak Android port 08/11/2026 SYSTEM is the default for a
+ * fresh install (getMode); a stored choice always wins. Launcher only; the game is never affected.
  *
  * A palette is a set of colours named like the standard ones with a gzh_navy_ / gzh_day_ prefix
  * (colors_palettes.xml): UiKit.color() maps a standard colour to the chosen palette, and apply()
@@ -114,10 +115,14 @@ final class ThemeHelper {
         return caches;
     }
 
+    // GeneralsX @tweak Android port 08/11/2026 A fresh install follows the phone (SYSTEM), so the
+    // launcher matches the system's light/dark setting out of the box. Only the DEFAULT: a stored
+    // choice always wins, so an existing install keeps whatever the player picked, and choosing a
+    // palette in Interface -> Appearance (SetupActivity.buildThemeSection) still overrides it.
     static int getMode(Context context) {
         int stored = context.getSharedPreferences(LocaleHelper.PREFS_NAME, Context.MODE_PRIVATE)
-            .getInt(PREF_MODE, STANDARD);
-        return stored >= STANDARD && stored <= SYSTEM ? stored : STANDARD;
+            .getInt(PREF_MODE, SYSTEM);
+        return stored >= STANDARD && stored <= SYSTEM ? stored : SYSTEM;
     }
 
     static void setMode(Context context, int mode) {
@@ -139,7 +144,7 @@ final class ThemeHelper {
         android.content.SharedPreferences.Editor editor =
             context.getSharedPreferences(LocaleHelper.PREFS_NAME, Context.MODE_PRIVATE).edit();
         if (clampAccent(accent) == ACCENT_DEFAULT) {
-            // Absent = the palette's own accent, matching how an unset theme mode means STANDARD.
+            // Absent = the palette's own accent, matching how an unset theme mode means SYSTEM.
             editor.remove(PREF_ACCENT);
         } else {
             editor.putInt(PREF_ACCENT, clampAccent(accent));
