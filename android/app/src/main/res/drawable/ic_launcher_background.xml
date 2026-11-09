@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- GeneralsX @tweak Android port 03/10/2026 Backdrop of the launcher icon: a deep navy with a
-     lighter centre, so the emblem's silver wings and blue shield read against it at any size and
-     under any mask shape. -->
+<!-- GeneralsX @tweak Android port 09/11/2026 Backdrop of the launcher icon: a translucent white
+     (owner's request), a soft lighter centre fading to a more see-through edge, so the launcher's
+     wallpaper shows through and the emblem sits on a frosted white instead of the former opaque
+     navy. The alphas are white, not colour, so the backdrop reads the same under any mask shape. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:aapt="http://schemas.android.com/aapt"
     android:width="108dp"
@@ -15,8 +16,8 @@
                 android:centerX="54"
                 android:centerY="50"
                 android:gradientRadius="64"
-                android:startColor="#FF23395D"
-                android:endColor="#FF0A1222" />
+                android:startColor="#B3FFFFFF"
+                android:endColor="#66FFFFFF" />
         </aapt:attr>
     </path>
 </vector>
