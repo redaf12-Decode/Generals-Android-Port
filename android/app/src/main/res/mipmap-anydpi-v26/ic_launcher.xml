@@ -7,7 +7,11 @@
      frame extracted, and scaled so the emblem's farthest pixel stays inside the 66dp
      safe circle (33dp radius) of the 108dp canvas: no launcher mask cuts a wing. One PNG
      per density (mdpi..xxxhdpi), plus the monochrome layer Android 13+ themed icons use.
-     minSdk 28, so this adaptive icon is the only one any supported Android shows. -->
+     minSdk 28, so this adaptive icon is the only one any supported Android shows.
+
+     GeneralsX @tweak Android port 09/11/2026 The backdrop is now a translucent white
+     (ic_launcher_background), so the launcher wallpaper shows through instead of the
+     former opaque navy; the artwork and the manifest reference are unchanged. -->
 <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
     <background android:drawable="@drawable/ic_launcher_background" />
     <foreground android:drawable="@mipmap/ic_launcher_foreground" />

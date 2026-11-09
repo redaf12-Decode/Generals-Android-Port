@@ -120,6 +120,13 @@ package: name='com.ports.generalsx' versionCode='10402' versionName='1.4.2'
 
 ## 3. Launcher icon
 
+> **Later change (09/11/2026, branch `icon-transparent-white`):** the backdrop described below as
+> "a navy radial vector, unchanged" is now a **translucent white** at the owner's request —
+> `ic_launcher_background.xml` went from `#FF23395D` → `#FF0A1222` to `#B3FFFFFF` → `#66FFFFFF`
+> (same radial geometry). The foreground artwork, the monochrome layer, the icon XML's layer
+> wiring and the manifest reference are all unchanged. The rest of this section still describes
+> how the artwork was sourced and measured.
+
 ### Source
 
 `https://www.steamgriddb.com/icon/59649` — **"Icon for Command & Conquer: Generals – Zero Hour"**
