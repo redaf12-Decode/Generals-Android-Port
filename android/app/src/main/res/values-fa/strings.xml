@@ -751,4 +751,36 @@
     <string name="update_dialog_version">نسخه: %1$s</string>
     <string name="update_dialog_whats_new">تازه‌های این نسخه چیست؟</string>
     <string name="update_dialog_later">بعداً</string>
+
+    <!-- GeneralsX @feature Android port 09/11/2026 Phase 2: secure APK download and user-approved install -->
+    <string name="update_dialog_download">دانلود به‌روزرسانی</string>
+    <string name="update_dialog_cancel">لغو</string>
+    <string name="update_progress_title">در حال دانلود به‌روزرسانی</string>
+    <string name="update_progress_percent">%1$d%%</string>
+    <string name="update_progress_sizes">%1$s از %2$s</string>
+    <string name="update_progress_verifying">در حال بررسی دانلود…</string>
+    <string name="update_ready_title">به‌روزرسانی آماده نصب است</string>
+    <string name="update_ready_verified">دانلود و تأیید شد.</string>
+    <string name="update_ready_install">اکنون نصب کن</string>
+    <string name="update_permission_title">دسترسی لازم است</string>
+    <string name="update_permission_message">برای نصب به‌روزرسانی، اندروید به اجازه شما برای نصب برنامه از این منبع نیاز دارد. تنظیمات را باز کنید، اجازه دهید و سپس بازگردید.</string>
+    <string name="update_permission_open_settings">باز کردن تنظیمات</string>
+    <string name="update_error_title">به‌روزرسانی ناموفق بود</string>
+    <string name="update_error_retry">تلاش دوباره</string>
+    <string name="update_error_no_apk">این نسخه فایل قابل دانلودی ندارد.</string>
+    <string name="update_error_url">نشانی دانلود نامعتبر است.</string>
+    <string name="update_error_offline">دسترسی به سرور ممکن نشد. اتصال خود را بررسی کنید و دوباره تلاش کنید.</string>
+    <string name="update_error_server">سرور خطا برگرداند. بعداً دوباره تلاش کنید.</string>
+    <string name="update_error_storage">فضای کافی برای دانلود به‌روزرسانی وجود ندارد.</string>
+    <string name="update_error_size">حجم دانلود مطابقت نداشت. فایل حذف شد.</string>
+    <string name="update_error_checksum">فایل دانلودشده خراب است (عدم تطابق چک‌سام). حذف شد.</string>
+    <string name="update_error_invalid_apk">فایل دانلودشده یک بسته برنامه معتبر نیست. حذف شد.</string>
+    <string name="update_error_package">برنامه دانلودشده برنامه دیگری است. نصب رد شد.</string>
+    <string name="update_error_version">نسخه برنامه دانلودشده با این به‌روزرسانی مطابقت ندارد. نصب رد شد.</string>
+    <string name="update_error_signature">برنامه دانلودشده توسط توسعه‌دهنده این برنامه امضا نشده است. نصب رد شد.</string>
+    <string name="update_error_permission">مجوز نصب برنامه‌ها هنوز داده نشده است. نصب نمی‌تواند ادامه یابد.</string>
+    <string name="update_error_install_failed">نصب‌کننده سیستم باز نشد.</string>
+    <string name="update_install_opened">نصب را در نصب‌کننده اندروید کامل کنید.</string>
+    <string name="update_install_cancelled">نصب لغو شد.</string>
+
 </resources>

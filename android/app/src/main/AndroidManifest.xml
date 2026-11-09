@@ -74,6 +74,12 @@
          show that system prompt. -->
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
 
+    <!-- GeneralsX @feature Android port 09/11/2026 The update check can download a newer APK and
+         hand it to Android's package installer (ApkInstaller). On Android 8.0+ this is the
+         per-app "install unknown apps" permission; the install itself is still the platform
+         installer's and the user's decision. Nothing here installs silently or with root. -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+
     <!-- GeneralsX @bugfix Android port 24/09/2026 Issue #22 (Android 10): with targetSdk 29+
          Android 10 applies scoped storage unless requestLegacyExternalStorage is true, so even
          with READ_EXTERNAL_STORAGE granted, File.listFiles() cannot see the game's .big files in

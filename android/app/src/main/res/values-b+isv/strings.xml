@@ -751,4 +751,36 @@
     <string name="update_dialog_version">Izdanje: %1$s</string>
     <string name="update_dialog_whats_new">Čto jest novo?</string>
     <string name="update_dialog_later">Poslěje</string>
+
+    <!-- GeneralsX @feature Android port 09/11/2026 Phase 2: secure APK download and user-approved install -->
+    <string name="update_dialog_download">Sněti aktualizaciju</string>
+    <string name="update_dialog_cancel">Otměniti</string>
+    <string name="update_progress_title">Snětije aktualizacije</string>
+    <string name="update_progress_percent">%1$d%%</string>
+    <string name="update_progress_sizes">%1$s iz %2$s</string>
+    <string name="update_progress_verifying">Prověrka snětija…</string>
+    <string name="update_ready_title">Aktualizacija gotova k ustanovjenju</string>
+    <string name="update_ready_verified">Sněto i prověreno.</string>
+    <string name="update_ready_install">Ustanoviti nyně</string>
+    <string name="update_permission_title">Potrěbno jest dozvoljenje</string>
+    <string name="update_permission_message">Za ustanovjenje aktualizacije Androidu jest potrěbno vaše dozvoljenje k ustanovjenju aplikacij iz togo žrědla. Otvorite nastavenja, dozvolite i vratite se.</string>
+    <string name="update_permission_open_settings">Otvoriti nastavenja</string>
+    <string name="update_error_title">Aktualizacija ne uspěla</string>
+    <string name="update_error_retry">Ponoviti</string>
+    <string name="update_error_no_apk">Togo izdanja ne ima datoteka k snětiju.</string>
+    <string name="update_error_url">Adresa snětija jest nevažeća.</string>
+    <string name="update_error_offline">Ne mogu dosěgnuti server. Prověřite spojenje i poskusite znovu.</string>
+    <string name="update_error_server">Server vratil grešku. Poskusite poslěje.</string>
+    <string name="update_error_storage">Nedostatek mjesta za snětije aktualizacije.</string>
+    <string name="update_error_size">Velikost snětija ne odgovarja. Datoteka byla izbrisana.</string>
+    <string name="update_error_checksum">Sněta datoteka jest pokvarjena (nesoglasje kontrolnogo zhirka). Izbrisana.</string>
+    <string name="update_error_invalid_apk">Sněta datoteka ne jest važeći paket aplikacije. Izbrisana.</string>
+    <string name="update_error_package">Sněta aplikacija jest druga aplikacija. Ustanovjenje otkazano.</string>
+    <string name="update_error_version">Izdanje snětoj aplikacije ne odgovarja tomu aktualizovanju. Ustanovjenje otkazano.</string>
+    <string name="update_error_signature">Sněta aplikacija ne jest podpisana tvoriteljem toj aplikacije. Ustanovjenje otkazano.</string>
+    <string name="update_error_permission">Dozvoljenje k ustanovjenju aplikacij ne jest dano. Ustanovjenje ne može prodolžiti.</string>
+    <string name="update_error_install_failed">Sistemny ustanovitelj ne mog byti otvoren.</string>
+    <string name="update_install_opened">Završite ustanovjenje v Androidnom ustanovitelju.</string>
+    <string name="update_install_cancelled">Ustanovjenje otkazano.</string>
+
 </resources>

@@ -751,4 +751,36 @@
     <string name="update_dialog_version">Wersja: %1$s</string>
     <string name="update_dialog_whats_new">Co nowego?</string>
     <string name="update_dialog_later">Później</string>
+
+    <!-- GeneralsX @feature Android port 09/11/2026 Phase 2: secure APK download and user-approved install -->
+    <string name="update_dialog_download">Pobierz aktualizację</string>
+    <string name="update_dialog_cancel">Anuluj</string>
+    <string name="update_progress_title">Pobieranie aktualizacji</string>
+    <string name="update_progress_percent">%1$d%%</string>
+    <string name="update_progress_sizes">%1$s z %2$s</string>
+    <string name="update_progress_verifying">Weryfikowanie pobranego pliku…</string>
+    <string name="update_ready_title">Aktualizacja gotowa do instalacji</string>
+    <string name="update_ready_verified">Pobrano i zweryfikowano.</string>
+    <string name="update_ready_install">Zainstaluj teraz</string>
+    <string name="update_permission_title">Wymagane uprawnienie</string>
+    <string name="update_permission_message">Aby zainstalować aktualizację, Android potrzebuje Twojej zgody na instalowanie aplikacji z tego źródła. Otwórz ustawienia, udziel zgody i wróć.</string>
+    <string name="update_permission_open_settings">Otwórz ustawienia</string>
+    <string name="update_error_title">Aktualizacja nie powiodła się</string>
+    <string name="update_error_retry">Ponów</string>
+    <string name="update_error_no_apk">Ta wersja nie zawiera pliku do pobrania.</string>
+    <string name="update_error_url">Adres pobierania jest nieprawidłowy.</string>
+    <string name="update_error_offline">Nie można połączyć się z serwerem. Sprawdź połączenie i spróbuj ponownie.</string>
+    <string name="update_error_server">Serwer zwrócił błąd. Spróbuj później.</string>
+    <string name="update_error_storage">Za mało miejsca na pobranie aktualizacji.</string>
+    <string name="update_error_size">Rozmiar pobrania się nie zgadzał. Plik odrzucono.</string>
+    <string name="update_error_checksum">Pobrany plik jest uszkodzony (niezgodność sumy kontrolnej). Został odrzucony.</string>
+    <string name="update_error_invalid_apk">Pobrany plik nie jest prawidłowym pakietem aplikacji. Został odrzucony.</string>
+    <string name="update_error_package">Pobrana aplikacja to inna aplikacja. Instalacja została odrzucona.</string>
+    <string name="update_error_version">Wersja pobranej aplikacji nie pasuje do tej aktualizacji. Instalacja została odrzucona.</string>
+    <string name="update_error_signature">Pobrana aplikacja nie jest podpisana przez twórcę tej aplikacji. Instalacja została odrzucona.</string>
+    <string name="update_error_permission">Uprawnienie do instalowania aplikacji nadal nie zostało przyznane. Nie można kontynuować.</string>
+    <string name="update_error_install_failed">Nie można otworzyć instalatora systemowego.</string>
+    <string name="update_install_opened">Dokończ instalację w instalatorze Androida.</string>
+    <string name="update_install_cancelled">Instalacja została anulowana.</string>
+
 </resources>

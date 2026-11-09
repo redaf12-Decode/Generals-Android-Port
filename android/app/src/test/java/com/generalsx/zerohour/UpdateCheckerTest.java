@@ -197,7 +197,90 @@ public class UpdateCheckerTest {
         assertTrue(UpdateChecker.installedVersionCode(app()) >= 0);
     }
 
+    // ------------------------------------------------------------------ Phase 2 APK fields
+
+    @Test
+    public void parsesTheApkFieldsOfAPhaseTwoManifest() {
+        UpdateChecker.Update update = UpdateChecker.parse(
+            "{\"versionCode\":10500,\"versionName\":\"1.5.0\",\"packageName\":\"com.ports.generalsx\","
+            + "\"apkUrl\":\"https://github.com/redaf12-Decode/Generals-Android-Port/releases/download/v1.5.0/app-release.apk\","
+            + "\"apkSha256\":\"0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef\","
+            + "\"apkSizeBytes\":123456789}");
+        assertNotNull(update);
+        assertTrue(update.hasApk());
+        assertEquals("com.ports.generalsx", update.packageName);
+        assertEquals(123456789L, update.apkSizeBytes);
+        assertEquals("0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+            update.apkSha256);
+    }
+
+    /** A manifest with no APK fields is still a valid Phase 1 notification, just with no install. */
+    @Test
+    public void anUpdateWithoutApkFieldsStillParses() {
+        UpdateChecker.Update update = UpdateChecker.parse("{\"versionCode\":10500}");
+        assertNotNull(update);
+        assertFalse(update.hasApk());
+        assertEquals("", update.apkUrl);
+        assertEquals(0L, update.apkSizeBytes);
+    }
+
+    /** The checksum is normalized to lower case so a manifest may publish either case. */
+    @Test
+    public void checksumIsLowerCased() {
+        UpdateChecker.Update update = UpdateChecker.parse(
+            "{\"versionCode\":1,\"apkUrl\":\"" + APK_URL + "\","
+            + "\"apkSha256\":\"ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789\"}");
+        assertEquals("abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789",
+            update.apkSha256);
+    }
+
+    /** A checksum that is not 64 hex characters, or a URL off this host, drops the download. */
+    @Test
+    public void aBadChecksumOrForeignUrlDropsTheApk() {
+        assertFalse(UpdateChecker.parse(
+            "{\"versionCode\":1,\"apkUrl\":\"" + APK_URL + "\",\"apkSha256\":\"abc\"}").hasApk());
+        assertFalse(UpdateChecker.parse(
+            "{\"versionCode\":1,\"apkUrl\":\"https://evil.example/app.apk\","
+            + "\"apkSha256\":\"" + SHA + "\"}").hasApk());
+        assertFalse(UpdateChecker.parse(
+            "{\"versionCode\":1,\"apkUrl\":\"http://github.com/redaf12-Decode/Generals-Android-Port/x\","
+            + "\"apkSha256\":\"" + SHA + "\"}").hasApk());
+    }
+
+    @Test
+    public void onlyThisRepositorysHttpsUrlsAreAccepted() {
+        assertTrue(UpdateChecker.isAcceptableApkUrl(APK_URL));
+        assertFalse(UpdateChecker.isAcceptableApkUrl(null));
+        assertFalse(UpdateChecker.isAcceptableApkUrl(""));
+        assertFalse(UpdateChecker.isAcceptableApkUrl("https://github.com/other/repo/releases/x"));
+        assertFalse(UpdateChecker.isAcceptableApkUrl("https://evil.example/github.com/redaf12-Decode/Generals-Android-Port/"));
+    }
+
+    @Test
+    public void aNegativeSizeIsTreatedAsUnknown() {
+        UpdateChecker.Update update = UpdateChecker.parse(
+            "{\"versionCode\":1,\"apkSizeBytes\":-5}");
+        assertEquals(0L, update.apkSizeBytes);
+    }
+
+    @Test
+    public void sha256ShapeIsSixtyFourHexCharacters() {
+        assertTrue(UpdateChecker.isSha256(SHA));
+        assertTrue(UpdateChecker.isSha256(SHA.toUpperCase(java.util.Locale.ROOT)));
+        assertFalse(UpdateChecker.isSha256(null));
+        assertFalse(UpdateChecker.isSha256(""));
+        assertFalse(UpdateChecker.isSha256("abc"));
+        assertFalse(UpdateChecker.isSha256(SHA + "0"));
+        assertFalse(UpdateChecker.isSha256("g" + SHA.substring(1)));
+    }
+
+    private static final String APK_URL =
+        "https://github.com/redaf12-Decode/Generals-Android-Port/releases/download/v1.5.0/app-release.apk";
+    private static final String SHA =
+        "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
+
     private static UpdateChecker.Update update(int versionCode) {
-        return new UpdateChecker.Update(versionCode, "1.0.0", java.util.Collections.emptyList());
+        return new UpdateChecker.Update(versionCode, "1.0.0", java.util.Collections.emptyList(),
+            "", "", "", 0L);
     }
 }

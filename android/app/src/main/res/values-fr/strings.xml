@@ -751,4 +751,36 @@
     <string name="update_dialog_version">Version : %1$s</string>
     <string name="update_dialog_whats_new">Quoi de neuf ?</string>
     <string name="update_dialog_later">Plus tard</string>
+
+    <!-- GeneralsX @feature Android port 09/11/2026 Phase 2: secure APK download and user-approved install -->
+    <string name="update_dialog_download">Télécharger la mise à jour</string>
+    <string name="update_dialog_cancel">Annuler</string>
+    <string name="update_progress_title">Téléchargement de la mise à jour</string>
+    <string name="update_progress_percent">%1$d%%</string>
+    <string name="update_progress_sizes">%1$s sur %2$s</string>
+    <string name="update_progress_verifying">Vérification du téléchargement…</string>
+    <string name="update_ready_title">Mise à jour prête à installer</string>
+    <string name="update_ready_verified">Téléchargé et vérifié.</string>
+    <string name="update_ready_install">Installer maintenant</string>
+    <string name="update_permission_title">Autorisation requise</string>
+    <string name="update_permission_message">Pour installer la mise à jour, Android a besoin de votre autorisation d’installer des applications depuis cette source. Ouvrez les paramètres, autorisez-la, puis revenez.</string>
+    <string name="update_permission_open_settings">Ouvrir les paramètres</string>
+    <string name="update_error_title">Échec de la mise à jour</string>
+    <string name="update_error_retry">Réessayer</string>
+    <string name="update_error_no_apk">Cette version ne contient pas de fichier téléchargeable.</string>
+    <string name="update_error_url">L’adresse de téléchargement est invalide.</string>
+    <string name="update_error_offline">Impossible de joindre le serveur. Vérifiez votre connexion et réessayez.</string>
+    <string name="update_error_server">Le serveur a renvoyé une erreur. Réessayez plus tard.</string>
+    <string name="update_error_storage">Espace insuffisant pour télécharger la mise à jour.</string>
+    <string name="update_error_size">La taille du téléchargement ne correspond pas. Le fichier a été supprimé.</string>
+    <string name="update_error_checksum">Le fichier téléchargé est corrompu (somme de contrôle incorrecte). Il a été supprimé.</string>
+    <string name="update_error_invalid_apk">Le fichier téléchargé n’est pas un paquet d’application valide. Il a été supprimé.</string>
+    <string name="update_error_package">L’application téléchargée est une autre application. L’installation a été refusée.</string>
+    <string name="update_error_version">La version de l’application téléchargée ne correspond pas à cette mise à jour. L’installation a été refusée.</string>
+    <string name="update_error_signature">L’application téléchargée n’est pas signée par le développeur de cette application. L’installation a été refusée.</string>
+    <string name="update_error_permission">L’autorisation d’installer des applications n’est toujours pas accordée. L’installation ne peut pas continuer.</string>
+    <string name="update_error_install_failed">Le programme d’installation du système n’a pas pu être ouvert.</string>
+    <string name="update_install_opened">Terminez l’installation dans le programme d’installation Android.</string>
+    <string name="update_install_cancelled">L’installation a été annulée.</string>
+
 </resources>

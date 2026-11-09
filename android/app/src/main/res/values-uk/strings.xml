@@ -751,4 +751,36 @@
     <string name="update_dialog_version">Версія: %1$s</string>
     <string name="update_dialog_whats_new">Що нового?</string>
     <string name="update_dialog_later">Пізніше</string>
+
+    <!-- GeneralsX @feature Android port 09/11/2026 Phase 2: secure APK download and user-approved install -->
+    <string name="update_dialog_download">Завантажити оновлення</string>
+    <string name="update_dialog_cancel">Скасувати</string>
+    <string name="update_progress_title">Завантаження оновлення</string>
+    <string name="update_progress_percent">%1$d%%</string>
+    <string name="update_progress_sizes">%1$s з %2$s</string>
+    <string name="update_progress_verifying">Перевірка завантаження…</string>
+    <string name="update_ready_title">Оновлення готове до встановлення</string>
+    <string name="update_ready_verified">Завантажено й перевірено.</string>
+    <string name="update_ready_install">Встановити зараз</string>
+    <string name="update_permission_title">Потрібен дозвіл</string>
+    <string name="update_permission_message">Щоб установити оновлення, Android потрібен ваш дозвіл на встановлення програм із цього джерела. Відкрийте налаштування, дозвольте й поверніться.</string>
+    <string name="update_permission_open_settings">Відкрити налаштування</string>
+    <string name="update_error_title">Не вдалося оновити</string>
+    <string name="update_error_retry">Повторити</string>
+    <string name="update_error_no_apk">У цьому випуску немає файлу для завантаження.</string>
+    <string name="update_error_url">Адреса завантаження недійсна.</string>
+    <string name="update_error_offline">Не вдалося зв\'язатися із сервером. Перевірте з\'єднання та повторіть спробу.</string>
+    <string name="update_error_server">Сервер повернув помилку. Спробуйте пізніше.</string>
+    <string name="update_error_storage">Недостатньо місця для завантаження оновлення.</string>
+    <string name="update_error_size">Розмір завантаження не збігся. Файл видалено.</string>
+    <string name="update_error_checksum">Завантажений файл пошкоджено (невідповідність контрольної суми). Його видалено.</string>
+    <string name="update_error_invalid_apk">Завантажений файл не є допустимим пакетом програми. Його видалено.</string>
+    <string name="update_error_package">Завантажена програма — інша програма. Встановлення відхилено.</string>
+    <string name="update_error_version">Версія завантаженої програми не відповідає цьому оновленню. Встановлення відхилено.</string>
+    <string name="update_error_signature">Завантажену програму не підписано розробником цієї програми. Встановлення відхилено.</string>
+    <string name="update_error_permission">Дозвіл на встановлення програм досі не надано. Встановлення не може продовжитися.</string>
+    <string name="update_error_install_failed">Не вдалося відкрити системний інсталятор.</string>
+    <string name="update_install_opened">Завершіть встановлення в інсталяторі Android.</string>
+    <string name="update_install_cancelled">Встановлення скасовано.</string>
+
 </resources>

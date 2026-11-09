@@ -751,4 +751,36 @@
     <string name="update_dialog_version">Version: %1$s</string>
     <string name="update_dialog_whats_new">Was ist neu?</string>
     <string name="update_dialog_later">Später</string>
+
+    <!-- GeneralsX @feature Android port 09/11/2026 Phase 2: secure APK download and user-approved install -->
+    <string name="update_dialog_download">Update herunterladen</string>
+    <string name="update_dialog_cancel">Abbrechen</string>
+    <string name="update_progress_title">Update wird heruntergeladen</string>
+    <string name="update_progress_percent">%1$d%%</string>
+    <string name="update_progress_sizes">%1$s von %2$s</string>
+    <string name="update_progress_verifying">Download wird überprüft…</string>
+    <string name="update_ready_title">Update bereit zur Installation</string>
+    <string name="update_ready_verified">Heruntergeladen und überprüft.</string>
+    <string name="update_ready_install">Jetzt installieren</string>
+    <string name="update_permission_title">Berechtigung erforderlich</string>
+    <string name="update_permission_message">Um das Update zu installieren, benötigt Android Ihre Erlaubnis, Apps aus dieser Quelle zu installieren. Öffnen Sie die Einstellungen, erlauben Sie es und kommen Sie dann zurück.</string>
+    <string name="update_permission_open_settings">Einstellungen öffnen</string>
+    <string name="update_error_title">Update fehlgeschlagen</string>
+    <string name="update_error_retry">Wiederholen</string>
+    <string name="update_error_no_apk">Diese Version enthält keine herunterladbare Datei.</string>
+    <string name="update_error_url">Die Download-Adresse ist ungültig.</string>
+    <string name="update_error_offline">Der Server ist nicht erreichbar. Prüfen Sie Ihre Verbindung und versuchen Sie es erneut.</string>
+    <string name="update_error_server">Der Server meldete einen Fehler. Versuchen Sie es später erneut.</string>
+    <string name="update_error_storage">Nicht genügend Speicherplatz für das Update.</string>
+    <string name="update_error_size">Die Download-Größe stimmte nicht. Die Datei wurde verworfen.</string>
+    <string name="update_error_checksum">Die heruntergeladene Datei ist beschädigt (Prüfsumme stimmt nicht). Sie wurde verworfen.</string>
+    <string name="update_error_invalid_apk">Die heruntergeladene Datei ist kein gültiges App-Paket. Sie wurde verworfen.</string>
+    <string name="update_error_package">Die heruntergeladene App ist eine andere Anwendung. Die Installation wurde abgelehnt.</string>
+    <string name="update_error_version">Die Version der heruntergeladenen App passt nicht zu diesem Update. Die Installation wurde abgelehnt.</string>
+    <string name="update_error_signature">Die heruntergeladene App ist nicht vom Entwickler dieser App signiert. Die Installation wurde abgelehnt.</string>
+    <string name="update_error_permission">Die Berechtigung zum Installieren von Apps wurde nicht erteilt. Die Installation kann nicht fortgesetzt werden.</string>
+    <string name="update_error_install_failed">Der System-Installer konnte nicht geöffnet werden.</string>
+    <string name="update_install_opened">Schließen Sie die Installation im Android-Installer ab.</string>
+    <string name="update_install_cancelled">Die Installation wurde abgebrochen.</string>
+
 </resources>

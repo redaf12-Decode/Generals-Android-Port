@@ -266,10 +266,22 @@ public class SetupActivity extends Activity {
         moveOffVulkanOnce();
         // GeneralsX @feature Android port 09/11/2026 A newer version of this launcher is
         // published as update.json on the project's GitHub repository. The check is a background
-        // HTTPS fetch, done once per app session, and it only ever shows a dialog: it installs
-        // nothing (Phase 1). A failure -- offline, timeout, HTTP error, malformed JSON -- is
-        // silent, so the launcher behaves exactly as it would without the check.
+        // HTTPS fetch, done once per app session, and it only ever shows a dialog: it downloads
+        // and verifies an APK (Phase 2) but leaves the install to Android's package installer and
+        // the user. A failure -- offline, timeout, HTTP error, malformed JSON -- is silent, so the
+        // launcher behaves exactly as it would without the check.
         UpdateChecker.maybeCheck(this);
+        // A download that outlived the previous screen (the process is kept; this activity was
+        // recreated) is re-attached rather than restarted. Obsolete partial APKs are cleared.
+        UpdateDialog.resumeIfDownloading(this);
+    }
+
+    @Override
+    protected void onDestroy() {
+        // GeneralsX @feature Android port 09/11/2026 Do not leave the download holding a dead
+        // Activity: detaching lets it keep running (or finish) without touching a destroyed UI.
+        ApkInstaller.detach(this);
+        super.onDestroy();
     }
 
     @Override
@@ -4317,6 +4329,14 @@ public class SetupActivity extends Activity {
             if (uri != null) {
                 importCustomDriver(uri);
             }
+        } else if (requestCode == ApkInstaller.REQUEST_INSTALL) {
+            // GeneralsX @feature Android port 09/11/2026 The package installer came back. This
+            // only reports; whether the install really happened is settled by the next version
+            // check, which reads the version from PackageManager rather than trusting this result.
+            ApkInstaller.onInstallResult(this, resultCode);
+        } else if (requestCode == ApkInstaller.REQUEST_INSTALL_PERMISSION) {
+            // Back from the "install unknown apps" screen: recheck and, if now allowed, install.
+            ApkInstaller.onInstallPermissionResult(this, requestCode);
         }
     }
 

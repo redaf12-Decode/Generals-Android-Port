@@ -763,4 +763,36 @@
     <string name="update_dialog_version">Version: %1$s</string>
     <string name="update_dialog_whats_new">What\'s New?</string>
     <string name="update_dialog_later">Later</string>
+
+    <!-- GeneralsX @feature Android port 09/11/2026 Phase 2: secure APK download and user-approved install -->
+    <string name="update_dialog_download">Download Update</string>
+    <string name="update_dialog_cancel">Cancel</string>
+    <string name="update_progress_title">Downloading Update</string>
+    <string name="update_progress_percent">%1$d%%</string>
+    <string name="update_progress_sizes">%1$s of %2$s</string>
+    <string name="update_progress_verifying">Verifying the download…</string>
+    <string name="update_ready_title">Update Ready to Install</string>
+    <string name="update_ready_verified">Downloaded and verified.</string>
+    <string name="update_ready_install">Install Now</string>
+    <string name="update_permission_title">Permission Needed</string>
+    <string name="update_permission_message">To install the update, Android needs your permission to install apps from this source. Open the settings screen and allow it, then come back.</string>
+    <string name="update_permission_open_settings">Open Settings</string>
+    <string name="update_error_title">Update Failed</string>
+    <string name="update_error_retry">Retry</string>
+    <string name="update_error_no_apk">This release does not include a downloadable file.</string>
+    <string name="update_error_url">The download address is invalid.</string>
+    <string name="update_error_offline">Could not reach the server. Check your connection and try again.</string>
+    <string name="update_error_server">The server returned an error. Try again later.</string>
+    <string name="update_error_storage">Not enough free space to download the update.</string>
+    <string name="update_error_size">The download size did not match. The file was discarded.</string>
+    <string name="update_error_checksum">The downloaded file is damaged (checksum mismatch). It was discarded.</string>
+    <string name="update_error_invalid_apk">The downloaded file is not a valid app package. It was discarded.</string>
+    <string name="update_error_package">The downloaded app is a different application. Installation was refused.</string>
+    <string name="update_error_version">The downloaded app’s version does not match this update. Installation was refused.</string>
+    <string name="update_error_signature">The downloaded app is not signed by this app’s developer. Installation was refused.</string>
+    <string name="update_error_permission">Permission to install apps is still not granted. Installation cannot continue.</string>
+    <string name="update_error_install_failed">The system installer could not be opened.</string>
+    <string name="update_install_opened">Finish the installation in the Android installer.</string>
+    <string name="update_install_cancelled">Installation was cancelled.</string>
+
 </resources>

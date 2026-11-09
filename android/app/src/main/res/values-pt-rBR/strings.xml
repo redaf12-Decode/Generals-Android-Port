@@ -751,4 +751,36 @@
     <string name="update_dialog_version">Versão: %1$s</string>
     <string name="update_dialog_whats_new">Novidades</string>
     <string name="update_dialog_later">Mais tarde</string>
+
+    <!-- GeneralsX @feature Android port 09/11/2026 Phase 2: secure APK download and user-approved install -->
+    <string name="update_dialog_download">Baixar atualização</string>
+    <string name="update_dialog_cancel">Cancelar</string>
+    <string name="update_progress_title">Baixando atualização</string>
+    <string name="update_progress_percent">%1$d%%</string>
+    <string name="update_progress_sizes">%1$s de %2$s</string>
+    <string name="update_progress_verifying">Verificando o download…</string>
+    <string name="update_ready_title">Atualização pronta para instalar</string>
+    <string name="update_ready_verified">Baixado e verificado.</string>
+    <string name="update_ready_install">Instalar agora</string>
+    <string name="update_permission_title">Permissão necessária</string>
+    <string name="update_permission_message">Para instalar a atualização, o Android precisa da sua permissão para instalar aplicativos desta fonte. Abra as configurações, permita e volte.</string>
+    <string name="update_permission_open_settings">Abrir configurações</string>
+    <string name="update_error_title">Falha na atualização</string>
+    <string name="update_error_retry">Tentar novamente</string>
+    <string name="update_error_no_apk">Esta versão não inclui um arquivo para download.</string>
+    <string name="update_error_url">O endereço de download é inválido.</string>
+    <string name="update_error_offline">Não foi possível contactar o servidor. Verifique sua conexão e tente novamente.</string>
+    <string name="update_error_server">O servidor retornou um erro. Tente novamente mais tarde.</string>
+    <string name="update_error_storage">Espaço insuficiente para baixar a atualização.</string>
+    <string name="update_error_size">O tamanho do download não correspondeu. O arquivo foi descartado.</string>
+    <string name="update_error_checksum">O arquivo baixado está corrompido (soma de verificação incorreta). Foi descartado.</string>
+    <string name="update_error_invalid_apk">O arquivo baixado não é um pacote de aplicativo válido. Foi descartado.</string>
+    <string name="update_error_package">O aplicativo baixado é outro aplicativo. A instalação foi recusada.</string>
+    <string name="update_error_version">A versão do aplicativo baixado não corresponde a esta atualização. A instalação foi recusada.</string>
+    <string name="update_error_signature">O aplicativo baixado não é assinado pelo desenvolvedor deste aplicativo. A instalação foi recusada.</string>
+    <string name="update_error_permission">A permissão para instalar aplicativos ainda não foi concedida. Não é possível continuar.</string>
+    <string name="update_error_install_failed">Não foi possível abrir o instalador do sistema.</string>
+    <string name="update_install_opened">Conclua a instalação no instalador do Android.</string>
+    <string name="update_install_cancelled">A instalação foi cancelada.</string>
+
 </resources>

@@ -753,4 +753,36 @@
     <string name="update_dialog_version">Версия: %1$s</string>
     <string name="update_dialog_whats_new">Что нового?</string>
     <string name="update_dialog_later">Позже</string>
+
+    <!-- GeneralsX @feature Android port 09/11/2026 Phase 2: secure APK download and user-approved install -->
+    <string name="update_dialog_download">Скачать обновление</string>
+    <string name="update_dialog_cancel">Отмена</string>
+    <string name="update_progress_title">Загрузка обновления</string>
+    <string name="update_progress_percent">%1$d%%</string>
+    <string name="update_progress_sizes">%1$s из %2$s</string>
+    <string name="update_progress_verifying">Проверка загруженного файла…</string>
+    <string name="update_ready_title">Обновление готово к установке</string>
+    <string name="update_ready_verified">Загружено и проверено.</string>
+    <string name="update_ready_install">Установить сейчас</string>
+    <string name="update_permission_title">Требуется разрешение</string>
+    <string name="update_permission_message">Чтобы установить обновление, Android нужно ваше разрешение на установку приложений из этого источника. Откройте настройки, разрешите и вернитесь.</string>
+    <string name="update_permission_open_settings">Открыть настройки</string>
+    <string name="update_error_title">Не удалось обновить</string>
+    <string name="update_error_retry">Повторить</string>
+    <string name="update_error_no_apk">В этом выпуске нет файла для загрузки.</string>
+    <string name="update_error_url">Адрес загрузки недействителен.</string>
+    <string name="update_error_offline">Не удалось связаться с сервером. Проверьте подключение и повторите попытку.</string>
+    <string name="update_error_server">Сервер вернул ошибку. Повторите попытку позже.</string>
+    <string name="update_error_storage">Недостаточно места для загрузки обновления.</string>
+    <string name="update_error_size">Размер загруженного файла не совпал. Файл удалён.</string>
+    <string name="update_error_checksum">Загруженный файл повреждён (несовпадение контрольной суммы). Он удалён.</string>
+    <string name="update_error_invalid_apk">Загруженный файл не является допустимым пакетом приложения. Он удалён.</string>
+    <string name="update_error_package">Загруженное приложение — другое приложение. Установка отклонена.</string>
+    <string name="update_error_version">Версия загруженного приложения не соответствует этому обновлению. Установка отклонена.</string>
+    <string name="update_error_signature">Загруженное приложение не подписано разработчиком этого приложения. Установка отклонена.</string>
+    <string name="update_error_permission">Разрешение на установку приложений так и не выдано. Установка не может продолжиться.</string>
+    <string name="update_error_install_failed">Не удалось открыть системный установщик.</string>
+    <string name="update_install_opened">Завершите установку в установщике Android.</string>
+    <string name="update_install_cancelled">Установка отменена.</string>
+
 </resources>

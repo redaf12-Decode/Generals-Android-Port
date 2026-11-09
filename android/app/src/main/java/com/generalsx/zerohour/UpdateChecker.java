@@ -4,13 +4,7 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
-import android.graphics.Typeface;
 import android.util.Log;
-import android.util.TypedValue;
-import android.view.ViewGroup;
-import android.widget.LinearLayout;
-import android.widget.ScrollView;
-import android.widget.TextView;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -25,6 +19,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * GeneralsX @feature Android port 09/11/2026 A simple "a newer version exists" check, separate
@@ -70,16 +65,40 @@ final class UpdateChecker {
     private UpdateChecker() {
     }
 
+    /**
+     * GeneralsX @feature Android port 09/11/2026 Phase 2: the GitHub repository whose Releases
+     * host the APK asset. Only an apkUrl under this prefix is accepted, so the remote JSON cannot
+     * point the download anywhere else. Must stay a plain https:// host prefix.
+     */
+    static final String APK_URL_PREFIX = "https://github.com/redaf12-Decode/Generals-Android-Port/";
+
     /** The remote version, or null when the check could not produce one. */
     static final class Update {
         final int versionCode;
         final String versionName;
         final List<String> releaseNotes;
+        // Phase 2: the downloadable APK, when the release publishes one. All four are optional
+        // together -- a JSON without them still drives Phase 1's notification, it just has no
+        // Install action.
+        final String packageName;
+        final String apkUrl;
+        final String apkSha256;
+        final long apkSizeBytes;
 
-        Update(int versionCode, String versionName, List<String> releaseNotes) {
+        Update(int versionCode, String versionName, List<String> releaseNotes,
+               String packageName, String apkUrl, String apkSha256, long apkSizeBytes) {
             this.versionCode = versionCode;
             this.versionName = versionName;
             this.releaseNotes = releaseNotes;
+            this.packageName = packageName;
+            this.apkUrl = apkUrl;
+            this.apkSha256 = apkSha256;
+            this.apkSizeBytes = apkSizeBytes;
+        }
+
+        /** True when this update carries a download this launcher is willing to fetch. */
+        boolean hasApk() {
+            return !apkUrl.isEmpty();
         }
     }
 
@@ -148,7 +167,36 @@ final class UpdateChecker {
                 }
             }
         }
-        return new Update(versionCode, versionName, Collections.unmodifiableList(notes));
+        // Phase 2 fields. They are read loosely: an apkUrl that is missing, not https, not under
+        // this repository, or whose sha256 is not 64 hex characters is dropped (leaving apkUrl
+        // empty), so an Update either carries a fetchable APK or none -- never a half-usable one.
+        String packageName = obj.optString("packageName", "").trim();
+        String apkUrl = obj.optString("apkUrl", "").trim();
+        String apkSha256 = obj.optString("apkSha256", "").trim().toLowerCase(Locale.ROOT);
+        long apkSizeBytes = obj.optLong("apkSizeBytes", 0L);
+        if (!isAcceptableApkUrl(apkUrl) || !isSha256(apkSha256)) {
+            apkUrl = "";
+        }
+        if (apkSizeBytes < 0) {
+            apkSizeBytes = 0;
+        }
+
+        return new Update(versionCode, versionName, Collections.unmodifiableList(notes),
+            packageName, apkUrl, apkUrl.isEmpty() ? "" : apkSha256, apkSizeBytes);
+    }
+
+    /**
+     * Only an https URL on this project's GitHub host is accepted. The download then follows
+     * GitHub's own HTTPS redirects to the release asset; an http:// URL, or a host anywhere else,
+     * is refused outright rather than being trusted to redirect somewhere safe.
+     */
+    static boolean isAcceptableApkUrl(String url) {
+        return url != null && url.startsWith(APK_URL_PREFIX);
+    }
+
+    /** Exactly 64 hexadecimal characters, the shape of a SHA-256 digest. */
+    static boolean isSha256(String value) {
+        return value != null && value.matches("[0-9a-fA-F]{64}");
     }
 
     /**
@@ -225,7 +273,7 @@ final class UpdateChecker {
                 if (!shouldNotify(activity, update)) {
                     return;
                 }
-                showDialog(activity, update);
+                UpdateDialog.show(activity, update);
             });
         }, "gx-app-update").start();
     }
@@ -246,94 +294,6 @@ final class UpdateChecker {
     /** True unless this exact version has already been shown (a newer one always notifies). */
     static boolean shouldNotify(Context ctx, Update update) {
         return update != null && update.versionCode > notifiedVersionCode(ctx);
-    }
-
-    // ---------------------------------------------------------------------------------------
-    // The dialog
-
-    static void showDialog(final Activity activity, Update update) {
-        markNotified(activity, update.versionCode);
-
-        LinearLayout body = new LinearLayout(activity);
-        body.setOrientation(LinearLayout.VERTICAL);
-        int pad = UiKit.dim(activity, R.dimen.gzh_card_padding);
-        body.setPadding(pad, pad, pad, 0);
-
-        String label = update.versionName.isEmpty()
-            ? Integer.toString(update.versionCode) : update.versionName;
-        TextView version = new TextView(activity);
-        version.setText(activity.getString(R.string.update_dialog_version, label));
-        version.setTextSize(TypedValue.COMPLEX_UNIT_PX, UiKit.dim(activity, R.dimen.gzh_text_body));
-        version.setTextColor(UiKit.color(activity, R.color.gzh_primary));
-        version.setTypeface(Typeface.DEFAULT_BOLD);
-        body.addView(version);
-
-        if (!update.releaseNotes.isEmpty()) {
-            TextView header = new TextView(activity);
-            header.setText(R.string.update_dialog_whats_new);
-            header.setTextSize(TypedValue.COMPLEX_UNIT_PX, UiKit.dim(activity, R.dimen.gzh_text_body));
-            header.setTextColor(UiKit.color(activity, R.color.gzh_on_surface));
-            header.setTypeface(Typeface.DEFAULT_BOLD);
-            LinearLayout.LayoutParams headerParams = new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-            headerParams.topMargin = UiKit.dim(activity, R.dimen.gzh_item_gap);
-            body.addView(header, headerParams);
-
-            TextView notes = new TextView(activity);
-            notes.setText(bullets(update.releaseNotes));
-            notes.setTextSize(TypedValue.COMPLEX_UNIT_PX, UiKit.dim(activity, R.dimen.gzh_text_body));
-            notes.setTextColor(UiKit.color(activity, R.color.gzh_on_surface_variant));
-            notes.setLineSpacing(0f, 1.3f);
-
-            int maxHeight = Math.round(
-                activity.getResources().getDisplayMetrics().heightPixels * 0.45f);
-            ScrollView scroll = new CappedScrollView(activity, maxHeight);
-            scroll.addView(notes, new ViewGroup.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-            LinearLayout.LayoutParams scrollParams = new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-            scrollParams.topMargin = UiKit.dp(activity, 4);
-            body.addView(scroll, scrollParams);
-        }
-
-        new com.google.android.material.dialog.MaterialAlertDialogBuilder(activity)
-            .setTitle(R.string.update_dialog_title)
-            .setIcon(R.mipmap.ic_launcher)
-            .setView(body)
-            .setPositiveButton(R.string.update_dialog_later, null)
-            .show();
-    }
-
-    /** "- note" lines; the notes are plain text and are never interpreted as markup. */
-    private static String bullets(List<String> notes) {
-        StringBuilder sb = new StringBuilder();
-        for (String note : notes) {
-            if (sb.length() > 0) {
-                sb.append('\n');
-            }
-            sb.append("\u2022 ").append(note);
-        }
-        return sb.toString();
-    }
-
-    /**
-     * A ScrollView that wraps its content but never grows past {@code maxHeight}, so a long release
-     * notes list scrolls instead of pushing the dialog off the screen. A plain LinearLayout child
-     * has no maxHeight, hence the override.
-     */
-    private static final class CappedScrollView extends ScrollView {
-        private final int maxHeight;
-
-        CappedScrollView(Context context, int maxHeight) {
-            super(context);
-            this.maxHeight = maxHeight;
-        }
-
-        @Override
-        protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-            int capped = MeasureSpec.makeMeasureSpec(maxHeight, MeasureSpec.AT_MOST);
-            super.onMeasure(widthMeasureSpec, capped);
-        }
     }
 
     // ---------------------------------------------------------------------------------------

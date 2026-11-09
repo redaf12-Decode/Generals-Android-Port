@@ -751,4 +751,36 @@
     <string name="update_dialog_version">الإصدار: %1$s</string>
     <string name="update_dialog_whats_new">ما الجديد؟</string>
     <string name="update_dialog_later">لاحقًا</string>
+
+    <!-- GeneralsX @feature Android port 09/11/2026 Phase 2: secure APK download and user-approved install -->
+    <string name="update_dialog_download">تنزيل التحديث</string>
+    <string name="update_dialog_cancel">إلغاء</string>
+    <string name="update_progress_title">جارٍ تنزيل التحديث</string>
+    <string name="update_progress_percent">%1$d%%</string>
+    <string name="update_progress_sizes">%1$s من %2$s</string>
+    <string name="update_progress_verifying">جارٍ التحقق من التنزيل…</string>
+    <string name="update_ready_title">التحديث جاهز للتثبيت</string>
+    <string name="update_ready_verified">تم التنزيل والتحقق.</string>
+    <string name="update_ready_install">تثبيت الآن</string>
+    <string name="update_permission_title">الإذن مطلوب</string>
+    <string name="update_permission_message">لتثبيت التحديث، يحتاج Android إلى إذنك لتثبيت التطبيقات من هذا المصدر. افتح شاشة الإعدادات واسمح بذلك ثم عُد.</string>
+    <string name="update_permission_open_settings">فتح الإعدادات</string>
+    <string name="update_error_title">فشل التحديث</string>
+    <string name="update_error_retry">إعادة المحاولة</string>
+    <string name="update_error_no_apk">لا يتضمن هذا الإصدار ملفًا قابلًا للتنزيل.</string>
+    <string name="update_error_url">عنوان التنزيل غير صالح.</string>
+    <string name="update_error_offline">تعذّر الوصول إلى الخادم. تحقق من اتصالك وحاول مجددًا.</string>
+    <string name="update_error_server">أعاد الخادم خطأ. حاول لاحقًا.</string>
+    <string name="update_error_storage">لا توجد مساحة كافية لتنزيل التحديث.</string>
+    <string name="update_error_size">حجم التنزيل غير مطابق. تم حذف الملف.</string>
+    <string name="update_error_checksum">الملف الذي تم تنزيله تالف (عدم تطابق التحقق). تم حذفه.</string>
+    <string name="update_error_invalid_apk">الملف الذي تم تنزيله ليس حزمة تطبيق صالحة. تم حذفه.</string>
+    <string name="update_error_package">التطبيق الذي تم تنزيله تطبيق مختلف. تم رفض التثبيت.</string>
+    <string name="update_error_version">إصدار التطبيق الذي تم تنزيله لا يطابق هذا التحديث. تم رفض التثبيت.</string>
+    <string name="update_error_signature">التطبيق الذي تم تنزيله غير موقّع من مطوّر هذا التطبيق. تم رفض التثبيت.</string>
+    <string name="update_error_permission">لم يُمنح إذن تثبيت التطبيقات بعد. لا يمكن متابعة التثبيت.</string>
+    <string name="update_error_install_failed">تعذّر فتح مثبّت النظام.</string>
+    <string name="update_install_opened">أكمل التثبيت في مثبّت Android.</string>
+    <string name="update_install_cancelled">تم إلغاء التثبيت.</string>
+
 </resources>
