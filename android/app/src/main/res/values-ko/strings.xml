@@ -746,4 +746,9 @@
     <string name="cbpack_conflict">두 압축 파일이 내용이 다른 같은 파일을 제공합니다. 하나를 제거하고 다시 가져오세요.</string>
     <string name="cbbig_unsupported">이 파일은 읽을 수 있는 BIG 압축 파일이 아닙니다.</string>
     <string name="cbbig_no_controlbar">이 압축 파일에는 컨트롤 바 파일이 없습니다(Window\\ControlBar.wnd 또는 ControlBarScheme INI).</string>
+    <!-- UpdateChecker: "a newer version is available" dialog (Phase 1: notification only) -->
+    <string name="update_dialog_title">새 버전을 사용할 수 있습니다!</string>
+    <string name="update_dialog_version">버전: %1$s</string>
+    <string name="update_dialog_whats_new">새로운 기능</string>
+    <string name="update_dialog_later">나중에</string>
 </resources>

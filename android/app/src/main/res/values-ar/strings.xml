@@ -746,4 +746,9 @@
     <string name="cbpack_conflict">يوفّر أرشيفان الملف نفسه بمحتوى مختلف. أزل أحدهما ثم استورد مرة أخرى.</string>
     <string name="cbbig_unsupported">هذا الملف ليس أرشيف BIG قابلًا للقراءة.</string>
     <string name="cbbig_no_controlbar">هذا الأرشيف لا يحتوي على ملفات شريط تحكم (Window\\ControlBar.wnd أو INI ControlBarScheme).</string>
+    <!-- UpdateChecker: "a newer version is available" dialog (Phase 1: notification only) -->
+    <string name="update_dialog_title">يتوفر إصدار جديد!</string>
+    <string name="update_dialog_version">الإصدار: %1$s</string>
+    <string name="update_dialog_whats_new">ما الجديد؟</string>
+    <string name="update_dialog_later">لاحقًا</string>
 </resources>

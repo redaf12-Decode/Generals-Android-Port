@@ -746,4 +746,9 @@
     <string name="cbpack_conflict">Dwa archiwa dostarczają ten sam plik o różnej zawartości. Usuń jedno i zaimportuj ponownie.</string>
     <string name="cbbig_unsupported">Ten plik nie jest czytelnym archiwum BIG.</string>
     <string name="cbbig_no_controlbar">To archiwum nie zawiera plików paska sterowania (Window\\ControlBar.wnd lub INI ControlBarScheme).</string>
+    <!-- UpdateChecker: "a newer version is available" dialog (Phase 1: notification only) -->
+    <string name="update_dialog_title">Dostępna jest nowa wersja!</string>
+    <string name="update_dialog_version">Wersja: %1$s</string>
+    <string name="update_dialog_whats_new">Co nowego?</string>
+    <string name="update_dialog_later">Później</string>
 </resources>

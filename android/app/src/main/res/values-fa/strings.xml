@@ -746,4 +746,9 @@
     <string name="cbpack_conflict">دو آرشیو همان فایل را با محتوای متفاوت می‌دهند. یکی را بردارید و دوباره درون‌ریزی کنید.</string>
     <string name="cbbig_unsupported">این فایل یک آرشیو BIG خواندنی نیست.</string>
     <string name="cbbig_no_controlbar">این آرشیو فایل نوار کنترل ندارد (Window\\ControlBar.wnd یا INI ControlBarScheme).</string>
+    <!-- UpdateChecker: "a newer version is available" dialog (Phase 1: notification only) -->
+    <string name="update_dialog_title">نسخه جدیدی موجود است!</string>
+    <string name="update_dialog_version">نسخه: %1$s</string>
+    <string name="update_dialog_whats_new">تازه‌های این نسخه چیست؟</string>
+    <string name="update_dialog_later">بعداً</string>
 </resources>

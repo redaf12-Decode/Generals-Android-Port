@@ -264,6 +264,12 @@ public class SetupActivity extends Activity {
             buildFallbackUi(t);
         }
         moveOffVulkanOnce();
+        // GeneralsX @feature Android port 09/11/2026 A newer version of this launcher is
+        // published as update.json on the project's GitHub repository. The check is a background
+        // HTTPS fetch, done once per app session, and it only ever shows a dialog: it installs
+        // nothing (Phase 1). A failure -- offline, timeout, HTTP error, malformed JSON -- is
+        // silent, so the launcher behaves exactly as it would without the check.
+        UpdateChecker.maybeCheck(this);
     }
 
     @Override

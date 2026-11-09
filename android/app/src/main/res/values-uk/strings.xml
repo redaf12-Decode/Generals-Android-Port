@@ -746,4 +746,9 @@
     <string name="cbpack_conflict">Два архіви містять один і той самий файл з різним вмістом. Видаліть один і імпортуйте знову.</string>
     <string name="cbbig_unsupported">Цей файл не читається як архів BIG.</string>
     <string name="cbbig_no_controlbar">У цьому архіві немає файлів панелі керування (Window\\ControlBar.wnd або INI ControlBarScheme).</string>
+    <!-- UpdateChecker: "a newer version is available" dialog (Phase 1: notification only) -->
+    <string name="update_dialog_title">Доступна нова версія!</string>
+    <string name="update_dialog_version">Версія: %1$s</string>
+    <string name="update_dialog_whats_new">Що нового?</string>
+    <string name="update_dialog_later">Пізніше</string>
 </resources>

@@ -746,4 +746,9 @@
     <string name="cbpack_conflict">Dois arquivos fornecem o mesmo arquivo com conteúdo diferente. Remova um e importe novamente.</string>
     <string name="cbbig_unsupported">Esse arquivo não é um arquivo BIG legível.</string>
     <string name="cbbig_no_controlbar">Este arquivo não contém arquivos da barra de controle (Window\\ControlBar.wnd ou uma INI ControlBarScheme).</string>
+    <!-- UpdateChecker: "a newer version is available" dialog (Phase 1: notification only) -->
+    <string name="update_dialog_title">Uma nova versão está disponível!</string>
+    <string name="update_dialog_version">Versão: %1$s</string>
+    <string name="update_dialog_whats_new">Novidades</string>
+    <string name="update_dialog_later">Mais tarde</string>
 </resources>

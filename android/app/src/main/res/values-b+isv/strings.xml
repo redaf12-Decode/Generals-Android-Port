@@ -746,4 +746,9 @@
     <string name="cbpack_conflict">Dvě arhivy davajut takoj sam fajl s različnym soderžanjem. Odstrani jednu i importuj znovu.</string>
     <string name="cbbig_unsupported">Toj fajl ne jest čitajema arhiva BIG.</string>
     <string name="cbbig_no_controlbar">Ta arhiva ne soderži fajly paneli upravljanja (Window\\ControlBar.wnd ili INI ControlBarScheme).</string>
+    <!-- UpdateChecker: "a newer version is available" dialog (Phase 1: notification only) -->
+    <string name="update_dialog_title">Dostupno jest novo izdanje!</string>
+    <string name="update_dialog_version">Izdanje: %1$s</string>
+    <string name="update_dialog_whats_new">Čto jest novo?</string>
+    <string name="update_dialog_later">Poslěje</string>
 </resources>

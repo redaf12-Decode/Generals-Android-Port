@@ -746,4 +746,9 @@
     <string name="cbpack_conflict">两个压缩包提供内容不同的同一文件。请移除一个后重新导入。</string>
     <string name="cbbig_unsupported">该文件不是可读取的 BIG 压缩包。</string>
     <string name="cbbig_no_controlbar">此压缩包不含操作栏文件（Window\\ControlBar.wnd 或 ControlBarScheme INI）。</string>
+    <!-- UpdateChecker: "a newer version is available" dialog (Phase 1: notification only) -->
+    <string name="update_dialog_title">有新版本可用！</string>
+    <string name="update_dialog_version">版本：%1$s</string>
+    <string name="update_dialog_whats_new">更新内容</string>
+    <string name="update_dialog_later">稍后</string>
 </resources>
