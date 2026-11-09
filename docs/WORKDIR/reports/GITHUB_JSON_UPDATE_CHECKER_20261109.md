@@ -138,6 +138,30 @@ are covered by inspection — every failure mode funnels through the same `try/c
 `null` — and by the fact that a failed check changes nothing the launcher reads. On-device
 verification of the dialog's appearance is likewise left to the owner.
 
+## 7a. Known blocker: the repository is private, so the raw URL returns 404
+
+Phase 1 requires the app to fetch `update.json` anonymously from
+`https://raw.githubusercontent.com/...`. **`redaf12-Decode/Generals-Android-Port` is a private
+repository**, and GitHub serves no `raw.githubusercontent.com` content for a private repository to an
+unauthenticated request — it returns `404`, exactly as for a file that does not exist. This is not a
+propagation delay: on the same branch, `AGENTS.md` (present for months) also returns `404`, while a
+public repository's raw file returns `200`.
+
+Consequence: with the repository private, `UpdateChecker.check()` gets an `IOException` on every
+launch and silently shows nothing. The feature is correct but dormant. It starts working, with no
+code change, the moment the repository is made public.
+
+Options, in order of least change:
+
+1. **Make the repository public.** `update.json` is the intended public version feed anyway. Nothing
+   else in the repository becomes reachable to the app — the app only ever requests this one URL.
+2. **Move `update.json` to a public location** (a public repository or a public Gist), and point
+   `UpdateChecker.UPDATE_URL` at it. This keeps the main repository private.
+3. Give the app an authenticated request. **Not recommended**: it means embedding a token in the
+   APK, which the task forbids ("Do not embed GitHub credentials or access tokens").
+
+This needs the repository owner's decision; no code change was made for it.
+
 ## 8. Compatibility
 
 `UpdateChecker` uses only APIs available at `minSdk 28`: `HttpURLConnection`, `org.json`,
