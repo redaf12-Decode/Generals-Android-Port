@@ -519,6 +519,7 @@ jobs:
           echo "apk_name=GeneralsXZH-android-run${{ github.run_number }}.apk" >> "$GITHUB_OUTPUT"
 
       - name: Prepare release signing
+        id: signkey
         # GeneralsX @feature Android security 10/11/2026 The production keystore lives only in
         # GitHub Actions secrets and is written to a runner-temp file for the length of the build.
         # Nothing is echoed: the base64 is decoded straight to disk and the passwords go into the
@@ -547,6 +548,7 @@ jobs:
               echo "GX_RELEASE_KEY_PASSWORD=${KEY_PASSWORD}"
               echo "GX_EPHEMERAL_SIGNING=false"
             } >> "$GITHUB_ENV"
+            echo "ephemeral=false" >> "$GITHUB_OUTPUT"
             echo "Using the production signing key from secrets."
           else
             KEYSTORE="$RUNNER_TEMP/ephemeral.keystore"
@@ -560,6 +562,7 @@ jobs:
               echo "GX_RELEASE_KEY_PASSWORD=ephemeral"
               echo "GX_EPHEMERAL_SIGNING=true"
             } >> "$GITHUB_ENV"
+            echo "ephemeral=true" >> "$GITHUB_OUTPUT"
             echo "::warning::production signing secrets absent (fork PR?). Built with a throwaway key; this build cannot be published."
           fi
 
@@ -591,11 +594,17 @@ jobs:
         # non-confidential) old debug keystore and the new production key, then the APK is
         # re-signed with the lineage attached. Absent the secret, the APK stays signed with the
         # production key alone and existing installs must uninstall once (see the HOWTO).
-        if: ${{ env.GX_EPHEMERAL_SIGNING != 'true' && secrets.ANDROID_RELEASE_OLD_DEBUG_KEYSTORE_BASE64 != '' }}
+        # `secrets` is not an allowed context in a step `if`, so the presence check happens in the
+        # script: an absent old keystore (or an ephemeral build) simply skips the rotation.
+        if: ${{ steps.signkey.outputs.ephemeral != 'true' }}
         env:
           OLD_KEYSTORE_B64: ${{ secrets.ANDROID_RELEASE_OLD_DEBUG_KEYSTORE_BASE64 }}
         run: |
           set -euo pipefail
+          if [ -z "${OLD_KEYSTORE_B64}" ]; then
+            echo "No ANDROID_RELEASE_OLD_DEBUG_KEYSTORE_BASE64 secret: releasing with the production key alone (existing installs need a one-time reinstall; see docs/HOWTO/SIGNING_KEY_ROTATION.md)."
+            exit 0
+          fi
           BT="$(ls -d "${ANDROID_HOME}"/build-tools/* | sort -V | tail -1)"
           umask 077
           OLD="$RUNNER_TEMP/old-debug.keystore"
@@ -729,7 +738,7 @@ jobs:
       # tagged from version_name (set alongside it above) so the release name
       # always matches what's baked into the APK's own versionName.
       - name: Create GitHub Release
-        if: ${{ github.event_name == 'workflow_dispatch' && inputs.create_release && env.GX_EPHEMERAL_SIGNING != 'true' }}
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.create_release && steps.signkey.outputs.ephemeral != 'true' }}
         run: |
           set -euo pipefail
           if [ -z "${{ inputs.version_name }}" ]; then
@@ -738,7 +747,7 @@ jobs:
           fi
 
       - name: Publish GitHub Release
-        if: ${{ github.event_name == 'workflow_dispatch' && inputs.create_release && env.GX_EPHEMERAL_SIGNING != 'true' }}
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.create_release && steps.signkey.outputs.ephemeral != 'true' }}
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ inputs.version_name }}
