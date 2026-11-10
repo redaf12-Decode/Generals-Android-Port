@@ -99,26 +99,40 @@ jobs:
         uses: actions/cache/restore@v5
         with:
           path: /opt/android-sdk
-          key: android-sdk-${{ env.CMDLINE_TOOLS_VERSION }}-p${{ env.COMPILE_SDK }}-bt${{ env.BUILD_TOOLS }}
+          # GeneralsX @bugfix Android CI 10/11/2026 -v2: the key used to be just
+          # "...-p35-bt35.0.0", and a run whose install had not finished saved a partial
+          # /opt/android-sdk under it. The next run restored that partial tree, the install step
+          # below was skipped on the "cache hit", and the job died at "Export Android SDK
+          # environment" with "platform android-35 missing" -- deterministically, on New-app too.
+          # The version suffix abandons the poisoned entries, and the install step now repairs a
+          # partial tree instead of trusting the hit, so this cannot recur.
+          key: android-sdk-${{ env.CMDLINE_TOOLS_VERSION }}-p${{ env.COMPILE_SDK }}-bt${{ env.BUILD_TOOLS }}-v2
 
       # GeneralsX @build Android CI 06/11/2026 Installs the SDK platform and build-tools the
       # Gradle build needs and nothing else: no NDK, no CMake, no vcpkg. The versions match
       # android/app/build.gradle (compileSdk 35) and build-android.yml.
+      #
+      # GeneralsX @bugfix Android CI 10/11/2026 This step runs on every run, cache hit or not, and
+      # is idempotent: it only downloads cmdline-tools when they are absent, then re-asserts the
+      # required packages with `sdkmanager --install`, which is a no-op when they are already
+      # present. That is a few seconds on a good cache and the difference between a red and a
+      # green job on a partial one -- a restore is not proof the SDK is complete.
       - name: Install Android SDK (cmdline-tools + platform + build-tools)
-        if: steps.cache-android-sdk.outputs.cache-hit != 'true'
         run: |
           set -euo pipefail
-          curl -fL --retry 3 -o /tmp/cmdline-tools.zip \
-            "https://dl.google.com/android/repository/commandlinetools-linux-${CMDLINE_TOOLS_VERSION}_latest.zip"
-          echo "${CMDLINE_TOOLS_SHA1}  /tmp/cmdline-tools.zip" | sha1sum -c -
-          sudo mkdir -p /opt/android-sdk/cmdline-tools
-          sudo unzip -q /tmp/cmdline-tools.zip -d /opt/android-sdk/cmdline-tools
-          # sdkmanager requires the "<sdk>/cmdline-tools/latest" layout to locate its SDK root.
-          sudo mv /opt/android-sdk/cmdline-tools/cmdline-tools /opt/android-sdk/cmdline-tools/latest
+          if [ ! -x /opt/android-sdk/cmdline-tools/latest/bin/sdkmanager ]; then
+            curl -fL --retry 3 -o /tmp/cmdline-tools.zip \
+              "https://dl.google.com/android/repository/commandlinetools-linux-${CMDLINE_TOOLS_VERSION}_latest.zip"
+            echo "${CMDLINE_TOOLS_SHA1}  /tmp/cmdline-tools.zip" | sha1sum -c -
+            sudo mkdir -p /opt/android-sdk/cmdline-tools
+            sudo unzip -q /tmp/cmdline-tools.zip -d /opt/android-sdk/cmdline-tools
+            # sdkmanager requires the "<sdk>/cmdline-tools/latest" layout to locate its SDK root.
+            sudo mv /opt/android-sdk/cmdline-tools/cmdline-tools /opt/android-sdk/cmdline-tools/latest
+            rm /tmp/cmdline-tools.zip
+          fi
           # sdkmanager and the later Gradle run write into the SDK, so hand it to this user rather
           # than leave it root-owned (build-android.yml does the same).
           sudo chown -R "$(id -u):$(id -g)" /opt/android-sdk
-          rm /tmp/cmdline-tools.zip
           SDKMANAGER=/opt/android-sdk/cmdline-tools/latest/bin/sdkmanager
           # `|| true` is load-bearing, not decoration: sdkmanager exits as soon as it has read the
           # answers it needs, and `yes` then dies of SIGPIPE (141). Under `set -o pipefail` that
