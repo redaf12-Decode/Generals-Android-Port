@@ -2,14 +2,16 @@
 //
 // The pieces of ApkInstaller that are pure enough to test without a device: the SHA-256 streaming
 // digest (the check that catches a corrupted or tampered download), the hex encoder it compares
-// with, the failure-to-message mapping every error screen goes through, and the two cheap guards
-// at the top of verify() (an absent or empty file is never a valid APK). The download itself and
-// the certificate comparison need a real network and a real signed APK, and are left to on-device
+// with, the failure-to-message mapping every error screen goes through, the cheap guards at the
+// top of verify() (an absent or empty file, or an Update with no digest/size, is never a valid
+// APK), and the redirect host allow-list the download enforces. The download itself and the
+// certificate comparison need a real network and a real signed APK, and are left to on-device
 // checks; nothing here reaches the network.
 
 package com.ports.generalsx;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
@@ -30,6 +32,9 @@ public class ApkInstallerTest {
     private static Context app() {
         return RuntimeEnvironment.getApplication();
     }
+
+    private static final String SHA =
+        "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
 
     /** The published digest of "abc" -- a fixed vector, so the streaming path is checked, not just
      *  "it produced 64 characters". */
@@ -74,7 +79,7 @@ public class ApkInstallerTest {
     /** An empty or absent file is rejected before any expensive work. */
     @Test
     public void verifyRejectsAnEmptyOrMissingFile() throws Exception {
-        UpdateChecker.Update update = update(1, 0L);
+        UpdateChecker.Update update = update(1, 0L, SHA);
         File empty = File.createTempFile("gx-empty", ".apk", app().getCacheDir());
         assertEquals(ApkInstaller.ERR_INVALID_APK, ApkInstaller.verify(app(), update, empty));
         assertEquals(ApkInstaller.ERR_INVALID_APK,
@@ -86,7 +91,7 @@ public class ApkInstallerTest {
     /** A wrong size is reported as a size failure, before the (also wrong) checksum is reached. */
     @Test
     public void verifyReportsASizeMismatch() throws Exception {
-        UpdateChecker.Update update = update(1, 999999L);
+        UpdateChecker.Update update = update(1, 999999L, SHA);
         File f = File.createTempFile("gx-size", ".apk", app().getCacheDir());
         try (FileOutputStream out = new FileOutputStream(f)) {
             out.write(new byte[16]);
@@ -96,13 +101,55 @@ public class ApkInstallerTest {
         f.delete();
     }
 
+    /**
+     * A file whose bytes match neither the promised size nor the digest is refused with the
+     * checksum failure once the size is forced to match -- the check that catches tampering.
+     */
+    @Test
+    public void verifyRejectsAWrongChecksum() throws Exception {
+        File f = File.createTempFile("gx-sha-bad", ".apk", app().getCacheDir());
+        try (FileOutputStream out = new FileOutputStream(f)) {
+            out.write(new byte[16]);
+        }
+        assertEquals(ApkInstaller.ERR_CHECKSUM, ApkInstaller.verify(app(), update(1, 16L, SHA), f));
+        //noinspection ResultOfMethodCallIgnored
+        f.delete();
+    }
+
+    /** An Update with no digest or size is refused outright, not verified with the checks skipped. */
+    @Test
+    public void verifyRefusesAnUpdateWithoutDigestOrSize() throws Exception {
+        File f = File.createTempFile("gx-nodigest", ".apk", app().getCacheDir());
+        try (FileOutputStream out = new FileOutputStream(f)) {
+            out.write(new byte[16]);
+        }
+        UpdateChecker.Update bare = new UpdateChecker.Update(1, "1.0.0",
+            java.util.Collections.emptyList(), "", "", "", 0L, "");
+        assertEquals(ApkInstaller.ERR_INVALID_APK, ApkInstaller.verify(app(), bare, f));
+        //noinspection ResultOfMethodCallIgnored
+        f.delete();
+    }
+
+    // ------------------------------------------------------------------ redirect host allow-list
+
+    @Test
+    public void onlyTrustedHttpsAssetHostsAreAcceptedAfterRedirects() throws Exception {
+        assertTrue(ApkInstaller.isAcceptableFinalUrl(
+            new java.net.URL("https://github.com/redaf12-Decode/Generals-Android-Port/releases/download/v1/x.apk")));
+        assertTrue(ApkInstaller.isAcceptableFinalUrl(
+            new java.net.URL("https://objects.githubusercontent.com/github-production-release-asset/x")));
+        assertFalse("http must be refused", ApkInstaller.isAcceptableFinalUrl(
+            new java.net.URL("http://github.com/redaf12-Decode/Generals-Android-Port/releases/download/v1/x.apk")));
+        assertFalse("an arbitrary host must be refused", ApkInstaller.isAcceptableFinalUrl(
+            new java.net.URL("https://evil.example/x.apk")));
+    }
+
     /** An Update as the signed metadata would produce it, for the pure verify() checks. */
-    private static UpdateChecker.Update update(int versionCode, long size) {
+    private static UpdateChecker.Update update(int versionCode, long size, String sha) {
         return new UpdateChecker.Update(versionCode, "1.2.9", java.util.Collections.emptyList(),
             UpdateChecker.EXPECTED_PACKAGE,
             "https://github.com/redaf12-Decode/Generals-Android-Port/releases/download/v1.2.9/app.apk",
-            "0000000000000000000000000000000000000000000000000000000000000000",
-            size, "644a3b0f8234c6ea8960ece9b55a161c00966b8dd522d2558d84883f4f77c48e");
+            sha, size, "644a3b0f8234c6ea8960ece9b55a161c00966b8dd522d2558d84883f4f77c48e");
     }
 
     /** Every failure code must resolve to a non-empty, localized string. */

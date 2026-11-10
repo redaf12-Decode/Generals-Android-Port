@@ -9,11 +9,11 @@ name: Android Unit Tests
 # native library is excluded -- the whole point being that the Setup screen and the rest of the
 # UI do not depend on the engine.
 #
-# GeneralsX @build Android CI 06/11/2026 The `testDebugUnitTest` step was removed at the
-# repository owner's request (06/11/2026). The JVM tests are still run locally before a push,
-# which is what AGENTS.md asks for; keeping them here as well only added a second place for the
-# same result to go red. The workflow's name is left as-is so existing run history and any
-# branch-protection reference to "Android Unit Tests" keep resolving to this job.
+# GeneralsX @build Android security 10/11/2026 `testDebugUnitTest` is re-enabled. It was removed
+# on 06/11/2026 to avoid a second red signal, but that left the security-critical unit tests
+# (update signature verification, APK checksum/size validation, ZIP-slip and ELF rejection, token
+# redaction, backup exclusion) running only on a developer's machine. They run in CI now, and a
+# failure blocks the PR. The workflow name is unchanged so branch protection still resolves.
 #
 # SDL3's Java glue is fetched straight from the SDL3 release tarball by
 # scripts/build/android/stage-sdl-java.sh, so the Java shell still matches the version the game
@@ -172,13 +172,26 @@ jobs:
         # action's own `path:` above does expand `~`, so the two agree on the directory.
         run: SDL3_TARBALL_CACHE="$HOME/.cache/generalsx/sdl3" ./scripts/build/android/stage-sdl-java.sh --force
 
-      # GeneralsX @build Android CI 06/11/2026 Lint is its own step so a lint failure is visible as
+      # GeneralsX @build Android security 10/11/2026 The security-critical JVM tests, run on every
+      # PR to New-app or main: update-metadata signature verification, APK checksum/size checks,
+      # strict URL validation, ZIP-slip and non-AArch64 driver rejection, token redaction, and
+      # backup exclusion of the session tokens. A failure here fails the job.
+      - name: Run JVM unit tests
+        working-directory: android
+        run: gradle :app:testDebugUnitTest --no-daemon --console=plain
+
+      # GeneralsX @build Android security 10/11/2026 Lint is its own step so a lint failure is visible as
       # such rather than as "the build failed". It needs no native compilation: the only findings
       # that were aborting it were in SDL's own staged Java, and those are scoped out by path in
       # android/app/lint.xml.
       - name: Run Android Lint
         working-directory: android
         run: gradle :app:lintDebug --no-daemon --console=plain
+
+      # GeneralsX @build Android security 10/11/2026 A committed keystore or a stray key file is a
+      # release-integrity defect, not a style one. Fail the job rather than warn.
+      - name: Scan for committed signing material
+        run: python3 scripts/qa/android/check-no-committed-secrets.py
 
       # GeneralsX @build Android CI 06/11/2026 The translation rules AGENTS.md asks for, checked
       # as a script over res/values*/strings.xml: every locale declares the same string names as
@@ -214,11 +227,10 @@ jobs:
           print("Launcher-only APK: %d entries, 0 native libraries, classes.dex present." % len(names))
           PY
 
-      # GeneralsX @build Android CI 06/11/2026 `if: always()`, so a failing lint run still leaves
-      # its report behind -- the report is the thing you need when the step above went red. The
-      # unit-test report paths that used to be listed here were dropped along with the
-      # `testDebugUnitTest` step; only the lint report is still produced.
-      - name: Upload lint reports
+      # GeneralsX @build Android security 10/11/2026 `if: always()`, so a failing lint or test run
+      # still leaves its report behind -- the report is the thing you need when the step above went
+      # red.
+      - name: Upload lint and test reports
         if: always()
         uses: actions/upload-artifact@v7
         with:
@@ -226,6 +238,7 @@ jobs:
           path: |
             android/app/build/reports/lint-results-*.html
             android/app/build/reports/lint-results-*.xml
+            android/app/build/reports/tests/testDebugUnitTest/**
           if-no-files-found: warn
           retention-days: 14
 

@@ -30,6 +30,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyFactory;
@@ -70,13 +72,22 @@ final class UpdateChecker {
         "https://github.com/" + REPOSITORY + "/releases/latest/download/update.json";
     static final String METADATA_SIG_URL = METADATA_URL + ".sig";
 
-    /** An https URL only under this repository is ever accepted as an APK download. */
+    /**
+     * An https URL only under this repository is ever accepted as an APK download. The host and the
+     * release-download path are checked as URI components (see isAcceptableApkUrl), not as a
+     * string prefix, so a look-alike host such as github.com.evil.example cannot slip through.
+     */
     static final String APK_URL_PREFIX = "https://github.com/" + REPOSITORY + "/";
+    static final String TRUSTED_APK_HOST = "github.com";
+    static final String TRUSTED_APK_PATH_PREFIX = "/" + REPOSITORY + "/releases/download/";
 
     private static final int MAX_METADATA_BYTES = 64 * 1024;
     private static final int MAX_SIG_BYTES = 4 * 1024;
     private static final int CONNECT_TIMEOUT_MS = 10000;
     private static final int READ_TIMEOUT_MS = 10000;
+
+    /** A release APK is ~60 MB today; refuse anything that could not plausibly be one. */
+    static final long MAX_APK_BYTES = 512L * 1024L * 1024L;
 
     private static final String PREFS = "gx_app_update";
     private static final String KEY_NOTIFIED = "notified_version_code";
@@ -231,8 +242,8 @@ final class UpdateChecker {
         long apkSize = apk.optLong("sizeBytes", 0L);
         String apkCert = apk.optString("signingCertificateSha256", "")
             .trim().toLowerCase(java.util.Locale.ROOT);
-        if (!isAcceptableApkUrl(apkUrl) || !isSha256(apkSha) || apkSize <= 0
-                || !isSha256(apkCert)) {
+        if (!isAcceptableApkUrl(apkUrl) || !isUsableSha256(apkSha) || !isUsableApkSize(apkSize)
+                || !isUsableSha256(apkCert)) {
             return null;
         }
 
@@ -251,14 +262,50 @@ final class UpdateChecker {
             packageName, apkUrl, apkSha, apkSize, apkCert);
     }
 
-    /** Only an https URL on this repository is accepted, so metadata cannot repoint the download. */
+    /**
+     * GeneralsX @bugfix Android security 10/11/2026 Parses the download URL as a real URI and
+     * checks the scheme, host and path separately, instead of a string-prefix test. A prefix test
+     * accepts "https://github.com.evil.example/..." and "https://github.com@evil.example/", both of
+     * which a naive downloader would fetch from the attacker; comparing URI components cannot be
+     * fooled that way. Only an https URL, on github.com exactly, under this repository's
+     * release-download path, is accepted.
+     */
     static boolean isAcceptableApkUrl(String url) {
-        return url != null && url.startsWith(APK_URL_PREFIX);
+        if (url == null || url.isEmpty()) {
+            return false;
+        }
+        try {
+            URI uri = new URI(url);
+            if (!"https".equalsIgnoreCase(uri.getScheme())) {
+                return false;
+            }
+            if (!TRUSTED_APK_HOST.equalsIgnoreCase(uri.getHost()) || uri.getUserInfo() != null) {
+                return false;
+            }
+            int port = uri.getPort();
+            if (port != -1 && port != 443) {
+                return false;
+            }
+            String path = uri.getPath();
+            return path != null && path.startsWith(TRUSTED_APK_PATH_PREFIX);
+        } catch (URISyntaxException e) {
+            return false;
+        }
     }
 
     /** Exactly 64 hexadecimal characters, the shape of a SHA-256 digest. */
     static boolean isSha256(String value) {
         return value != null && value.matches("[0-9a-fA-F]{64}");
+    }
+
+    /** A real digest: the right shape and not the all-zero placeholder. */
+    static boolean isUsableSha256(String value) {
+        return isSha256(value) && !value.matches("0{64}");
+    }
+
+    /** A believable APK size: greater than zero and no larger than a release could plausibly be. */
+    static boolean isUsableApkSize(long bytes) {
+        return bytes > 0 && bytes <= MAX_APK_BYTES;
     }
 
     // ---------------------------------------------------------------------------------------

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  GeneralsX @feature Android security 10/11/2026 Backup rules for Android 11 and
+  below (the android:fullBackupContent attribute). Android 12+ reads
+  data_extraction_rules.xml instead; both are declared so the same exclusions
+  apply on every supported version (minSdk 28).
+
+  The point is that a cloud backup, or an adb backup on an old device, must
+  never carry the account out of the phone. The GeneralsOnline session marker
+  and the preferences beside it hold a session token and a refresh token, which
+  together ARE the account until they expire; the network trace log is written
+  to be shared, but it still describes this device's traffic and is excluded
+  from the backup rather than trusted to be empty.
+-->
+<full-backup-content>
+    <!-- The session marker file (files/generalsonline_session.txt): session and refresh tokens. -->
+    <exclude domain="file" path="generalsonline_session.txt" />
+    <!-- The preferences copy of the same tokens. -->
+    <exclude domain="sharedpref" path="generalsonline_session.xml" />
+    <!-- The support log (external files dir): request/response bodies, redacted but still ours. -->
+    <exclude domain="external" path="generals-network.log" />
+    <exclude domain="external" path="generals-network.log.prev" />
+</full-backup-content>

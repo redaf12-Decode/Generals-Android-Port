@@ -58,6 +58,26 @@ public class NetworkTraceRedactTest {
         assertTrue(out.contains("\"refresh_token\":\"<token, 16 chars>\""));
     }
 
+    /** The key=value form the session marker file and a query string use is replaced too. */
+    @Test
+    public void keyValueTokensAreReplaced() {
+        String marker = "session_token=0123456789abcdef\nrefresh_token=fedcba9876543210\n";
+        String out = NetworkTrace.redact(marker);
+        assertFalse("a session token in key=value form must not survive",
+            out.contains("0123456789abcdef"));
+        assertFalse("a refresh token in key=value form must not survive",
+            out.contains("fedcba9876543210"));
+        assertTrue(out.contains("session_token=<token, 16 chars>"));
+        assertTrue(out.contains("refresh_token=<token, 16 chars>"));
+    }
+
+    /** A short key=value token is left alone, matching the JSON behaviour. */
+    @Test
+    public void shortKeyValueTokensAreLeftAlone() {
+        String marker = "session_token=abc\n";
+        assertEquals(marker, NetworkTrace.redact(marker));
+    }
+
     /** A short value is not a token, and the JSON shape around it must survive untouched. */
     @Test
     public void shortValuesAreLeftAlone() {

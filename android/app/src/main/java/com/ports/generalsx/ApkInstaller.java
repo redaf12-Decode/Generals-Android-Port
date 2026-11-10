@@ -335,12 +335,17 @@ final class ApkInstaller {
 
     private static void download(UpdateChecker.Update update, File dest) throws IOException {
         long existing = dest.isFile() ? dest.length() : 0;
+        // GeneralsX @bugfix Android security 10/11/2026 The download is always bounded: by the
+        // size the (signed) metadata promised, or by an absolute ceiling when it states none.
+        // Before this the ceiling was only the promised size, so a metadata file with size 0
+        // let a server stream forever.
+        long hardCap = update.apkSizeBytes > 0 ? update.apkSizeBytes : UpdateChecker.MAX_APK_BYTES;
         // Only resume a partial whose size is believable: at or under the promised total, and with
         // a total to resume towards. Otherwise start clean.
         boolean canResume = update.apkSizeBytes > 0 && existing > 0 && existing < update.apkSizeBytes;
 
         long free = dest.getParentFile() != null ? dest.getParentFile().getUsableSpace() : Long.MAX_VALUE;
-        long needed = update.apkSizeBytes > 0 ? update.apkSizeBytes - (canResume ? existing : 0) : 0;
+        long needed = hardCap - (canResume ? existing : 0);
         if (needed > 0 && free < needed + HEADROOM_BYTES) {
             throw new StorageException();
         }
@@ -351,11 +356,20 @@ final class ApkInstaller {
             conn.setConnectTimeout(CONNECT_TIMEOUT_MS);
             conn.setReadTimeout(READ_TIMEOUT_MS);
             conn.setRequestProperty("User-Agent", "GeneralsX-Android");
+            conn.setInstanceFollowRedirects(true);
             if (canResume) {
                 conn.setRequestProperty("Range", "bytes=" + existing + "-");
             }
 
             int status = conn.getResponseCode();
+            // GeneralsX @feature Android security 10/11/2026 The URL after redirects is checked
+            // too: the request is only ever started against a trusted GitHub URL (see
+            // UpdateChecker.isAcceptableApkUrl), but a redirect could still point anywhere. Only
+            // an https URL on GitHub's own asset hosts is accepted, so no redirect can downgrade
+            // the transport to http or move the download to an arbitrary server.
+            if (!isAcceptableFinalUrl(conn.getURL())) {
+                throw new IOException("download redirected to an untrusted URL: " + conn.getURL());
+            }
             boolean resuming = canResume && status == HttpURLConnection.HTTP_PARTIAL;
             if (status != HttpURLConnection.HTTP_OK && !resuming) {
                 throw new IOException("HTTP " + status);
@@ -382,6 +396,11 @@ final class ApkInstaller {
                     }
                     out.write(buffer, 0, read);
                     done += read;
+                    // Hard cap regardless of what the server's Content-Length said (or omitted).
+                    if (done > hardCap) {
+                        throw new IOException("download exceeded the size limit of " + hardCap
+                            + " bytes");
+                    }
                     sLastDone = done;
                     sLastTotal = total;
                     long percent = total > 0 ? done * 100 / total : -1;
@@ -406,6 +425,33 @@ final class ApkInstaller {
     }
 
     /**
+     * GeneralsX @feature Android security 10/11/2026 Hosts GitHub serves release assets from,
+     * directly or through a redirect. The download may only end on one of these over https.
+     */
+    private static final java.util.Set<String> TRUSTED_ASSET_HOSTS = new java.util.HashSet<>(
+        java.util.Arrays.asList(
+            "github.com",
+            "objects.githubusercontent.com",
+            "release-assets.githubusercontent.com",
+            "raw.githubusercontent.com",
+            "github-releases.githubusercontent.com"));
+
+    static boolean isAcceptableFinalUrl(URL url) {
+        if (url == null) {
+            return false;
+        }
+        if (!"https".equalsIgnoreCase(url.getProtocol())) {
+            return false;
+        }
+        String host = url.getHost();
+        if (host == null || !TRUSTED_ASSET_HOSTS.contains(host.toLowerCase(java.util.Locale.ROOT))) {
+            return false;
+        }
+        int port = url.getPort();
+        return port == -1 || port == 443;
+    }
+
+    /**
      * Every check from section 5, in order, and null only when all pass. Order matters for the
      * messages: a wrong size is reported before a wrong checksum, and the cheap identity reads
      * come after the checksum so a file that is not even ours is rejected before it is parsed.
@@ -414,8 +460,14 @@ final class ApkInstaller {
         if (!apk.isFile() || apk.length() == 0) {
             return ERR_INVALID_APK;
         }
-        // D. Size, when the release states one.
-        if (update.apkSizeBytes > 0 && apk.length() != update.apkSizeBytes) {
+        // GeneralsX @bugfix Android security 10/11/2026 An APK with no promised digest or size is
+        // never trusted. parse() already refuses such metadata, so reaching here means the caller
+        // built an Update by hand; refuse rather than skip the check.
+        if (update.apkSha256.isEmpty() || update.apkSizeBytes <= 0) {
+            return ERR_INVALID_APK;
+        }
+        // D. Size, against the size the signed metadata promised.
+        if (apk.length() != update.apkSizeBytes) {
             return ERR_SIZE;
         }
         // A. Streaming SHA-256 against the promised digest.
@@ -425,7 +477,7 @@ final class ApkInstaller {
         } catch (IOException e) {
             return ERR_INVALID_APK;
         }
-        if (!update.apkSha256.isEmpty() && !update.apkSha256.equalsIgnoreCase(actual)) {
+        if (!update.apkSha256.equalsIgnoreCase(actual)) {
             Log.i(TAG, "checksum mismatch: expected " + update.apkSha256 + " got " + actual);
             return ERR_CHECKSUM;
         }
