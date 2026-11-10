@@ -342,31 +342,22 @@ a file manager to create them by hand.
 **→ For sharing this section directly:
 [docs/port/ANDROID_PORT.md#diagnostic-marker-files-opt-in-extra-logging](docs/port/ANDROID_PORT.md#diagnostic-marker-files-opt-in-extra-logging)**
 
-## 4a. Updates without a new APK
+## 4a. Application updates
 
-The launcher reads a signed manifest from the repository's `updates` branch when the
-**GeneralsOnline account** screen opens, and applies its **settings**:
+Since 10/11/2026 an update is a real GitHub Release of this repository. The launcher reads two
+files the Publish Android Release workflow attaches to the newest release -- `update.json` and its
+`update.json.sig` -- and refuses anything whose ECDSA P-256 signature does not verify against the
+public key compiled into `UpdateChecker.PUBLIC_KEY_B64`. Only then is the version compared, and
+only a newer one is offered. The download is checked again (size, SHA-256, package name, version
+code, signing certificate) before Android's own installer is asked to run.
 
-- **Settings** (`update/config.json`): written to `files/update/remote_config.ini`, read by the
-  engine through `Common/GXRemoteConfig.h` and by the launcher: the STUN and TURN lists, the PC
-  checksum and its revision-tag rule, and the community data package's manifest address.
+The old **engine-over-the-air** system (a signed manifest on a MYSOREZ repository's `updates`
+branch, applying remote settings and swapping the engine inside an installed APK) was removed on
+10/11/2026 together with its repository, branch and key. The community data patch is unaffected:
+it comes from the GeneralsOnline CDN (`DataPackInstaller`), which verifies its own SHA-256, and
+the multiplayer screen still checks and installs it.
 
-**The engine is no longer downloaded over the air** (04/11/2026, owner's request). The Home
-screen's "Updates" card -- its status line, **Check for updates** button and automatic check --
-is gone, and it was the only caller that asked `UpdateManager.check(ctx, true)` to download a
-newer `libmain.so`/`libmain60.so`. An engine update now needs a new APK. The manifest still
-carries an `engine` entry and `publish-update.py` still publishes it, so putting the card back
-restores the old behaviour without touching the update format.
-
-The manifest is signed (ECDSA P-256; the public key is in `UpdateManager.PUBLIC_KEY_B64`, the
-private key is kept outside the repository). Its `serial` may never go down, engine files are
-checked against the signed SHA-256, and a downloaded engine runs only when its build number
-(`assets/engine_build.txt`, the commit count) is higher than the APK's and every other native
-library matches the one it was built against -- otherwise the launcher asks for a new APK. An
-engine that twice fails to reach the main menu is dropped (`files/update/boot_pending`, cleared
-by `MainMenuInit`). Everything works offline: the last verified update stays in use.
-
-How to publish: [`docs/HOWTO/PUBLISH_UPDATE.md`](../HOWTO/PUBLISH_UPDATE.md).
+How to publish: [`docs/HOWTO/PUBLISH_APP_UPDATE.md`](../HOWTO/PUBLISH_APP_UPDATE.md).
 
 ## 5. Verification checklist for first device bring-up
 

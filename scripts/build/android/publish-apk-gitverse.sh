@@ -27,6 +27,9 @@ REPO="$(cd "${SCRIPT_DIR}/../../.." && pwd)"
 API="https://api.gitverse.ru/repos/${GITVERSE_REPO}"
 GIT_URL="https://gitverse.ru/${GITVERSE_REPO}.git"
 OWNER="${GITVERSE_REPO%%/*}"
+# GeneralsX @build Android port 10/11/2026 The source repository on GitHub, named in the mirrored
+# release notes. The old MYSOREZ repository is no longer this project's home.
+GITHUB_REPO="redaf12-Decode/Generals-Android-Port"
 
 if [ "${1:-}" = "--release" ]; then
     VERSION="${2:?usage: $0 --release <version>}"
@@ -119,12 +122,12 @@ fi
 
 # 2. The release: created, or updated if it already exists.
 BODY_FILE="${WORK}/release.json"
-python3 - "${TAG}" "${TITLE}" "${NOTES}" "${PRERELEASE}" > "${BODY_FILE}" <<'EOF'
+python3 - "${TAG}" "${TITLE}" "${NOTES}" "${PRERELEASE}" "${GITHUB_REPO}" > "${BODY_FILE}" <<'EOF'
 import json, sys
-tag, title, notes_path, pre = sys.argv[1:5]
+tag, title, notes_path, pre, repo = sys.argv[1:6]
 body = open(notes_path, encoding="utf-8").read() if notes_path else (
     "Current test build of the Android port. Install the APK below.\n\n"
-    "Releases and source: https://github.com/MYSOREZ/GeneralsZH-Android-Port")
+    "Releases and source: https://github.com/" + repo)
 print(json.dumps({"tag_name": tag, "name": title, "body": body,
                   "draft": False, "prerelease": pre == "true"}))
 EOF

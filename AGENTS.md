@@ -83,9 +83,10 @@ Test builds may build one game only when only it changed, which halves the wait:
 latest APK in `apk/`). A change to shared code (`Core/`) needs both. Releases always build both
 (the variable unset).
 
-Test builds set `GX_UPDATE_CHANNEL=test` (`GX_UPDATE_CHANNEL=test ./scripts/build/android/build-dual-hz.sh`):
-they then read the `updates-test` branch, so later test engines can reach testers over the air
-without touching what players get (docs/HOWTO/PUBLISH_UPDATE.md). Releases never set it.
+The engine-over-the-air update channel (`GX_UPDATE_CHANNEL=test` / the `updates-test` branch) was
+removed on 10/11/2026 with the rest of the MYSOREZ update system. The launcher now updates from
+signed GitHub Release metadata only (docs/HOWTO/PUBLISH_APP_UPDATE.md); a test build is just a
+build someone installs by hand.
 
 Use `build-dual-hz.sh`, not `build-local-sandboxed.sh`: the latter leaves
 `SAGE_HIGH_FPS_SIM` at its OFF default and ships a 30 Hz engine only. Both
@@ -212,11 +213,12 @@ cmake --build build/macos-vulkan --target z_generals
   `docs/WORKDIR/lessons/LESSON-d3d-state-value-semantics.md`, which also records which
   diagnostics were blind to it and why.
 - **Cross-play with the PC client is OFF** (since 18/10/2026, at the GeneralsOnline developers'
-  request): the engine claims the PC checksum only when the signed manifest carries
-  `pc_crossplay=1`, verified by the engine itself (`GXSignedSettings`); see
-  `update/features.json` and docs/HOWTO/PUBLISH_UPDATE.md. Do not turn it back on, or weaken that
-  check, without the repository owner's word and GeneralsOnline's agreement. The two notes below
-  apply only if it is ever turned on again.
+  request): the engine claims the PC checksum only when the signed settings carry `pc_crossplay=1`,
+  verified by the engine itself (`GXSignedSettings`). Those signed settings came from the
+  engine-over-the-air manifest, which was removed on 10/11/2026, so cross-play is off
+  unconditionally now (the launcher no longer fetches a manifest at all). Do not turn it back on,
+  or weaken that check, without the repository owner's word and GeneralsOnline's agreement. The two
+  notes below apply only if it is ever turned on again.
 - **Lockstep CRC desync against the PC client**: do NOT start from floating-point
   theory, and do NOT build a Windows or x86 reference binary -- one was brought up
   for this and abandoned. The PC client's full source is on the dev machine at

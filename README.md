@@ -9,18 +9,18 @@
 > wrong — please don't spread it further.
 
 <p align="center">
-  <a href="https://github.com/MYSOREZ/GeneralsZH-Android-Port/releases/latest"><img alt="Download the latest APK" src="https://img.shields.io/github/v/release/MYSOREZ/GeneralsZH-Android-Port?label=Download%20APK&style=for-the-badge&logo=android&logoColor=white&color=3DDC84"></a>
+  <a href="https://github.com/redaf12-Decode/Generals-Android-Port/releases/latest"><img alt="Download the latest APK" src="https://img.shields.io/github/v/release/redaf12-Decode/Generals-Android-Port?label=Download%20APK&style=for-the-badge&logo=android&logoColor=white&color=3DDC84"></a>
   <a href="https://gitverse.ru/MYSOREZ/Generals_ZeroHour/releases"><img alt="Mirror on GitVerse" src="https://img.shields.io/badge/Mirror-GitVerse-5B5BD6?style=for-the-badge"></a>
 </p>
 <p align="center">
   <a href="#quick-start--android"><img alt="Quick start" src="https://img.shields.io/badge/Quick%20start-2b3137?style=flat-square"></a>
   <a href="#touch-controls"><img alt="Touch controls" src="https://img.shields.io/badge/Touch%20controls-2b3137?style=flat-square"></a>
   <a href="#known-issues"><img alt="Known issues" src="https://img.shields.io/badge/Known%20issues-2b3137?style=flat-square"></a>
-  <a href="https://github.com/MYSOREZ/GeneralsZH-Android-Port/issues"><img alt="Report a problem" src="https://img.shields.io/badge/Report%20a%20problem-2b3137?style=flat-square"></a>
+  <a href="https://github.com/redaf12-Decode/Generals-Android-Port/issues"><img alt="Report a problem" src="https://img.shields.io/badge/Report%20a%20problem-2b3137?style=flat-square"></a>
 </p>
 <p align="center">
-  <img alt="Downloads" src="https://img.shields.io/github/downloads/MYSOREZ/GeneralsZH-Android-Port/total?label=downloads">
-  <img alt="Stars" src="https://img.shields.io/github/stars/MYSOREZ/GeneralsZH-Android-Port?label=stars">
+  <img alt="Downloads" src="https://img.shields.io/github/downloads/redaf12-Decode/Generals-Android-Port/total?label=downloads">
+  <img alt="Stars" src="https://img.shields.io/github/stars/redaf12-Decode/Generals-Android-Port?label=stars">
   <img alt="License" src="https://img.shields.io/badge/license-GPL--3.0-blue">
   <img alt="Android 9+ arm64" src="https://img.shields.io/badge/Android-9%2B%20arm64-3DDC84">
 </p>
@@ -259,10 +259,10 @@ architecture, bring-up log): [docs/port/ANDROID_PORT.md](docs/port/ANDROID_PORT.
 
 ## Popularity
 
-<a href="https://star-history.com/#MYSOREZ/GeneralsZH-Android-Port&Date">
+<a href="https://star-history.com/#redaf12-Decode/Generals-Android-Port&Date">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=MYSOREZ/GeneralsZH-Android-Port&type=Date&theme=dark">
-    <img alt="Star history" src="https://api.star-history.com/svg?repos=MYSOREZ/GeneralsZH-Android-Port&type=Date" width="600">
+    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=redaf12-Decode/Generals-Android-Port&type=Date&theme=dark">
+    <img alt="Star history" src="https://api.star-history.com/svg?repos=redaf12-Decode/Generals-Android-Port&type=Date" width="600">
   </picture>
 </a>
 

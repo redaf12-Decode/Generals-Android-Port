@@ -1,4 +1,4 @@
-# GeneralsX @feature Android port 27/09/2026 Publish a GitHub Release from files already in the
+# GeneralsX @feature Android port 10/11/2026 Publish a GitHub Release from files already in the
 # repository, without building anything.
 #
 # Android builds happen locally (AGENTS.md): scripts/build/android/build-dual-hz.sh produces the
@@ -6,6 +6,14 @@
 # tables go to docs/releases/v<version>/. This job only checks those files and publishes them, so
 # it takes seconds of the Actions budget instead of a full build -- and, unlike build-android.yml's
 # create_release, the APK it publishes carries both the 30 Hz and the 60 Hz engine.
+#
+# Since 10/11/2026 it also generates and signs the update metadata the app checks against: the
+# APK is uploaded first, then scripts/update/generate-update-metadata.py reads the APK's own
+# package name, version code, size, SHA-256 and signing certificate back out of the published
+# asset, writes update.json, signs it with the UPDATE_METADATA_KEY secret, and both files are
+# uploaded to the same release. Nothing is written before the APK exists, and a missing or
+# inconsistent value fails the run -- the app refuses unsigned metadata, so a release without it
+# simply does not offer an update.
 name: Publish Android Release
 
 on:
@@ -56,6 +64,23 @@ jobs:
               exit 1
             fi
           done
+          # The published APK must be a signed release build of the production identity.
+          SDK="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}"
+          AAPT2="$(find "${SDK}/build-tools" -name aapt2 | sort | tail -1)"
+          APKSIGNER="$(find "${SDK}/build-tools" -name apksigner | sort | tail -1)"
+          if [ -z "${AAPT2}" ] || [ -z "${APKSIGNER}" ]; then
+            echo "::error::aapt2/apksigner not found in the Android SDK build-tools."
+            exit 1
+          fi
+          PACKAGE="$("${AAPT2}" dump badging "${APK}" | sed -n "s/^package: name='\([^']*\)'.*/\1/p")"
+          if [ "${PACKAGE}" != "com.ports.generalsx" ]; then
+            echo "::error::${APK} declares package '${PACKAGE}', expected com.ports.generalsx."
+            exit 1
+          fi
+          if ! "${APKSIGNER}" verify "${APK}" >/dev/null 2>&1; then
+            echo "::error::${APK} is not correctly signed -- refusing to publish it."
+            exit 1
+          fi
           ASSET="GeneralsXZH-android-v${VERSION}.apk"
           cp "${APK}" "${ASSET}"
           echo "apk=${ASSET}" >> "$GITHUB_OUTPUT"
@@ -72,3 +97,53 @@ jobs:
             ${{ steps.files.outputs.apk }}
             ${{ steps.files.outputs.dir }}/*.symbols.txt.gz
           make_latest: true
+
+      # The APK is published now, so the metadata can describe the exact asset that is live:
+      # generate-update-metadata.py asks the API for the asset URL and size and checks them against
+      # the bytes on disk, then signs the document. A run without UPDATE_METADATA_KEY stops here --
+      # an unsigned update.json is never uploaded, because the app would reject it anyway.
+      - name: Generate and sign update metadata
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          UPDATE_METADATA_KEY: ${{ secrets.UPDATE_METADATA_KEY }}
+        run: |
+          set -euo pipefail
+          if [ -z "${UPDATE_METADATA_KEY}" ]; then
+            echo "::error::UPDATE_METADATA_KEY is not set -- cannot sign the update metadata."
+            echo "Generate a key with scripts/update/generate-metadata-key.py and add its private half as a secret."
+            exit 1
+          fi
+          python3 -m pip install --quiet --disable-pip-version-check cryptography
+          umask 077
+          KEY="$RUNNER_TEMP/metadata-key.pem"
+          printf '%s\n' "${UPDATE_METADATA_KEY}" > "${KEY}"
+          trap 'rm -f "${KEY}"' EXIT
+          python3 scripts/update/generate-update-metadata.py \
+            --apk "${{ steps.files.outputs.apk }}" \
+            --repo "${{ github.repository }}" \
+            --tag "v${{ inputs.version }}" \
+            --out "$RUNNER_TEMP/update-metadata" \
+            --notes "${{ steps.files.outputs.dir }}/notes.md" \
+            --key "${KEY}"
+
+      - name: Upload metadata to the release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          gh release upload "v${{ inputs.version }}" \
+            "$RUNNER_TEMP/update-metadata/update.json" \
+            "$RUNNER_TEMP/update-metadata/update.json.sig" \
+            --clobber
+
+      # Re-read the release and confirm the published assets agree with the metadata. A mismatch
+      # (a truncated upload, a stale asset) fails the run rather than shipping a bad update.
+      - name: Validate published assets
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          python3 scripts/update/validate-release.py \
+            --repo "${{ github.repository }}" \
+            --tag "v${{ inputs.version }}" \
+            --metadata "$RUNNER_TEMP/update-metadata/update.json"

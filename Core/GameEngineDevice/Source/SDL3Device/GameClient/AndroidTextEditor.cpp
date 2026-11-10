@@ -230,13 +230,13 @@ void AndroidTextEditor::pump()
 }
 
 extern "C" JNIEXPORT void JNICALL
-Java_com_generalsx_zerohour_GeneralsZHActivity_nativeTextEditorChanged(JNIEnv* env, jclass, jstring text, jint serial)
+Java_com_ports_generalsx_GeneralsZHActivity_nativeTextEditorChanged(JNIEnv* env, jclass, jstring text, jint serial)
 {
 	storePending(env, text, serial, false, false);
 }
 
 extern "C" JNIEXPORT void JNICALL
-Java_com_generalsx_zerohour_GeneralsZHActivity_nativeTextEditorDone(JNIEnv* env, jclass, jstring text, jboolean submit, jint serial)
+Java_com_ports_generalsx_GeneralsZHActivity_nativeTextEditorDone(JNIEnv* env, jclass, jstring text, jboolean submit, jint serial)
 {
 	storePending(env, text, serial, true, submit == JNI_TRUE);
 }
