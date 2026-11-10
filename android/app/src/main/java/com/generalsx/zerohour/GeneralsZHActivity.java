@@ -235,7 +235,12 @@ public class GeneralsZHActivity extends SDLActivity {
         writeZeroHourArtPath();
         Intent intent = getIntent();
         String replay = intent != null ? intent.getStringExtra(EXTRA_REPLAY) : null;
-        if (replay == null || replay.isEmpty()) {
+        // GeneralsX @bugfix Android security 10/11/2026 Validate the replay name before it reaches
+        // the engine. This Activity is exported (a home-screen shortcut and, in principle, any
+        // other app can start it), and the extra is appended to the engine's own command line.
+        // Only a plain replay file name is accepted: no directory components, no "..", no path
+        // separators, and a bounded length. Anything else is ignored rather than passed through.
+        if (!isSafeReplayName(replay)) {
             return args.toArray(new String[0]);
         }
         args.add("-replay");
@@ -246,7 +251,8 @@ public class GeneralsZHActivity extends SDLActivity {
             args.add("-gxCheckTrace");
         }
         int fastTo = intent.getIntExtra(EXTRA_FAST_TO, 0);
-        if (fastTo != 0) {
+        // A frame number: positive, and not absurdly large (the marker is a 32-bit frame counter).
+        if (fastTo > 0 && fastTo <= 0x7FFFFFFF) {
             args.add("-gxFastTo");
             args.add(Integer.toString(fastTo));
         }
@@ -258,6 +264,17 @@ public class GeneralsZHActivity extends SDLActivity {
         }
         Log.i(TAG, "Replay check launch: " + args);
         return args.toArray(new String[0]);
+    }
+
+    /** A bare replay file name: non-empty, bounded, no separators, no parent traversal. */
+    static boolean isSafeReplayName(String name) {
+        if (name == null || name.isEmpty() || name.length() > 255) {
+            return false;
+        }
+        if (name.indexOf('/') >= 0 || name.indexOf('\\') >= 0) {
+            return false;
+        }
+        return !name.equals(".") && !name.equals("..");
     }
 
     // GeneralsX @feature Android port 24/09/2026 Issue #20: the engine's corner HUD (FPS,

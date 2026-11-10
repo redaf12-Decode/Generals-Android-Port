@@ -1,13 +1,9 @@
 {
-  "versionCode": 10500,
-  "versionName": "1.5.0",
-  "releaseNotes": [
-    "Fixed known bugs.",
-    "Improved application performance.",
-    "Added a new feature."
-  ],
+  "versionCode": 10209,
+  "versionName": "1.2.9",
+  "releaseNotes": [],
   "packageName": "com.ports.generalsx",
-  "apkUrl": "https://github.com/redaf12-Decode/Generals-Android-Port/releases/download/v1.5.0/app-release.apk",
-  "apkSha256": "0000000000000000000000000000000000000000000000000000000000000000",
-  "apkSizeBytes": 0
+  "apkUrl": "https://github.com/redaf12-Decode/Generals-Android-Port/releases/download/v1.2.9/GeneralsXZH-android-run48.apk",
+  "apkSha256": "83bb10593d3c81cd1de8b49e164eaec8a29bf72b31dcd41bcc785c096c3d5bdb",
+  "apkSizeBytes": 93586754
 }

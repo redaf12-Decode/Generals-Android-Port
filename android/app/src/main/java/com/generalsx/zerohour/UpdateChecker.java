@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
+import android.util.Base64;
 import android.util.Log;
 
 import org.json.JSONArray;
@@ -14,8 +15,14 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.security.KeyFactory;
+import java.security.PublicKey;
+import java.security.Signature;
+import java.security.spec.X509EncodedKeySpec;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -50,8 +57,27 @@ final class UpdateChecker {
     static final String UPDATE_URL =
         "https://raw.githubusercontent.com/redaf12-Decode/Generals-Android-Port/New-app/update.json";
 
+    /** The detached signature of {@link #UPDATE_URL}'s bytes (base64 ECDSA-P256/SHA-256). */
+    static final String UPDATE_SIGNATURE_URL =
+        "https://raw.githubusercontent.com/redaf12-Decode/Generals-Android-Port/New-app/update.json.sig";
+
+    /**
+     * GeneralsX @feature Android security 10/11/2026 The public half of the update-metadata
+     * signing key. update.json is unsigned data from the network; without this check a
+     * substitution on the way (or in the repository) could hand the launcher an APK URL, a
+     * package name and a checksum of the attacker's choosing. The private key never enters the
+     * repository -- it is a GitHub Actions secret and the metadata is signed at release time
+     * (scripts/update/generate-update-json.py + the release workflow). The format is the same
+     * SubjectPublicKeyInfo (DER, base64) the engine-update manifest already uses.
+     */
+    static final String PUBLIC_KEY_B64 =
+        "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE/KZ+Tz9g/zR2Fp5E3drAjbOuJXveYBUsbVzbVfFZLT1AZI3SniD6OUw5gQSmB68unf5HBbrY5tw3WKa6IWDOpw==";
+
     /** A few kilobytes is generous for this file; anything larger is not ours and is refused. */
     private static final int MAX_BYTES = 128 * 1024;
+
+    /** A release APK is ~60 MB today; refuse anything that could not plausibly be one. */
+    static final long MAX_APK_BYTES = 512L * 1024L * 1024L;
 
     private static final int CONNECT_TIMEOUT_MS = 10000;
     private static final int READ_TIMEOUT_MS = 10000;
@@ -71,6 +97,12 @@ final class UpdateChecker {
      * point the download anywhere else. Must stay a plain https:// host prefix.
      */
     static final String APK_URL_PREFIX = "https://github.com/redaf12-Decode/Generals-Android-Port/";
+
+    /** The exact host apkUrl must name; a prefix check alone can be spoofed (see isAcceptableApkUrl). */
+    static final String TRUSTED_APK_HOST = "github.com";
+
+    /** The path prefix under that host a release asset must live under. */
+    static final String TRUSTED_APK_PATH_PREFIX = "/redaf12-Decode/Generals-Android-Port/releases/download/";
 
     /** The remote version, or null when the check could not produce one. */
     static final class Update {
@@ -167,36 +199,82 @@ final class UpdateChecker {
                 }
             }
         }
-        // Phase 2 fields. They are read loosely: an apkUrl that is missing, not https, not under
-        // this repository, or whose sha256 is not 64 hex characters is dropped (leaving apkUrl
-        // empty), so an Update either carries a fetchable APK or none -- never a half-usable one.
+        // Phase 2 fields. They are read strictly: an apkUrl that is missing, not an https URL on
+        // this project's GitHub host, whose sha256 is not 64 hex characters (and not the
+        // all-zero placeholder), whose size is zero/negative/implausibly large, or whose
+        // packageName is missing or malformed drops the whole download (leaving apkUrl empty),
+        // so an Update either carries a fully-specified, fetchable APK or none.
         String packageName = obj.optString("packageName", "").trim();
         String apkUrl = obj.optString("apkUrl", "").trim();
         String apkSha256 = obj.optString("apkSha256", "").trim().toLowerCase(Locale.ROOT);
         long apkSizeBytes = obj.optLong("apkSizeBytes", 0L);
-        if (!isAcceptableApkUrl(apkUrl) || !isSha256(apkSha256)) {
+        boolean apkOk = isAcceptableApkUrl(apkUrl)
+            && isUsableSha256(apkSha256)
+            && isUsableApkSize(apkSizeBytes)
+            && isPackageName(packageName);
+        if (!apkOk) {
             apkUrl = "";
-        }
-        if (apkSizeBytes < 0) {
-            apkSizeBytes = 0;
+            apkSha256 = "";
+            apkSizeBytes = 0L;
         }
 
         return new Update(versionCode, versionName, Collections.unmodifiableList(notes),
-            packageName, apkUrl, apkUrl.isEmpty() ? "" : apkSha256, apkSizeBytes);
+            packageName, apkUrl, apkSha256, apkSizeBytes);
     }
 
     /**
-     * Only an https URL on this project's GitHub host is accepted. The download then follows
-     * GitHub's own HTTPS redirects to the release asset; an http:// URL, or a host anywhere else,
-     * is refused outright rather than being trusted to redirect somewhere safe.
+     * GeneralsX @bugfix Android security 10/11/2026 Parses the download URL as a real URI and
+     * checks the scheme, host and path separately, instead of a string-prefix test. A prefix
+     * test accepts "https://github.com.evil.example/..." and "https://github.com@evil.example/",
+     * both of which a naive downloader would fetch from the attacker; comparing URI components
+     * cannot be fooled that way. Only an https URL, on github.com exactly, under this
+     * repository's release-download path, is accepted.
      */
     static boolean isAcceptableApkUrl(String url) {
-        return url != null && url.startsWith(APK_URL_PREFIX);
+        if (url == null || url.isEmpty()) {
+            return false;
+        }
+        try {
+            URI uri = new URI(url);
+            if (!"https".equalsIgnoreCase(uri.getScheme())) {
+                return false;
+            }
+            if (!TRUSTED_APK_HOST.equalsIgnoreCase(uri.getHost())) {
+                return false;
+            }
+            if (uri.getUserInfo() != null) {
+                return false;
+            }
+            int port = uri.getPort();
+            if (port != -1 && port != 443) {
+                return false;
+            }
+            String path = uri.getPath();
+            return path != null && path.startsWith(TRUSTED_APK_PATH_PREFIX);
+        } catch (URISyntaxException e) {
+            return false;
+        }
     }
 
-    /** Exactly 64 hexadecimal characters, the shape of a SHA-256 digest. */
+    /** Exactly 64 hexadecimal characters and not the all-zero placeholder. */
     static boolean isSha256(String value) {
         return value != null && value.matches("[0-9a-fA-F]{64}");
+    }
+
+    /** A real digest: correct shape and not the "0000...0" placeholder update.json shipped with. */
+    static boolean isUsableSha256(String value) {
+        return isSha256(value) && !value.matches("0{64}");
+    }
+
+    /** A believable APK size: greater than zero and no larger than a release could plausibly be. */
+    static boolean isUsableApkSize(long bytes) {
+        return bytes > 0 && bytes <= MAX_APK_BYTES;
+    }
+
+    /** A plausible Android package name: dot-separated identifiers, no scheme/space/separator. */
+    static boolean isPackageName(String value) {
+        return value != null
+            && value.matches("[A-Za-z][A-Za-z0-9_]*(\\.[A-Za-z][A-Za-z0-9_]*)+");
     }
 
     /**
@@ -246,6 +324,14 @@ final class UpdateChecker {
         }
         try {
             byte[] body = fetch(UPDATE_URL, MAX_BYTES);
+            byte[] sig = fetch(UPDATE_SIGNATURE_URL, 8 * 1024);
+            if (!verify(body, sig)) {
+                // GeneralsX @feature Android security 10/11/2026 Unsigned or wrongly signed
+                // metadata is refused outright: an update that cannot be proven ours is not
+                // offered at all, not offered with a warning.
+                Log.w(TAG, "update.json signature did not verify; ignoring the update");
+                return null;
+            }
             Update update = parse(new String(body, StandardCharsets.UTF_8));
             return isNewer(update, installedVersionCode(ctx)) ? update : null;
         } catch (IOException e) {
@@ -256,6 +342,39 @@ final class UpdateChecker {
             // A JSON shape this class did not expect must not take the launcher down with it.
             Log.i(TAG, "update check skipped: " + e);
             return null;
+        }
+    }
+
+    /**
+     * GeneralsX @feature Android security 10/11/2026 Verifies a detached base64 ECDSA-P256/SHA-256
+     * signature over the exact bytes of update.json against {@link #PUBLIC_KEY_B64}. The same
+     * scheme the engine-update manifest already uses (UpdateManager.verify), so one key can sign
+     * both, but the public key is pinned in this class so a change to one does not silently change
+     * the other's trust.
+     */
+    static boolean verify(byte[] data, byte[] signatureText) {
+        return verify(data, signatureText, PUBLIC_KEY_B64);
+    }
+
+    /** As {@link #verify(byte[], byte[])}, but against a caller-supplied public key (tests). */
+    static boolean verify(byte[] data, byte[] signatureText, String publicKeyB64) {
+        if (data == null || signatureText == null || signatureText.length == 0
+                || publicKeyB64 == null) {
+            return false;
+        }
+        try {
+            byte[] keyBytes = Base64.decode(publicKeyB64, Base64.DEFAULT);
+            PublicKey key = KeyFactory.getInstance("EC")
+                .generatePublic(new X509EncodedKeySpec(keyBytes));
+            byte[] sig = Base64.decode(
+                new String(signatureText, StandardCharsets.US_ASCII).trim(), Base64.DEFAULT);
+            Signature verifier = Signature.getInstance("SHA256withECDSA");
+            verifier.initVerify(key);
+            verifier.update(data);
+            return verifier.verify(sig);
+        } catch (Exception e) {
+            Log.w(TAG, "signature check failed", e);
+            return false;
         }
     }
 

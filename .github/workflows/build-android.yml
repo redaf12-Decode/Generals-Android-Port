@@ -1,19 +1,12 @@
 name: Build Android
 
+# GeneralsX @bugfix Android security 10/11/2026 The write scopes this workflow needs (creating a
+# Release, deleting superseded artifacts) are declared on the build-android job below rather than
+# workflow-wide, so every other job in this file -- and any job added later -- defaults to the
+# repository's read-only token. pull_request (not pull_request_target) from a fork gets a
+# read-only token from GitHub regardless of these scopes.
 permissions:
-  # GeneralsX @feature Android port 09/07/2026 contents:write is needed for the
-  # optional "create a GitHub Release" step below (softprops/action-gh-release
-  # needs to create a tag + release + upload an asset). Safe to declare at the
-  # workflow level: pull_request (not pull_request_target) from a fork always
-  # gets a read-only token from GitHub regardless of this block, and push/
-  # workflow_dispatch on this repo both require write access to trigger anyway.
-  contents: write
-  pull-requests: read
-  # GeneralsX @bugfix Android CI 18/07/2026 needed by the "Delete old
-  # artifacts" cleanup step below (DELETE .../actions/artifacts/{id}) --
-  # without this, that call 403s since an explicit permissions: block (this
-  # one) drops every unlisted scope to none rather than defaulting to read.
-  actions: write
+  contents: read
 
 on:
   # GeneralsX @bugfix Android CI 01/08/2026 dropped the push: trigger that
@@ -29,6 +22,11 @@ on:
   pull_request:
     branches:
       - main
+      # GeneralsX @build Android security 10/11/2026 New-app is the integration branch PRs land
+      # on; without it here a PR to New-app never ran the full build (same gap android-unit-tests
+      # closed). This is the full native build, so it is expensive -- it runs only on a PR, not on
+      # a push, which is what keeps an unattended build from firing on every commit.
+      - New-app
     paths:
       - 'GeneralsMD/**'
       - 'Core/**'
@@ -70,6 +68,12 @@ jobs:
   build-android:
     name: apk@${{ inputs.preset || 'android-vulkan' }}
     runs-on: ubuntu-latest
+    # GeneralsX @bugfix Android security 10/11/2026 Declared here, not workflow-wide: only this
+    # job creates a Release (contents: write) or deletes superseded artifacts (actions: write).
+    permissions:
+      contents: write
+      pull-requests: read
+      actions: write
     # GeneralsX @build Android CI 04/11/2026 raised from 120: the job now compiles both games
     # (z_generals + g_generals) twice, once per simulation rate, so a cold-cache run is roughly
     # four engine builds instead of one.
@@ -514,18 +518,62 @@ jobs:
           echo "version_name=${{ inputs.version_name || '' }}" >> "$GITHUB_OUTPUT"
           echo "apk_name=GeneralsXZH-android-run${{ github.run_number }}.apk" >> "$GITHUB_OUTPUT"
 
+      - name: Prepare release signing
+        # GeneralsX @feature Android security 10/11/2026 The production keystore lives only in
+        # GitHub Actions secrets and is written to a runner-temp file for the length of the build.
+        # Nothing is echoed: the base64 is decoded straight to disk and the passwords go into the
+        # job environment (where GitHub masks them in logs), never onto a command line. The old
+        # committed debug.keystore is gone -- see docs/HOWTO/SIGNING_KEY_ROTATION.md.
+        #
+        # A fork PR has no secrets, so when the production key is absent this generates a throwaway
+        # key instead: the release variant still builds and is still verified non-debuggable, but
+        # GX_EPHEMERAL_SIGNING is set and the publish step below refuses to release it. Only a
+        # build with the real secrets can become a published release.
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_RELEASE_KEYSTORE_BASE64 }}
+          STORE_PASSWORD: ${{ secrets.ANDROID_RELEASE_STORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_RELEASE_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_RELEASE_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          umask 077
+          if [ -n "${KEYSTORE_B64}" ] && [ -n "${STORE_PASSWORD}" ] && [ -n "${KEY_ALIAS}" ] && [ -n "${KEY_PASSWORD}" ]; then
+            KEYSTORE="$RUNNER_TEMP/release.keystore"
+            printf '%s' "${KEYSTORE_B64}" | base64 -d > "${KEYSTORE}"
+            {
+              echo "GX_RELEASE_STORE_FILE=${KEYSTORE}"
+              echo "GX_RELEASE_STORE_PASSWORD=${STORE_PASSWORD}"
+              echo "GX_RELEASE_KEY_ALIAS=${KEY_ALIAS}"
+              echo "GX_RELEASE_KEY_PASSWORD=${KEY_PASSWORD}"
+              echo "GX_EPHEMERAL_SIGNING=false"
+            } >> "$GITHUB_ENV"
+            echo "Using the production signing key from secrets."
+          else
+            KEYSTORE="$RUNNER_TEMP/ephemeral.keystore"
+            keytool -genkeypair -keystore "${KEYSTORE}" -storepass ephemeral \
+              -keypass ephemeral -alias ephemeral -keyalg EC -groupname secp256r1 \
+              -validity 1 -dname "CN=GeneralsX CI validation, O=GeneralsX, C=US" >/dev/null 2>&1
+            {
+              echo "GX_RELEASE_STORE_FILE=${KEYSTORE}"
+              echo "GX_RELEASE_STORE_PASSWORD=ephemeral"
+              echo "GX_RELEASE_KEY_ALIAS=ephemeral"
+              echo "GX_RELEASE_KEY_PASSWORD=ephemeral"
+              echo "GX_EPHEMERAL_SIGNING=true"
+            } >> "$GITHUB_ENV"
+            echo "::warning::production signing secrets absent (fork PR?). Built with a throwaway key; this build cannot be published."
+          fi
+
       - name: Package APK
         env:
           # scripts/build/android/package-android-zh.sh uses these to stage
-          # jniLibs/, the SDL3 Java glue, and fonts, then invokes Gradle. Same
-          # fixed debug.keystore every run (committed in android/app/) is what
-          # makes consecutive CI builds installable as updates over each other
-          # rather than requiring an uninstall, PROVIDED versionCode was bumped
-          # by hand (in build.gradle or via a manual-dispatch override) since
-          # the last build the user actually installed.
+          # jniLibs/, the SDL3 Java glue, and fonts, then invokes Gradle.
           GX_ANDROID_STAGING: ${{ github.workspace }}/android-staging
           GX_ANDROID_VERSION_CODE: ${{ steps.artifact.outputs.version_code }}
           GX_ANDROID_VERSION_NAME: ${{ steps.artifact.outputs.version_name }}
+          # GeneralsX @bugfix Android security 10/11/2026 Build the RELEASE variant: non-debuggable
+          # and signed with the production key prepared above. The old workflow shipped a renamed
+          # app-debug.apk as the release, signed with the committed debug key.
+          GX_ANDROID_VARIANT: release
           # GeneralsX @build Android CI 04/11/2026 The 60 Hz engines stashed by pass 1, so
           # package-android-zh.sh stages all four into jniLibs/: libmain.so + libmain60.so
           # (Zero Hour) and libgenerals.so + libgenerals60.so (the base game). The 30 Hz pair is
@@ -535,13 +583,65 @@ jobs:
         run: |
           ./scripts/build/android/package-android-zh.sh
 
+      - name: Apply signing-key rotation lineage
+        # GeneralsX @feature Android security 10/11/2026 Optional, and only when the rotation
+        # secret is present. The old debug key was public, so an install signed with it can only
+        # accept this release if the APK carries a v3 signing lineage proving the old key
+        # authorised the new one. The lineage is built from the (public, therefore
+        # non-confidential) old debug keystore and the new production key, then the APK is
+        # re-signed with the lineage attached. Absent the secret, the APK stays signed with the
+        # production key alone and existing installs must uninstall once (see the HOWTO).
+        if: ${{ env.GX_EPHEMERAL_SIGNING != 'true' && secrets.ANDROID_RELEASE_OLD_DEBUG_KEYSTORE_BASE64 != '' }}
+        env:
+          OLD_KEYSTORE_B64: ${{ secrets.ANDROID_RELEASE_OLD_DEBUG_KEYSTORE_BASE64 }}
+        run: |
+          set -euo pipefail
+          BT="$(ls -d "${ANDROID_HOME}"/build-tools/* | sort -V | tail -1)"
+          umask 077
+          OLD="$RUNNER_TEMP/old-debug.keystore"
+          printf '%s' "${OLD_KEYSTORE_B64}" | base64 -d > "${OLD}"
+          APK="${{ steps.locate.outputs.path }}"
+          # The lineage: old debug key -> new production key. Both passwords of the old debug
+          # keystore are the well-known "android", which is exactly why the key is being retired.
+          "${BT}/apksigner" rotate --out "$RUNNER_TEMP/lineage.bin" \
+            --old-signer --ks "${OLD}" --ks-pass pass:android --ks-key-alias androiddebugkey --key-pass pass:android \
+            --new-signer --ks "${GX_RELEASE_STORE_FILE}" --ks-pass "pass:${GX_RELEASE_STORE_PASSWORD}" \
+              --ks-key-alias "${GX_RELEASE_KEY_ALIAS}" --key-pass "pass:${GX_RELEASE_KEY_PASSWORD}"
+          # Re-sign in place with the production key and the lineage, so Android 9+ accepts the
+          # APK as an update to an install signed with the old key.
+          "${BT}/apksigner" sign --ks "${GX_RELEASE_STORE_FILE}" \
+            --ks-pass "pass:${GX_RELEASE_STORE_PASSWORD}" --ks-key-alias "${GX_RELEASE_KEY_ALIAS}" \
+            --key-pass "pass:${GX_RELEASE_KEY_PASSWORD}" --lineage "$RUNNER_TEMP/lineage.bin" \
+            --in "${APK}" --out "${APK}.rotated"
+          mv "${APK}.rotated" "${APK}"
+
       - name: Locate APK
         id: locate
         run: |
-          APK="android/app/build/outputs/apk/debug/app-debug.apk"
+          APK="android/app/build/outputs/apk/release/app-release.apk"
           if [ ! -f "$APK" ]; then echo "::error::APK not found at $APK"; exit 1; fi
           cp "$APK" "${{ steps.artifact.outputs.apk_name }}"
           echo "path=${{ steps.artifact.outputs.apk_name }}" >> "$GITHUB_OUTPUT"
+
+      - name: Verify APK is a signed, non-debuggable release
+        # GeneralsX @feature Android security 10/11/2026 The build is not a release unless the
+        # artifact proves it: signed (v2+, and v3 when a lineage is attached), not debuggable, and
+        # carrying the expected package id. This is the check that would have caught the old
+        # workflow shipping a debug-signed, debuggable app-debug.apk as the release.
+        run: |
+          set -euo pipefail
+          BT="$(ls -d "${ANDROID_HOME}"/build-tools/* | sort -V | tail -1)"
+          APK="${{ steps.locate.outputs.path }}"
+          "${BT}/apksigner" verify --verbose --print-certs "${APK}"
+          if "${BT}/aapt2" dump badging "${APK}" | grep -q "application-debuggable"; then
+            echo "::error::the release APK is debuggable"
+            exit 1
+          fi
+          if ! "${BT}/aapt2" dump badging "${APK}" | grep -q "package: name='com.ports.generalsx'"; then
+            echo "::error::unexpected package name in the release APK"
+            exit 1
+          fi
+          echo "OK: signed, non-debuggable release APK for com.ports.generalsx."
 
       # GeneralsX @bugfix Android CI 07/07/2026 A real device caught what CI
       # missed: run #10's APK was missing libgamespy.so (a genuine DT_NEEDED
@@ -629,7 +729,7 @@ jobs:
       # tagged from version_name (set alongside it above) so the release name
       # always matches what's baked into the APK's own versionName.
       - name: Create GitHub Release
-        if: ${{ github.event_name == 'workflow_dispatch' && inputs.create_release }}
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.create_release && env.GX_EPHEMERAL_SIGNING != 'true' }}
         run: |
           set -euo pipefail
           if [ -z "${{ inputs.version_name }}" ]; then
@@ -638,7 +738,7 @@ jobs:
           fi
 
       - name: Publish GitHub Release
-        if: ${{ github.event_name == 'workflow_dispatch' && inputs.create_release }}
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.create_release && env.GX_EPHEMERAL_SIGNING != 'true' }}
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ inputs.version_name }}

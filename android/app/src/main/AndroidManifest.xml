@@ -74,10 +74,16 @@
          show that system prompt. -->
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
 
-    <!-- GeneralsX @feature Android port 09/11/2026 The update check can download a newer APK and
-         hand it to Android's package installer (ApkInstaller). On Android 8.0+ this is the
-         per-app "install unknown apps" permission; the install itself is still the platform
-         installer's and the user's decision. Nothing here installs silently or with root. -->
+    <!-- GeneralsX @build Android port 09/11/2026 The update check downloads a newer APK and hands
+         it to Android's package installer (ApkInstaller). On Android 8.0+ this is the per-app
+         "install unknown apps" permission; the install itself is still the platform installer's
+         and the user's decision. Nothing here installs silently or with root.
+
+         GeneralsX @bugfix Android security 10/11/2026 It is asked for at runtime, only when the
+         player taps Install on an already-verified update (ApkInstaller.requestInstall ->
+         Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES). Declaring it in the manifest is still
+         required for that request to be possible, but the app never uses it before the user has
+         explicitly chosen to install a file that passed every integrity check. -->
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 
     <!-- GeneralsX @bugfix Android port 24/09/2026 Issue #22 (Android 10): with targetSdk 29+
@@ -89,6 +95,8 @@
         android:label="@string/app_name"
         android:icon="@mipmap/ic_launcher"
         android:allowBackup="true"
+        android:fullBackupContent="@xml/backup_rules"
+        android:dataExtractionRules="@xml/data_extraction_rules"
         android:isGame="true"
         android:appCategory="game"
         android:hardwareAccelerated="true"

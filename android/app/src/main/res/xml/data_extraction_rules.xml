@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  GeneralsX @feature Android security 10/11/2026 Backup rules for Android 12+
+  (the android:dataExtractionRules attribute). The cloud-backup half mirrors
+  backup_rules.xml (Android 11 and below); device-transfer keeps the same
+  exclusions so a phone-to-phone transfer cannot carry the account either.
+-->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="file" path="generalsonline_session.txt" />
+        <exclude domain="sharedpref" path="generalsonline_session.xml" />
+        <exclude domain="external" path="generals-network.log" />
+        <exclude domain="external" path="generals-network.log.prev" />
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="file" path="generalsonline_session.txt" />
+        <exclude domain="sharedpref" path="generalsonline_session.xml" />
+        <exclude domain="external" path="generals-network.log" />
+        <exclude domain="external" path="generals-network.log.prev" />
+    </device-transfer>
+</data-extraction-rules>

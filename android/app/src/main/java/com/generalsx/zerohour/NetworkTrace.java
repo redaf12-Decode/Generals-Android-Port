@@ -82,6 +82,12 @@ final class NetworkTrace {
         Pattern.compile("(Bearer\\s+)([A-Za-z0-9._\\-+/=]{8,})");
     private static final Pattern TOKEN_FIELD =
         Pattern.compile("(\"(?:session_token|refresh_token|access_token)\"\\s*:\\s*\")([^\"]{8,})(\")");
+    // GeneralsX @bugfix Android security 10/11/2026 The session marker file and query strings
+    // carry the same tokens in "key=value" form (files/generalsonline_session.txt), which the two
+    // patterns above do not match. If that content ever reaches a log -- a copied marker, a
+    // request line with a query -- this is what stops the token leaving with it.
+    private static final Pattern TOKEN_ASSIGNMENT =
+        Pattern.compile("((?:session_token|refresh_token|access_token)=)([A-Za-z0-9._\\-+/=]{8,})");
 
     private NetworkTrace() {
     }
@@ -119,6 +125,15 @@ final class NetworkTrace {
         while (m.find()) {
             m.appendReplacement(out,
                 Matcher.quoteReplacement(m.group(1) + "<token, " + m.group(2).length() + " chars>" + m.group(3)));
+        }
+        m.appendTail(out);
+
+        String twice = out.toString();
+        out = new StringBuffer(twice.length());
+        m = TOKEN_ASSIGNMENT.matcher(twice);
+        while (m.find()) {
+            m.appendReplacement(out,
+                Matcher.quoteReplacement(m.group(1) + "<token, " + m.group(2).length() + " chars>"));
         }
         m.appendTail(out);
         return out.toString();

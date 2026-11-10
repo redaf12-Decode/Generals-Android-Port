@@ -12,3 +12,9 @@ app/src/main/assets/gamedata/*
 app/src/main/assets/default_driver/
 app/src/main/assets/engine_build.txt
 app/src/main/assets/update_channel.txt
+
+# GeneralsX @bugfix Android security 10/11/2026 never commit signing keys
+*.keystore
+*.jks
+keystore.properties
+signing/
