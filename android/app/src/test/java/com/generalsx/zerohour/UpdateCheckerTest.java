@@ -228,23 +228,70 @@ public class UpdateCheckerTest {
     @Test
     public void checksumIsLowerCased() {
         UpdateChecker.Update update = UpdateChecker.parse(
-            "{\"versionCode\":1,\"apkUrl\":\"" + APK_URL + "\","
+            "{\"versionCode\":1,\"packageName\":\"com.ports.generalsx\","
+            + "\"apkUrl\":\"" + APK_URL + "\",\"apkSizeBytes\":123456789,"
             + "\"apkSha256\":\"ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789\"}");
         assertEquals("abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789",
             update.apkSha256);
     }
 
-    /** A checksum that is not 64 hex characters, or a URL off this host, drops the download. */
+    /** The all-zero placeholder update.json used to ship with is refused, not accepted as a hash. */
     @Test
-    public void aBadChecksumOrForeignUrlDropsTheApk() {
+    public void allZeroChecksumDropsTheApk() {
+        assertFalse(UpdateChecker.isUsableSha256(
+            "0000000000000000000000000000000000000000000000000000000000000000"));
         assertFalse(UpdateChecker.parse(
-            "{\"versionCode\":1,\"apkUrl\":\"" + APK_URL + "\",\"apkSha256\":\"abc\"}").hasApk());
+            "{\"versionCode\":1,\"packageName\":\"com.ports.generalsx\","
+            + "\"apkUrl\":\"" + APK_URL + "\",\"apkSizeBytes\":123,"
+            + "\"apkSha256\":\"0000000000000000000000000000000000000000000000000000000000000000\"}")
+            .hasApk());
+    }
+
+    /** A zero, negative or implausibly large size drops the download. */
+    @Test
+    public void unusableSizesDropTheApk() {
+        assertFalse(UpdateChecker.isUsableApkSize(0));
+        assertFalse(UpdateChecker.isUsableApkSize(-1));
+        assertFalse(UpdateChecker.isUsableApkSize(UpdateChecker.MAX_APK_BYTES + 1));
+        assertTrue(UpdateChecker.isUsableApkSize(1));
+        assertTrue(UpdateChecker.isUsableApkSize(UpdateChecker.MAX_APK_BYTES));
         assertFalse(UpdateChecker.parse(
-            "{\"versionCode\":1,\"apkUrl\":\"https://evil.example/app.apk\","
+            "{\"versionCode\":1,\"packageName\":\"com.ports.generalsx\","
+            + "\"apkUrl\":\"" + APK_URL + "\",\"apkSizeBytes\":0,"
             + "\"apkSha256\":\"" + SHA + "\"}").hasApk());
+    }
+
+    /** A missing or malformed package name drops the download. */
+    @Test
+    public void malformedPackageNameDropsTheApk() {
+        assertFalse(UpdateChecker.isPackageName(""));
+        assertFalse(UpdateChecker.isPackageName("com"));
+        assertFalse(UpdateChecker.isPackageName("com..x"));
+        assertFalse(UpdateChecker.isPackageName("com/ports/generalsx"));
+        assertTrue(UpdateChecker.isPackageName("com.ports.generalsx"));
         assertFalse(UpdateChecker.parse(
-            "{\"versionCode\":1,\"apkUrl\":\"http://github.com/redaf12-Decode/Generals-Android-Port/x\","
+            "{\"versionCode\":1,\"apkUrl\":\"" + APK_URL + "\",\"apkSizeBytes\":123,"
             + "\"apkSha256\":\"" + SHA + "\"}").hasApk());
+    }
+
+    // ------------------------------------------------------------------ URL spoofing
+
+    /** A URL that only looks like a GitHub URL (extra domain, embedded userinfo, http) is refused. */
+    @Test
+    public void urlSpoofingIsRefused() {
+        assertFalse(UpdateChecker.isAcceptableApkUrl(
+            "https://github.com.evil.example/redaf12-Decode/Generals-Android-Port/releases/download/v1/x.apk"));
+        assertFalse(UpdateChecker.isAcceptableApkUrl(
+            "https://github.com@evil.example/redaf12-Decode/Generals-Android-Port/releases/download/v1/x.apk"));
+        assertFalse(UpdateChecker.isAcceptableApkUrl(
+            "http://github.com/redaf12-Decode/Generals-Android-Port/releases/download/v1/x.apk"));
+        assertFalse(UpdateChecker.isAcceptableApkUrl(
+            "https://evil.example/github.com/redaf12-Decode/Generals-Android-Port/releases/download/v1/x.apk"));
+        assertFalse(UpdateChecker.isAcceptableApkUrl(
+            "https://github.com/other/repo/releases/download/v1/x.apk"));
+        // The genuine shape is accepted.
+        assertTrue(UpdateChecker.isAcceptableApkUrl(
+            "https://github.com/redaf12-Decode/Generals-Android-Port/releases/download/v1.5.0/app-release.apk"));
     }
 
     @Test

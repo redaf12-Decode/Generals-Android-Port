@@ -10,6 +10,7 @@
 package com.generalsx.zerohour;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
@@ -75,8 +76,10 @@ public class ApkInstallerTest {
     @Test
     public void verifyRejectsAnEmptyOrMissingFile() throws Exception {
         UpdateChecker.Update update = UpdateChecker.parse(
-            "{\"versionCode\":1,\"apkUrl\":\"https://github.com/redaf12-Decode/Generals-Android-Port/x\","
-            + "\"apkSha256\":\"0000000000000000000000000000000000000000000000000000000000000000\"}");
+            "{\"versionCode\":1,\"packageName\":\"com.ports.generalsx\","
+            + "\"apkUrl\":\"https://github.com/redaf12-Decode/Generals-Android-Port/releases/download/v1/x.apk\","
+            + "\"apkSizeBytes\":1,"
+            + "\"apkSha256\":\"0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef\"}");
         File empty = File.createTempFile("gx-empty", ".apk", app().getCacheDir());
         assertEquals(ApkInstaller.ERR_INVALID_APK, ApkInstaller.verify(app(), update, empty));
         assertEquals(ApkInstaller.ERR_INVALID_APK,
@@ -89,8 +92,9 @@ public class ApkInstallerTest {
     @Test
     public void verifyReportsASizeMismatch() throws Exception {
         UpdateChecker.Update update = UpdateChecker.parse(
-            "{\"versionCode\":1,\"apkUrl\":\"https://github.com/redaf12-Decode/Generals-Android-Port/x\","
-            + "\"apkSha256\":\"0000000000000000000000000000000000000000000000000000000000000000\","
+            "{\"versionCode\":1,\"packageName\":\"com.ports.generalsx\","
+            + "\"apkUrl\":\"https://github.com/redaf12-Decode/Generals-Android-Port/releases/download/v1/x.apk\","
+            + "\"apkSha256\":\"0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef\","
             + "\"apkSizeBytes\":999999}");
         File f = File.createTempFile("gx-size", ".apk", app().getCacheDir());
         try (FileOutputStream out = new FileOutputStream(f)) {
@@ -99,6 +103,54 @@ public class ApkInstallerTest {
         assertEquals(ApkInstaller.ERR_SIZE, ApkInstaller.verify(app(), update, f));
         //noinspection ResultOfMethodCallIgnored
         f.delete();
+    }
+
+    /**
+     * A file whose bytes match neither the promised size nor the digest is refused with the
+     * checksum failure once the size is forced to match -- the check that catches tampering.
+     */
+    @Test
+    public void verifyRejectsAWrongChecksum() throws Exception {
+        File f = File.createTempFile("gx-sha-bad", ".apk", app().getCacheDir());
+        try (FileOutputStream out = new FileOutputStream(f)) {
+            out.write(new byte[16]);
+        }
+        UpdateChecker.Update update = UpdateChecker.parse(
+            "{\"versionCode\":1,\"packageName\":\"com.ports.generalsx\","
+            + "\"apkUrl\":\"https://github.com/redaf12-Decode/Generals-Android-Port/releases/download/v1/x.apk\","
+            + "\"apkSizeBytes\":16,"
+            + "\"apkSha256\":\"0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef\"}");
+        assertEquals(ApkInstaller.ERR_CHECKSUM, ApkInstaller.verify(app(), update, f));
+        //noinspection ResultOfMethodCallIgnored
+        f.delete();
+    }
+
+    /** An Update with no digest or size is refused outright, not verified with the checks skipped. */
+    @Test
+    public void verifyRefusesAnUpdateWithoutDigestOrSize() throws Exception {
+        File f = File.createTempFile("gx-nodigest", ".apk", app().getCacheDir());
+        try (FileOutputStream out = new FileOutputStream(f)) {
+            out.write(new byte[16]);
+        }
+        UpdateChecker.Update bare = new UpdateChecker.Update(1, "1.0.0",
+            java.util.Collections.emptyList(), "", "", "", 0L);
+        assertEquals(ApkInstaller.ERR_INVALID_APK, ApkInstaller.verify(app(), bare, f));
+        //noinspection ResultOfMethodCallIgnored
+        f.delete();
+    }
+
+    // ------------------------------------------------------------------ redirect host allow-list
+
+    @Test
+    public void onlyTrustedHttpsAssetHostsAreAcceptedAfterRedirects() throws Exception {
+        assertTrue(ApkInstaller.isAcceptableFinalUrl(
+            new java.net.URL("https://github.com/redaf12-Decode/Generals-Android-Port/releases/download/v1/x.apk")));
+        assertTrue(ApkInstaller.isAcceptableFinalUrl(
+            new java.net.URL("https://objects.githubusercontent.com/github-production-release-asset/x")));
+        assertFalse("http must be refused", ApkInstaller.isAcceptableFinalUrl(
+            new java.net.URL("http://github.com/redaf12-Decode/Generals-Android-Port/releases/download/v1/x.apk")));
+        assertFalse("an arbitrary host must be refused", ApkInstaller.isAcceptableFinalUrl(
+            new java.net.URL("https://evil.example/x.apk")));
     }
 
     /** Every failure code must resolve to a non-empty, localized string. */

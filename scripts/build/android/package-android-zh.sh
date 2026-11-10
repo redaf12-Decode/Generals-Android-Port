@@ -367,10 +367,25 @@ if [[ -n "${GX_ANDROID_VERSION_NAME:-}" ]]; then
     GRADLE_VERSION_ARG="${GRADLE_VERSION_ARG} -PandroidVersionName=${GX_ANDROID_VERSION_NAME}"
 fi
 
-echo "==> ${GRADLE_CMD} assembleDebug ${GRADLE_VERSION_ARG}"
-"${GRADLE_CMD}" assembleDebug ${GRADLE_VERSION_ARG}
+# GeneralsX @bugfix Android security 10/11/2026 The build type is selectable. The default stays
+# `debug` so the local test-build scripts (build-local-sandboxed.sh, build-dual-hz.sh) are
+# unchanged: a test build keeps the debug type, whose key is throwaway, so consecutive test APKs
+# install over each other. A *release* MUST be built as the release type, which is non-debuggable
+# and signed with the production key from the signing environment (GX_RELEASE_*), never the old
+# in-repo debug key -- the CI release job sets GX_ANDROID_VARIANT=release.
+#   GX_ANDROID_VARIANT=debug   (default) -> assembleDebug,   test build
+#   GX_ANDROID_VARIANT=release           -> assembleRelease, signed release
+VARIANT="${GX_ANDROID_VARIANT:-debug}"
+case "${VARIANT}" in
+    release) GRADLE_TASK="assembleRelease" ;;
+    debug)   GRADLE_TASK="assembleDebug" ;;
+    *) echo "ERROR: GX_ANDROID_VARIANT must be 'release' or 'debug' (got '${VARIANT}')"; exit 1 ;;
+esac
 
-APK="${ANDROID_DIR}/app/build/outputs/apk/debug/app-debug.apk"
+echo "==> ${GRADLE_CMD} ${GRADLE_TASK} ${GRADLE_VERSION_ARG}"
+"${GRADLE_CMD}" "${GRADLE_TASK}" ${GRADLE_VERSION_ARG}
+
+APK="${ANDROID_DIR}/app/build/outputs/apk/${VARIANT}/app-${VARIANT}.apk"
 if [[ ! -f "${APK}" ]]; then
     echo "ERROR: expected APK not found at ${APK}"
     exit 1
