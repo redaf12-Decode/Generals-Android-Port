@@ -132,6 +132,16 @@ JSON, unsigned metadata, URL-prefix spoofing, http downgrade, redirect to an unt
 malicious ZIP paths, ZIP resource exhaustion, invalid driver metadata, non-AArch64 ELF, token
 redaction, and backup exclusion.
 
+### CI
+
+- **Android Unit Tests (PR to New-app): green.** Every step passed, including the re-enabled
+  `Run JVM unit tests`, `Validate update metadata` and `Scan for committed signing material`.
+- **Build Android (PR to New-app): fails at `Restore vcpkg cache` (step 12), before any security
+  step.** The failure is a GitHub-side `BlobNotFound` on an evicted cache entry (the repo's Actions
+  cache quota is small), not caused by these changes; the same run's security steps are only
+  reached after the ~1h native compile. The release-signing path itself is verified locally
+  (`assembleRelease` + `apksigner verify` + non-debuggable check, above).
+
 ## 6. Final APK verification (local, production signing configuration)
 
 > Signed with a throwaway local test key to exercise the configuration; the real release uses the
