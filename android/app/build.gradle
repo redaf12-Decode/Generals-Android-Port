@@ -22,7 +22,7 @@ def gxDebugKeyAlias = System.getenv('GX_DEBUG_KEY_ALIAS') ?: project.findPropert
 def gxDebugKeyPassword = System.getenv('GX_DEBUG_KEY_PASSWORD') ?: project.findProperty('gxDebugKeyPassword')
 
 android {
-    namespace 'com.generalsx.zerohour'
+    namespace 'com.ports.generalsx'
     compileSdk 35
 
     signingConfigs {
@@ -48,13 +48,13 @@ android {
     }
 
     defaultConfig {
-        // GeneralsX @tweak Android port 08/11/2026 The applicationId (the id the OS, the Play
-        // Store and other apps see) is deliberately DIFFERENT from the Java namespace below
-        // ('com.generalsx.zerohour'), which stays put: renaming the package would move every
-        // class and every manifest .Name reference for no functional gain. Only this line, the
-        // native paths in Core/GameEngine/Include/Common/GXAndroidApp.h and the comments in
-        // scripts/build/android/package-android-zh.sh name the id, and all four must agree --
-        // see GXAndroidApp.h for why the native side builds those paths by hand.
+        // GeneralsX @tweak Android port 10/11/2026 The applicationId (the id the OS, the Play
+        // Store and other apps see) and the Java namespace above are now the SAME
+        // ('com.ports.generalsx'). The old Java package 'com.generalsx.zerohour' is gone: the
+        // source moved to java/com/ports/generalsx/, the manifest components are relative
+        // ('.SetupActivity' -> com.ports.generalsx.SetupActivity), the JNI entry points were
+        // renamed to Java_com_ports_generalsx_*, and the native paths in
+        // Core/GameEngine/Include/Common/GXAndroidApp.h already name this id. All of them agree.
         applicationId 'com.ports.generalsx'
         // API 28 (Android 9): floor that still covers the Redmi Note 8 Pro
         // line while giving bionic glob(3) and stable Vulkan loader behavior.
@@ -65,7 +65,7 @@ android {
         // a drop to 24 (Android 7.0) while modernising the launcher UI, and
         // deliberately NOT lowered. The launcher's own Java is clean at 24 —
         // `gradle :app:lintDebug` with minSdk 24 reports zero NewApi findings
-        // anywhere under java/com/generalsx/zerohour/ (the one API-30 call,
+        // anywhere under java/com/ports/generalsx/ (the one API-30 call,
         // Environment.isExternalStorageManager() in onSelectGameFolder(), is
         // already behind a SDK_INT >= R gate, and FeatureInfo.version /
         // Comparator.comparing() are both exactly API 24). Two things outside

@@ -18,11 +18,13 @@
 
 // GeneralsX @feature Android port 27/09/2026 Values that change without a new APK.
 //
-// The launcher (UpdateManager.java) fetches a signed manifest from the repository's `updates`
-// branch and writes its `config` section to files/update/remote_config.ini as key=value lines.
-// Only a verified manifest is ever written there, and the file is in the app's private storage,
-// so the engine reads it as trusted. A missing file or key means "use the value compiled in".
-// Parsed once per process. Off Android there is no such file and every lookup misses.
+// The launcher used to fetch a signed manifest from a repository's `updates` branch and write its
+// `config` section to files/update/remote_config.ini as key=value lines. That engine-over-the-air
+// system was removed on 10/11/2026, so nothing writes the file now and every lookup below misses,
+// leaving the values compiled in. The reader is kept because the engine reads these keys directly
+// (pc_exe_crc, stun_servers, turn_servers, ...) and a future settings channel can reuse it. A
+// missing file or key means "use the value compiled in". Parsed once per process. Off Android
+// there is no such file and every lookup misses.
 //
 // It also owns the boot marker of an updated engine: the launcher writes files/update/
 // boot_pending before loading a downloaded engine, and markEngineBootComplete() removes it once
@@ -96,8 +98,9 @@ namespace GXRemoteConfig
 	}
 
 	// GeneralsX @feature Android port 18/10/2026 A feature switch from the signed settings: "1" on,
-	// "0" off, missing means the build's own default. Every switch is listed, with the builds that
-	// read it, in update/features.json; scripts/update/features.py turns them on and off.
+	// "0" off, missing means the build's own default. The signed-settings channel that published
+	// these was removed on 10/11/2026, so this now always returns the fallback; kept for the engine
+	// callers (GXSignedSettings) and a future settings source.
 	inline bool enabled(const char *feature, bool fallback)
 	{
 		const std::string value = get(feature, fallback ? "1" : "0");

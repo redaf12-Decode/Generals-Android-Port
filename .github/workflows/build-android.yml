@@ -759,6 +759,50 @@ jobs:
           generate_release_notes: true
           make_latest: true
 
+      # GeneralsX @feature Android port 10/11/2026 After the release is published, generate and
+      # sign the update metadata the app reads, then upload it to the same release. The metadata is
+      # built from the published APK's own values (package, version code, size, SHA-256, signing
+      # certificate) by scripts/update/generate-update-metadata.py and signed with the
+      # UPDATE_METADATA_KEY secret; validate-release.py then re-reads the release and fails the run
+      # if anything disagrees. A missing secret stops the job -- an unsigned update.json would be
+      # rejected by the app, so it is never uploaded.
+      - name: Generate and sign update metadata
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.create_release }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          UPDATE_METADATA_KEY: ${{ secrets.UPDATE_METADATA_KEY }}
+        run: |
+          set -euo pipefail
+          if [ -z "${UPDATE_METADATA_KEY}" ]; then
+            echo "::error::UPDATE_METADATA_KEY is not set -- cannot sign the update metadata."
+            echo "Generate a key with scripts/update/generate-metadata-key.py and add its private half as a secret."
+            exit 1
+          fi
+          python3 -m pip install --quiet --disable-pip-version-check cryptography
+          umask 077
+          KEY="$RUNNER_TEMP/metadata-key.pem"
+          printf '%s\n' "${UPDATE_METADATA_KEY}" > "${KEY}"
+          trap 'rm -f "${KEY}"' EXIT
+          APK="${{ steps.locate.outputs.path }}"
+          python3 scripts/update/generate-update-metadata.py \
+            --apk "${APK}" \
+            --repo "${{ github.repository }}" \
+            --tag "v${{ inputs.version_name }}" \
+            --out "$RUNNER_TEMP/update-metadata" \
+            --key "${KEY}" \
+            --asset-url "https://github.com/${{ github.repository }}/releases/download/v${{ inputs.version_name }}/${APK##*/}"
+
+      - name: Upload metadata to the release
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.create_release }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          gh release upload "v${{ inputs.version_name }}" \
+            "$RUNNER_TEMP/update-metadata/update.json" \
+            "$RUNNER_TEMP/update-metadata/update.json.sig" \
+            --clobber
+
       - name: Collect dependency build logs for diagnosis
         if: always()
         run: |
