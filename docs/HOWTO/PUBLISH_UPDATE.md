@@ -91,10 +91,17 @@ not encrypted. Encryption would need the key inside the APK, where anyone can ta
 
 ## The key
 
-`update_signing_key.pem` is the private key. Keep it out of the repository. To sign in GitHub
-Actions, store its full text (including the `-----BEGIN/END EC PRIVATE KEY-----` lines) as the
-repository secret `UPDATE_SIGNING_KEY` (Settings → Secrets and variables → Actions → New
-repository secret). If the key is ever lost, a new one means a new APK with its public key.
+The engine-update manifest is signed with the key whose public half is pinned in
+`UpdateManager.PUBLIC_KEY_B64` (launcher) and `GXSignedSettings.cpp` (engine). The private key is
+`engine-update-key.pem`; keep it out of the repository. To sign in GitHub Actions, store its full
+text (including the `-----BEGIN/END EC PRIVATE KEY-----` lines) as the repository secret
+`UPDATE_SIGNING_KEY` (Settings → Secrets and variables → Actions → New repository secret).
+
+`update.json` (the Home "Updates" metadata) is signed with a **separate** key,
+`UPDATE_METADATA_SIGNING_KEY`, whose public half is `UpdateChecker.PUBLIC_KEY_B64`. The two domains
+are independent on purpose. See `docs/HOWTO/SIGNING_KEY_ROTATION.md` for both keys, their current
+fingerprints, and how to rotate them. If a key is ever lost, a new one means a new APK with its
+public key.
 
 ## Publishing
 

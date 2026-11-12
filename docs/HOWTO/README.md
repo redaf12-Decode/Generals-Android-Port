@@ -10,6 +10,7 @@ Step-by-step guides for common tasks in GeneralsX.
 | [Getting the Game Files](GETTING_THE_GAME_FILES.md) | Obtain original game assets (Steam, CrossOver, SteamCMD) |
 | [SagePatch Configuration](SAGEPATCH_CONFIGURATION.md) | Configure camera height, scroll speed, terrain draw distance, and other QoL settings |
 | [Russian Localization](RUSSIAN_LOCALIZATION.md) | Apply Russian language patch (EN + RU instructions) |
+| [Signing Keys and Rotation](SIGNING_KEY_ROTATION.md) | APK signing identity and the two update signing domains: fingerprints, secrets, rotation and migration |
 
 ## Contributing
 

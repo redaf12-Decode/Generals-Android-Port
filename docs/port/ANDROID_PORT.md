@@ -213,13 +213,16 @@ push to `main`/`claude/**` touching engine or `android/` files. Download the
 `GeneralsXZH-android-<run>.apk` artifact from the run summary and `adb install`
 it (or transfer + tap-install on the phone).
 
-**Every CI build is signed with the same committed debug key**
-(`android/app/debug.keystore` — a fixed, non-secret debug key checked into the
-repo instead of the machine-local key Android tooling normally auto-generates)
-and gets a strictly increasing `versionCode` from the workflow run number.
-That combination is what makes consecutive CI builds installable **as updates
-over each other** — tap a newer APK on the phone without uninstalling first —
-instead of Android refusing the install over a signature mismatch.
+**CI builds are signed with the throwaway debug key**, and each gets a strictly
+increasing `versionCode` from the workflow run number. That combination is what
+makes consecutive CI builds installable **as updates over each other** — tap a
+newer APK on the phone without uninstalling first — instead of Android refusing
+the install over a signature mismatch. The debug key is generated per machine by
+Android tooling (or supplied through `GX_DEBUG_KEYSTORE`); it is **not** the
+release key. **Releases** are signed with the production key from GitHub Actions
+secrets, never with a debug key — see `docs/HOWTO/SIGNING_KEY_ROTATION.md`. A
+release build without the signing secrets is refused at configuration time; it
+never falls back to debug signing.
 
 **On a fork, Actions must be enabled once**: GitHub disables workflow runs on
 forks by default. Go to the repo's **Actions** tab → click **"I understand my
