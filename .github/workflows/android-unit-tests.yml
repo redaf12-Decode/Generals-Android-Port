@@ -213,6 +213,22 @@ jobs:
       - name: Check signing trust anchors
         run: python3 scripts/qa/android/check-trust-anchors.py
 
+      # GeneralsX @build Android security 12/11/2026 The custom-driver trust pins: the archive the
+      # APK bundles (fetch-turnip.sh) and the library hashes the launcher marks verified
+      # (CustomDriverPackage.VERIFIED_DRIVER_SHA256) must both be present and well-formed, and must
+      # not be the same value. A pin left empty would silently mark no driver verified, or accept
+      # any archive.
+      - name: Check custom-driver trust pins
+        run: python3 scripts/qa/android/check-driver-allowlist.py
+
+      # GeneralsX @build Android security 12/11/2026 The manifest's external surface: only the two
+      # intended entry points may be exported, the FileProvider must be private with an
+      # applicationId-derived authority, no debug-only attribute may ship, and every declared
+      # permission must be on the known list and documented in the permissions audit. An exported
+      # component or a new dangerous permission added by accident fails the job.
+      - name: Check manifest hardening
+        run: python3 scripts/qa/android/check-manifest-hardening.py
+
       # GeneralsX @build Android security 12/11/2026 The signing self-tests: the accept/reject
       # matrix for update metadata and engine manifests, the trust-anchor invariants, the
       # committed-secret scan and the release-APK verifier, all against throwaway keys generated

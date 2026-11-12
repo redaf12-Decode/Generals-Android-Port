@@ -1,6 +1,10 @@
 # usage: lang_build.py <lang> <chunk>: glossary by label + <lang>/work/<chunk>*.tsv ("i<TAB>text", \n escaped)
-import json,sys,glob,subprocess
+import json,sys,glob,subprocess,os
 lang,n=sys.argv[1],sys.argv[2]
+# GeneralsX @bugfix Android port 12/11/2026 Resolve translate_kit.py from the repository this
+# script lives in, not from an absolute path in one developer's checkout.
+_here=os.path.dirname(os.path.abspath(__file__))
+_kit=os.path.join(_here,'..','..','scripts','language','translate_kit.py')
 g={e['label']:e['text'] for e in json.load(open(f'{lang}/glossary.json'))}
 d=json.load(open(f'chunks/{n}.json'))
 tr={}
@@ -16,4 +20,4 @@ for i,x in enumerate(d):
     out.append({'label':x['label'],'text':t})
 json.dump(out,open(f'{lang}/out/{n}.json','w',encoding='utf-8'),ensure_ascii=False,indent=1)
 print('missing',miss)
-subprocess.run(['python3','/home/user/GeneralsZH-Android-Port/scripts/language/translate_kit.py','check',f'chunks/{n}.json',f'{lang}/out/{n}.json'])
+subprocess.run(['python3',_kit,'check',f'chunks/{n}.json',f'{lang}/out/{n}.json'])

@@ -33,12 +33,16 @@ import os
 import re
 import sys
 
-OUT_DARK = ("/workspace/project/Generals-Android-Port/android/app/src/main/res"
-            "/values/colors_accents.xml")
-OUT_DAY = ("/workspace/project/Generals-Android-Port/android/app/src/main/res"
-           "/values/colors_accents_day.xml")
-OUT_THEMES = ("/workspace/project/Generals-Android-Port/android/app/src/main/res"
-              "/values/themes_accents.xml")
+# GeneralsX @bugfix Android port 12/11/2026 These were absolute paths into one developer's
+# checkout (/workspace/project/Generals-Android-Port/...), so the script wrote nothing anywhere
+# else. Resolve them from this file's own location instead.
+_REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(
+    os.path.dirname(os.path.abspath(__file__)))))
+_RES = os.path.join(_REPO_ROOT, "android", "app", "src", "main", "res")
+
+OUT_DARK = os.path.join(_RES, "values", "colors_accents.xml")
+OUT_DAY = os.path.join(_RES, "values", "colors_accents_day.xml")
+OUT_THEMES = os.path.join(_RES, "values", "themes_accents.xml")
 
 # Overlay attributes: the accent roles every palette defines, then the day-only
 # ladder. The dark palettes share one overlay set because their accent values
