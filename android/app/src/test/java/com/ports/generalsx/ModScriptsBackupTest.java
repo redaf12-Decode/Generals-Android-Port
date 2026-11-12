@@ -115,6 +115,20 @@ public class ModScriptsBackupTest {
         }
     }
 
+    /** Deletes a directory and everything under it; a plain delete() leaves a non-empty dir. */
+    private static void deleteTree(File file) {
+        if (file == null) {
+            return;
+        }
+        File[] children = file.listFiles();
+        if (children != null) {
+            for (File child : children) {
+                deleteTree(child);
+            }
+        }
+        file.delete();
+    }
+
     // ------------------------------------------------------------- the option
 
     /** The preference is kept, and survives a fresh read of the store. */
@@ -571,8 +585,11 @@ public class ModScriptsBackupTest {
         assertEquals(ModScriptsBackup.State.CONFLICT, ModScriptsBackup.inspectState(app));
 
         // A marker that records this game but neither folder present: a restore is pending.
-        assertTrue(scripts().delete() || !scripts().exists());
-        assertTrue(backup().delete() || !backup().exists());
+        // (The backup holds SkirmishScripts.scb, so it is deleted recursively, not with delete().)
+        deleteTree(scripts());
+        deleteTree(backup());
+        assertFalse(scripts().exists());
+        assertFalse(backup().exists());
         assertEquals(ModScriptsBackup.State.RESTORE_PENDING, ModScriptsBackup.inspectState(app));
 
         // Reconcile clears the stale marker and reports nothing to do.
