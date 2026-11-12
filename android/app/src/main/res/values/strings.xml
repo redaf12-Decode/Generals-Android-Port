@@ -86,7 +86,7 @@
     <string name="setup_card_vulkan_driver">Custom Vulkan Driver (advanced, Adreno GPUs only)</string>
     <string name="setup_button_import_driver">Import Driver (.zip)</string>
     <string name="setup_button_reset_driver">Reset to Recommended</string>
-    <string name="setup_driver_help">Loads a Vulkan driver (a Mesa Turnip build) instead of your phone\'s built-in one, the same technique Winlator and AetherSX2 use. DXVK itself now only needs Vulkan 1.1, but some older Qualcomm Adreno stock drivers report even less (or have other bugs) — this Turnip build can let those phones run the game anyway. On a qualifying Adreno phone this is applied automatically — \"Reset to Recommended\" restores that automatic choice after you\'ve imported something else.\n\nThis does NOT help Mali, PowerVR, or other non-Adreno GPUs — but those don\'t need it either: most Mali GPUs (Mali-G76, Mali-G57, and similar) already meet DXVK\'s Vulkan 1.1 requirement natively, no driver swap needed. This option is Adreno-only because Turnip only targets Adreno hardware, not because other GPUs are unsupported.\n\n\"Import Driver\" lets you override the automatic choice with your own adrenotools-format driver .zip (for example from K11MCH1/AdrenoToolsDrivers or The412Banner/Banners-Turnip on GitHub). Takes effect next launch, not live. You can keep several drivers: import more than one, tap a driver in the list to make it active, and use its bin icon to delete it. \"Reset to Recommended\" returns to the automatic choice without removing the others.</string>
+    <string name="setup_driver_help">Loads a Vulkan driver (a Mesa Turnip build) instead of your phone\'s built-in one, the same technique Winlator and AetherSX2 use. DXVK itself now only needs Vulkan 1.1, but some older Qualcomm Adreno stock drivers report even less (or have other bugs) — this Turnip build can let those phones run the game anyway. On a qualifying Adreno phone this is applied automatically — \"Reset to Recommended\" restores that automatic choice after you\'ve imported something else.\n\nThis does NOT help Mali, PowerVR, or other non-Adreno GPUs — but those don\'t need it either: most Mali GPUs (Mali-G76, Mali-G57, and similar) already meet DXVK\'s Vulkan 1.1 requirement natively, no driver swap needed. This option is Adreno-only because Turnip only targets Adreno hardware, not because other GPUs are unsupported.\n\n\"Import Driver\" lets you override the automatic choice with your own adrenotools-format driver .zip (for example from K11MCH1/AdrenoToolsDrivers or The412Banner/Banners-Turnip on GitHub). Takes effect next launch, not live. You can keep several drivers: import more than one, tap a driver in the list to make it active, and use its bin icon to delete it. \"Reset to Recommended\" returns to the automatic choice without removing the others.\n\nAn imported driver is a native library from outside the app: it runs with this app\'s permissions, and nothing here can verify who built it. Activating one asks you to confirm first; only import drivers from sources you trust.</string>
     <string name="setup_driver_status_none">No custom driver active — using your phone\'s built-in Vulkan driver.</string>
     <string name="setup_driver_status_auto">Recommended driver (auto-selected for this device): %1$s</string>
     <string name="setup_driver_status_manual">Custom driver (manually imported): %1$s</string>
@@ -235,7 +235,12 @@
     <string name="online_subtitle">Sign in for online multiplayer (playgenerals.online)</string>
     <string name="online_button_sign_out">Sign Out</string>
     <string name="online_card_sign_in">Sign in</string>
-    <string name="online_signin_help">Tap Sign In. The first tap may ask to exempt this app from battery optimization -- allow it, then come back and tap Sign In again. A browser then opens to playgenerals.online, already carrying a one-time code for this device. Pick Steam, Discord, or GameReplays there, then just come back to this app; it finishes on its own.</string>
+    <string name="online_signin_help">Tap Sign In. A browser opens to playgenerals.online, already carrying a one-time code for this device. Pick Steam, Discord, or GameReplays there, then come back to this app; it finishes on its own.</string>
+    <string name="online_card_battery">Background running</string>
+    <string name="online_battery_help">Signing in opens a browser and waits for you to come back. On some phones the battery manager can throttle that wait, so the login may only finish on the next tap or launch. You can allow Generals to run in the background in the system battery settings; it is optional and affects nothing but that wait.</string>
+    <string name="online_button_battery_settings">Open battery settings</string>
+    <string name="online_battery_granted">Background running is allowed.</string>
+    <string name="online_battery_not_granted">Background running is not allowed. Sign-in still works; it may just finish on the next tap or launch.</string>
     <string name="online_card_datapacks">Online game data</string>
     <string name="online_datapacks_help">Playing online needs two things the retail game does not ship: the community data patch, which every online game is played with (a game only admits players whose game data matches), and the community maps those games are played on. This fetches both from GeneralsOnline directly.</string>
     <string name="online_button_datapacks_update">Update</string>
@@ -273,7 +278,6 @@
     <string name="online_crossplay_off">Turned off for an indefinite time at the request of the GeneralsOnline developers. Online games with other Android players are not affected.</string>
     <string name="online_button_sign_in">Sign In</string>
     <string name="online_status_signing_in">Signing in...</string>
-    <string name="online_status_battery_opt">Allow Generals to run in the background on the next screen, then come back and tap Sign In again -- otherwise Android may kill the sign-in check while you\'re in the browser.</string>
     <string name="online_toast_no_browser">No browser available: %1$s</string>
     <string name="online_status_continue_browser">Continue in your browser -- come back here once you\'ve signed in.</string>
     <string name="online_status_network_error">Network error -- check your connection and try again.</string>
@@ -795,4 +799,11 @@
     <string name="update_install_opened">Finish the installation in the Android installer.</string>
     <string name="update_install_cancelled">Installation was cancelled.</string>
 
+    <string name="setup_driver_activate_confirm_title">Activate this driver?</string>
+    <string name="setup_driver_activate_confirm">%1$s is a third-party Vulkan driver. It runs inside this app with the app\'s permissions, and nothing verifies who built it. Activate only drivers you trust. Takes effect next launch.</string>
+    <string name="setup_driver_activate_confirm_verified">%1$s matches a driver build this app ships and verifies by SHA-256, so its content is known. It still runs inside this app with the app\'s permissions. Takes effect next launch.</string>
+    <string name="setup_driver_activate">Activate</string>
+    <string name="setup_toast_driver_import_duplicate">Import failed: the .zip lists the same file twice</string>
+    <string name="setup_toast_driver_import_unexpected">Import failed: the .zip contains an unexpected file (%1$s)</string>
+    <string name="online_battery_settings_unavailable">Could not open the battery settings on this device. You can find them in Android Settings, under Battery.</string>
 </resources>

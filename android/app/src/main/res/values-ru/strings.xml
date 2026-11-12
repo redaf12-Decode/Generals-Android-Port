@@ -215,10 +215,14 @@
     <string name="online_subtitle">Войдите для онлайн-мультиплеера (playgenerals.online)</string>
     <string name="online_button_sign_out">Выйти</string>
     <string name="online_card_sign_in">Вход</string>
-    <string name="online_signin_help">Нажмите «Войти». При первом нажатии может появиться запрос исключить приложение из оптимизации батареи — разрешите это, затем вернитесь и снова нажмите «Войти». После этого откроется браузер на playgenerals.online уже с одноразовым кодом для этого устройства. Выберите там Steam, Discord или GameReplays, затем просто вернитесь в приложение — вход завершится сам.</string>
+    <string name="online_signin_help">Нажмите «Войти». Откроется браузер на playgenerals.online уже с одноразовым кодом для этого устройства. Выберите там Steam, Discord или GameReplays, затем просто вернитесь в приложение — вход завершится сам.</string>
+    <string name="online_card_battery">Работа в фоне</string>
+    <string name="online_battery_help">Вход открывает браузер и ждёт вашего возвращения. На некоторых телефонах менеджер батареи может ограничивать это ожидание, и вход завершится только при следующем нажатии или запуске. Вы можете разрешить Generals работу в фоне в системных настройках батареи; это необязательно и влияет только на это ожидание.</string>
+    <string name="online_button_battery_settings">Открыть настройки батареи</string>
+    <string name="online_battery_granted">Работа в фоне разрешена.</string>
+    <string name="online_battery_not_granted">Работа в фоне не разрешена. Вход всё равно работает; возможно, он завершится только при следующем нажатии или запуске.</string>
     <string name="online_button_sign_in">Войти</string>
     <string name="online_status_signing_in">Выполняется вход...</string>
-    <string name="online_status_battery_opt">Разрешите Generals работать в фоне на следующем экране, затем вернитесь и снова нажмите «Войти» — иначе Android может прервать проверку входа, пока вы находитесь в браузере.</string>
     <string name="online_toast_no_browser">Нет доступного браузера: %1$s</string>
     <string name="online_status_continue_browser">Продолжите в браузере — вернитесь сюда после входа.</string>
     <string name="online_status_network_error">Ошибка сети — проверьте соединение и попробуйте снова.</string>
@@ -785,4 +789,11 @@
     <string name="update_install_opened">Завершите установку в установщике Android.</string>
     <string name="update_install_cancelled">Установка отменена.</string>
 
+    <string name="setup_driver_activate_confirm_title">Активировать этот драйвер?</string>
+    <string name="setup_driver_activate_confirm">%1$s — сторонний драйвер Vulkan. Он работает внутри приложения с его правами, и никто не проверяет, кто его собрал. Активируйте только те драйверы, которым доверяете. Вступит в силу при следующем запуске.</string>
+    <string name="setup_driver_activate_confirm_verified">%1$s совпадает со сборкой драйвера, поставляемой с приложением и проверяемой по SHA-256, поэтому её содержимое известно. Тем не менее он работает внутри приложения с его правами. Вступит в силу при следующем запуске.</string>
+    <string name="setup_driver_activate">Активировать</string>
+    <string name="setup_toast_driver_import_duplicate">Ошибка импорта: в .zip один и тот же файл указан дважды</string>
+    <string name="setup_toast_driver_import_unexpected">Ошибка импорта: в .zip неожиданный файл (%1$s)</string>
+    <string name="online_battery_settings_unavailable">Не удалось открыть настройки батареи на этом устройстве. Их можно найти в настройках Android в разделе «Батарея».</string>
 </resources>

@@ -203,10 +203,14 @@
     <string name="online_subtitle">Anmelden für Online-Mehrspieler (playgenerals.online)</string>
     <string name="online_button_sign_out">Abmelden</string>
     <string name="online_card_sign_in">Anmelden</string>
-    <string name="online_signin_help">Tippe auf Anmelden. Beim ersten Tippen wirst du eventuell gefragt, diese App von der Akku-Optimierung auszunehmen — erlaube dies, komm dann zurück und tippe erneut auf Anmelden. Danach öffnet sich ein Browser mit playgenerals.online, der bereits einen Einmalcode für dieses Gerät enthält. Wähle dort Steam, Discord oder GameReplays und komm einfach zu dieser App zurück; der Vorgang schließt sich von selbst ab.</string>
+    <string name="online_signin_help">Tippe auf Anmelden. Danach öffnet sich ein Browser mit playgenerals.online, der bereits einen Einmalcode für dieses Gerät enthält. Wähle dort Steam, Discord oder GameReplays und komm einfach zu dieser App zurück; der Vorgang schließt sich von selbst ab.</string>
+    <string name="online_card_battery">Hintergrundausführung</string>
+    <string name="online_battery_help">Die Anmeldung öffnet einen Browser und wartet auf deine Rückkehr. Auf manchen Geräten kann der Akkumanager dieses Warten drosseln, sodass die Anmeldung erst beim nächsten Tippen oder Start abschließt. Du kannst Generals in den System-Akkueinstellungen die Ausführung im Hintergrund erlauben; das ist optional und betrifft nur dieses Warten.</string>
+    <string name="online_button_battery_settings">Akkueinstellungen öffnen</string>
+    <string name="online_battery_granted">Ausführung im Hintergrund ist erlaubt.</string>
+    <string name="online_battery_not_granted">Ausführung im Hintergrund ist nicht erlaubt. Die Anmeldung funktioniert trotzdem; sie schließt eventuell erst beim nächsten Tippen oder Start ab.</string>
     <string name="online_button_sign_in">Anmelden</string>
     <string name="online_status_signing_in">Anmeldung läuft...</string>
-    <string name="online_status_battery_opt">Erlaube Generals auf dem nächsten Bildschirm, im Hintergrund zu laufen, komm dann zurück und tippe erneut auf Anmelden — sonst könnte Android die Anmeldeprüfung beenden, während du im Browser bist.</string>
     <string name="online_toast_no_browser">Kein Browser verfügbar: %1$s</string>
     <string name="online_status_continue_browser">Fahre in deinem Browser fort — komm hierher zurück, sobald du angemeldet bist.</string>
     <string name="online_status_network_error">Netzwerkfehler — überprüfe deine Verbindung und versuche es erneut.</string>
@@ -783,4 +787,11 @@
     <string name="update_install_opened">Schließen Sie die Installation im Android-Installer ab.</string>
     <string name="update_install_cancelled">Die Installation wurde abgebrochen.</string>
 
+    <string name="setup_driver_activate_confirm_title">Diesen Treiber aktivieren?</string>
+    <string name="setup_driver_activate_confirm">%1$s ist ein Vulkan-Treiber eines Drittanbieters. Er läuft in dieser App mit deren Berechtigungen, und niemand prüft, wer ihn erstellt hat. Aktivieren Sie nur Treiber, denen Sie vertrauen. Wirkt beim nächsten Start.</string>
+    <string name="setup_driver_activate_confirm_verified">%1$s entspricht einem Treiber-Build, den diese App mitliefert und per SHA-256 verifiziert, sein Inhalt ist also bekannt. Er läuft dennoch in dieser App mit deren Berechtigungen. Wirkt beim nächsten Start.</string>
+    <string name="setup_driver_activate">Aktivieren</string>
+    <string name="setup_toast_driver_import_duplicate">Import fehlgeschlagen: die .zip nennt dieselbe Datei zweimal</string>
+    <string name="setup_toast_driver_import_unexpected">Import fehlgeschlagen: die .zip enthält eine unerwartete Datei (%1$s)</string>
+    <string name="online_battery_settings_unavailable">Die Akku-Einstellungen konnten auf diesem Gerät nicht geöffnet werden. Du findest sie in den Android-Einstellungen unter „Akku“.</string>
 </resources>

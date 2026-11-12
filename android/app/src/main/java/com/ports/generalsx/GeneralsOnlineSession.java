@@ -222,7 +222,8 @@ final class GeneralsOnlineSession {
 
             NetworkTrace.write(ctx, "POST " + hostOf(base) + "/" + endpoint
                 + "  body=" + NetworkTrace.snippet(body.toString(), 300)
-                + (bearerToken != null ? "  auth=Bearer " + bearerToken : "  auth=none"));
+                + (bearerToken != null
+                    ? "  auth=Bearer <token, " + bearerToken.length() + " chars>" : "  auth=none"));
 
             try (OutputStream os = conn.getOutputStream()) {
                 os.write(body.toString().getBytes(StandardCharsets.UTF_8));

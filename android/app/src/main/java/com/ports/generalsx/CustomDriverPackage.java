@@ -18,6 +18,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.zip.ZipEntry;
@@ -65,6 +66,21 @@ final class CustomDriverPackage {
     static final int MAX_DEPTH = 8;
     static final long MAX_META_BYTES = 64L * 1024L;
 
+    /**
+     * GeneralsX @feature Android security 12/11/2026 The SHA-256 of every driver library whose
+     * author this port can vouch for -- the one it bundles itself (the pinned Turnip build staged
+     * by scripts/build/android/fetch-turnip.sh). A driver whose main library hashes to one of
+     * these is <em>verified</em>; every other driver is <em>unverified</em> and the import says so
+     * plainly. This is an allowlist of content hashes, not a signature scheme: the adrenotools
+     * package format carries no publisher signature, so a hash is the only thing that can be
+     * checked without inventing a format extension. Adding a build here is a deliberate act --
+     * recompute it with `sha256sum` on the driver .so the release publishes.
+     */
+    static final String[] VERIFIED_DRIVER_SHA256 = {
+        // Mesa Turnip v25.3.0-R11 (vulkan.ad07xx.so) -- the pinned build this APK bundles.
+        "919c16fa11401c18551fbd611efba39888e2f64d9bfa6ac216c7a35f106712e5",
+    };
+
     /** Why a package was refused. The caller maps each to a localized message. */
     enum Reason {
         NOT_A_ZIP,
@@ -75,6 +91,8 @@ final class CustomDriverPackage {
         BAD_LIBRARY,
         MIN_API,
         TOO_LARGE,
+        DUPLICATE_ENTRY,
+        UNEXPECTED_FILE,
         IO
     }
 
@@ -141,14 +159,17 @@ final class CustomDriverPackage {
         }
     }
 
-    /** A validated package: its metadata, and the folder holding meta.json and the driver. */
+    /** A validated package: its metadata, the folder holding meta.json and the driver, and
+     * whether its main library matched a hash this port vouches for. */
     static final class Package {
         final Meta meta;
         final File dir;
+        final boolean verified;
 
-        Package(Meta meta, File dir) {
+        Package(Meta meta, File dir, boolean verified) {
             this.meta = meta;
             this.dir = dir;
+            this.verified = verified;
         }
     }
 
@@ -181,6 +202,7 @@ final class CustomDriverPackage {
     static Package extract(InputStream zip, File tmpDir, int deviceApiLevel)
             throws ImportException {
         List<File> metaFiles = new ArrayList<>();
+        java.util.Set<String> seen = new java.util.HashSet<>();
         try {
             String rootCanonical = tmpDir.getCanonicalPath();
             byte[] buf = new byte[65536];
@@ -207,6 +229,22 @@ final class CustomDriverPackage {
                     // the intent legible and keeps the error message specific.
                     if (name.startsWith("/") || name.startsWith("\\") || hasParentSegment(name)) {
                         throw new ImportException(Reason.UNSAFE_PATH, name, name);
+                    }
+                    // GeneralsX @feature Android security 12/11/2026 Reject a duplicate entry
+                    // outright. Two entries writing the same path is a classic way to make a
+                    // validator look at one file and the loader open another; a real driver
+                    // package never names the same file twice. (A directory entry may precede the
+                    // files inside it, so directories are not tracked here.)
+                    if (!entry.isDirectory() && !seen.add(name)) {
+                        throw new ImportException(Reason.DUPLICATE_ENTRY, name, name);
+                    }
+                    // GeneralsX @feature Android security 12/11/2026 A driver package is meta.json
+                    // plus native libraries and nothing else. An unexpected file type (an .apk, a
+                    // script, an executable, a second archive) is refused rather than stored: it
+                    // has no place in the format and no reason to sit beside a library the app is
+                    // about to dlopen.
+                    if (!entry.isDirectory() && !isAllowedDriverEntry(name)) {
+                        throw new ImportException(Reason.UNEXPECTED_FILE, name, name);
                     }
 
                     File out = new File(tmpDir, name).getCanonicalFile();
@@ -293,7 +331,77 @@ final class CustomDriverPackage {
                 String.valueOf(meta.minApi), String.valueOf(deviceApiLevel));
         }
 
-        return new Package(meta, metaFile.getParentFile());
+        boolean verified = false;
+        try {
+            verified = isVerifiedDriver(library);
+        } catch (IOException e) {
+            throw new ImportException(Reason.IO, e.getMessage());
+        }
+
+        return new Package(meta, metaFile.getParentFile(), verified);
+    }
+
+    /**
+     * True when {@code library}'s SHA-256 is one this port vouches for (see
+     * {@link #VERIFIED_DRIVER_SHA256}). The comparison is on content, never on the file name or on
+     * anything the package says about itself, so a package cannot claim to be verified.
+     */
+    static boolean isVerifiedDriver(File library) throws IOException {
+        return isVerifiedDriver(library, VERIFIED_DRIVER_SHA256);
+    }
+
+    /** The check against an explicit allowlist, so a test can exercise the match without the
+     * several-megabyte real driver. */
+    static boolean isVerifiedDriver(File library, String[] trustedHashes) throws IOException {
+        byte[] digest = sha256(library);
+        if (digest == null) {
+            return false;
+        }
+        StringBuilder hex = new StringBuilder(digest.length * 2);
+        for (byte b : digest) {
+            hex.append(Character.forDigit((b >> 4) & 0xf, 16))
+               .append(Character.forDigit(b & 0xf, 16));
+        }
+        String actual = hex.toString();
+        for (String trusted : trustedHashes) {
+            if (trusted != null && trusted.equalsIgnoreCase(actual)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** The lower-case hex SHA-256 of {@code file}, or null if it cannot be read. */
+    static String sha256Hex(File file) {
+        try {
+            byte[] digest = sha256(file);
+            if (digest == null) {
+                return null;
+            }
+            StringBuilder hex = new StringBuilder(digest.length * 2);
+            for (byte b : digest) {
+                hex.append(Character.forDigit((b >> 4) & 0xf, 16))
+                   .append(Character.forDigit(b & 0xf, 16));
+            }
+            return hex.toString();
+        } catch (IOException e) {
+            return null;
+        }
+    }
+
+    private static byte[] sha256(File file) throws IOException {
+        try (InputStream in = new FileInputStream(file)) {
+            MessageDigest md = MessageDigest.getInstance("SHA-256");
+            byte[] buf = new byte[64 * 1024];
+            int n;
+            while ((n = in.read(buf)) > 0) {
+                md.update(buf, 0, n);
+            }
+            return md.digest();
+        } catch (java.security.NoSuchAlgorithmException e) {
+            // SHA-256 is mandatory on every Android version this app supports.
+            return null;
+        }
     }
 
     /**
@@ -404,7 +512,13 @@ final class CustomDriverPackage {
         if (!library.isFile() || !isAarch64Elf(library)) {
             return null;
         }
-        return new Package(meta, dir);
+        boolean verified;
+        try {
+            verified = isVerifiedDriver(library);
+        } catch (IOException e) {
+            verified = false;
+        }
+        return new Package(meta, dir, verified);
     }
 
     /** Writes the per-driver info sidecar (see {@link #INFO_NAME}) beside a stored driver. */
@@ -488,6 +602,25 @@ final class CustomDriverPackage {
             }
         }
         return false;
+    }
+
+    /**
+     * GeneralsX @feature Android security 12/11/2026 The only file types an adrenotools driver
+     * package may contain: {@code meta.json}, an optional info/readme text file, and shared
+     * libraries. Everything else is refused. The rule is deliberately tight -- a driver package
+     * is a handful of .so files and its metadata, so anything else (a second archive, an
+     * executable, a script, a device-specific blob under another extension) is not something the
+     * app should be unpacking next to a library it will dlopen.
+     */
+    static boolean isAllowedDriverEntry(String name) {
+        String lower = name.toLowerCase(java.util.Locale.US);
+        if (lower.endsWith("/") || lower.endsWith("\\")) {
+            return true;  // a directory entry
+        }
+        return lower.endsWith(".so")
+            || lower.endsWith(".json")
+            || lower.endsWith(".txt")
+            || lower.endsWith(".md");
     }
 
     private static int depthOf(String name) {

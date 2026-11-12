@@ -209,6 +209,57 @@ public class UpdateManagerTest {
         assertEquals(0, UpdateManager.bundledEngineSeq(app()));
     }
 
+    // ------------------------------------------------------------------ update URL trust
+
+    /**
+     * GeneralsX @feature Android security 12/11/2026 The engine-update transport must be https on
+     * a trusted host, checked before the request and again after redirects. These are the shapes
+     * that a prefix test would wrongly accept, plus the ones that must be refused outright.
+     */
+    @Test
+    public void acceptsHttpsOnTrustedHosts() {
+        assertTrue(UpdateManager.isTrustedUpdateUrl(
+            "https://raw.githubusercontent.com/MYSOREZ/GeneralsZH-Android-Port/updates/manifest.json"));
+        assertTrue(UpdateManager.isTrustedUpdateUrl(
+            "https://github.com/MYSOREZ/GeneralsZH-Android-Port/releases/download/v1.5.0/engine.so.gz"));
+        assertTrue(UpdateManager.isTrustedUpdateUrl(
+            "https://objects.githubusercontent.com/foo"));
+        assertTrue(UpdateManager.isTrustedUpdateUrl(
+            "https://release-assets.githubusercontent.com/foo"));
+    }
+
+    @Test
+    public void refusesHttpAndNonHttpsSchemes() {
+        assertFalse(UpdateManager.isTrustedUpdateUrl(
+            "http://raw.githubusercontent.com/MYSOREZ/x/updates/manifest.json"));
+        assertFalse(UpdateManager.isTrustedUpdateUrl("ftp://github.com/x"));
+        assertFalse(UpdateManager.isTrustedUpdateUrl("file:///etc/passwd"));
+    }
+
+    @Test
+    public void refusesUntrustedAndSpoofedHosts() {
+        // A different host entirely.
+        assertFalse(UpdateManager.isTrustedUpdateUrl("https://evil.example/engine.so.gz"));
+        // The prefix-spoof shapes a startsWith() test accepts.
+        assertFalse(UpdateManager.isTrustedUpdateUrl(
+            "https://raw.githubusercontent.com.evil.example/engine.so.gz"));
+        assertFalse(UpdateManager.isTrustedUpdateUrl(
+            "https://raw.githubusercontent.com@evil.example/engine.so.gz"));
+        // A user-info component is never legitimate here.
+        assertFalse(UpdateManager.isTrustedUpdateUrl(
+            "https://user:pass@github.com/x"));
+        // A non-default port.
+        assertFalse(UpdateManager.isTrustedUpdateUrl("https://github.com:8443/x"));
+    }
+
+    @Test
+    public void refusesMalformedAndEmptyUrls() {
+        assertFalse(UpdateManager.isTrustedUpdateUrl(null));
+        assertFalse(UpdateManager.isTrustedUpdateUrl(""));
+        assertFalse(UpdateManager.isTrustedUpdateUrl("not a url"));
+        assertFalse(UpdateManager.isTrustedUpdateUrl("//github.com/x"));
+    }
+
     private static KeyPair newEcKeyPair() throws Exception {
         KeyPairGenerator generator = KeyPairGenerator.getInstance("EC");
         generator.initialize(new ECGenParameterSpec("secp256r1"));

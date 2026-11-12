@@ -203,10 +203,14 @@
     <string name="online_subtitle">Entre para jogar multijogador online (playgenerals.online)</string>
     <string name="online_button_sign_out">Sair</string>
     <string name="online_card_sign_in">Entrar</string>
-    <string name="online_signin_help">Toque em Entrar. Na primeira vez, pode ser solicitado que você isente este aplicativo da otimização de bateria — permita isso, depois volte e toque em Entrar novamente. Em seguida, um navegador abrirá em playgenerals.online, já com um código de uso único para este dispositivo. Escolha Steam, Discord ou GameReplays lá, depois é só voltar para este aplicativo; o processo termina sozinho.</string>
+    <string name="online_signin_help">Toque em Entrar. Um navegador abrirá em playgenerals.online, já com um código de uso único para este dispositivo. Escolha Steam, Discord ou GameReplays lá, depois é só voltar para este aplicativo; o processo termina sozinho.</string>
+    <string name="online_card_battery">Execução em segundo plano</string>
+    <string name="online_battery_help">Entrar abre um navegador e espera você voltar. Em alguns celulares o gerenciador de bateria pode limitar essa espera, então o login pode só terminar no próximo toque ou abertura. Você pode permitir que o Generals seja executado em segundo plano nas configurações de bateria do sistema; é opcional e afeta apenas essa espera.</string>
+    <string name="online_button_battery_settings">Abrir configurações de bateria</string>
+    <string name="online_battery_granted">A execução em segundo plano está permitida.</string>
+    <string name="online_battery_not_granted">A execução em segundo plano não está permitida. O login continua funcionando; ele pode apenas terminar no próximo toque ou abertura.</string>
     <string name="online_button_sign_in">Entrar</string>
     <string name="online_status_signing_in">Entrando...</string>
-    <string name="online_status_battery_opt">Permita que o Generals seja executado em segundo plano na próxima tela, depois volte e toque em Entrar novamente — caso contrário, o Android pode interromper a verificação de login enquanto você está no navegador.</string>
     <string name="online_toast_no_browser">Nenhum navegador disponível: %1$s</string>
     <string name="online_status_continue_browser">Continue no seu navegador — volte aqui assim que tiver entrado.</string>
     <string name="online_status_network_error">Erro de rede — verifique sua conexão e tente novamente.</string>
@@ -783,4 +787,11 @@
     <string name="update_install_opened">Conclua a instalação no instalador do Android.</string>
     <string name="update_install_cancelled">A instalação foi cancelada.</string>
 
+    <string name="setup_driver_activate_confirm_title">Ativar este driver?</string>
+    <string name="setup_driver_activate_confirm">%1$s é um driver Vulkan de terceiros. Ele roda dentro deste app com as permissões dele, e nada verifica quem o criou. Ative apenas drivers confiáveis. Vale no próximo início.</string>
+    <string name="setup_driver_activate_confirm_verified">%1$s corresponde a uma compilação de driver fornecida com este app e verificada por SHA-256, então seu conteúdo é conhecido. Ainda assim, ele roda dentro deste app com as permissões dele. Vale no próximo início.</string>
+    <string name="setup_driver_activate">Ativar</string>
+    <string name="setup_toast_driver_import_duplicate">Falha na importação: o .zip lista o mesmo arquivo duas vezes</string>
+    <string name="setup_toast_driver_import_unexpected">Falha na importação: o .zip contém um arquivo inesperado (%1$s)</string>
+    <string name="online_battery_settings_unavailable">Não foi possível abrir as configurações de bateria neste dispositivo. Você as encontra nas configurações do Android, em "Bateria".</string>
 </resources>

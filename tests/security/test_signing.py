@@ -292,6 +292,187 @@ def test_secret_scan_accepts_a_clean_tree():
         assert r.returncode == 0, r.stdout.decode()
 
 
+# --- custom-driver trust pins -------------------------------------------------------------------
+
+DRIVER_CHECK_REL = os.path.join("scripts", "qa", "android", "check-driver-allowlist.py")
+
+
+def _driver_fixture(d, zip_pin="a" * 64, lib_hashes=("b" * 64,)):
+    write(os.path.join(d, "scripts/build/android/fetch-turnip.sh"),
+          'TURNIP_ZIP_SHA256="%s"\n' % zip_pin)
+    hashes = ", ".join('"%s"' % h for h in lib_hashes)
+    write(os.path.join(d, "android/app/src/main/java/com/ports/generalsx/CustomDriverPackage.java"),
+          "final class CustomDriverPackage {\n"
+          "    static final String[] VERIFIED_DRIVER_SHA256 = { %s };\n"
+          "}\n" % hashes)
+    git_init(d)
+
+
+def test_driver_allowlist_accepts_wellformed_pins():
+    with tempfile.TemporaryDirectory() as d:
+        _driver_fixture(d)
+        r = run([sys.executable, os.path.join(QA_DIR, "check-driver-allowlist.py")],
+                env={"GX_REPO_ROOT": d})
+        assert r.returncode == 0, r.stdout.decode()
+
+
+def test_driver_allowlist_rejects_an_empty_allowlist():
+    with tempfile.TemporaryDirectory() as d:
+        _driver_fixture(d, lib_hashes=())
+        r = run([sys.executable, os.path.join(QA_DIR, "check-driver-allowlist.py")],
+                env={"GX_REPO_ROOT": d})
+        assert r.returncode != 0, "an empty driver allowlist must be rejected"
+
+
+def test_driver_allowlist_rejects_a_malformed_pin():
+    with tempfile.TemporaryDirectory() as d:
+        _driver_fixture(d, zip_pin="not-a-hash")
+        r = run([sys.executable, os.path.join(QA_DIR, "check-driver-allowlist.py")],
+                env={"GX_REPO_ROOT": d})
+        assert r.returncode != 0, "a non-hex archive pin must be rejected"
+
+
+def test_driver_allowlist_rejects_the_archive_pin_pasted_into_the_allowlist():
+    same = "c" * 64
+    with tempfile.TemporaryDirectory() as d:
+        _driver_fixture(d, zip_pin=same, lib_hashes=(same,))
+        r = run([sys.executable, os.path.join(QA_DIR, "check-driver-allowlist.py")],
+                env={"GX_REPO_ROOT": d})
+        assert r.returncode != 0, "the archive pin must not be a library allowlist entry"
+
+
+# --- manifest hardening guard -------------------------------------------------------------------
+
+AUDIT_REL = os.path.join("security", "reports", "android-permissions-audit.md")
+MANIFEST_REL = os.path.join("android", "app", "src", "main", "AndroidManifest.xml")
+
+GOOD_MANIFEST = """<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-permission android:name="android.permission.INTERNET" />
+    <application>
+        <activity android:name=".GeneralsZHActivity" android:exported="true">
+            <intent-filter><action android:name="android.intent.action.MAIN" /></intent-filter>
+        </activity>
+        <activity android:name=".SetupActivity" android:exported="true">
+            <intent-filter><action android:name="android.intent.action.MAIN" /></intent-filter>
+        </activity>
+        <activity android:name=".FolderPickerActivity" android:exported="false" />
+        <provider android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false" android:grantUriPermissions="true" />
+    </application>
+</manifest>
+"""
+
+AUDIT_TEXT = "INTERNET is documented here.\n"
+
+
+def _manifest_fixture(d, manifest=GOOD_MANIFEST, audit=AUDIT_TEXT):
+    write(os.path.join(d, MANIFEST_REL), manifest)
+    write(os.path.join(d, AUDIT_REL), audit)
+    git_init(d)
+
+
+def _run_manifest_check(d):
+    return run([sys.executable, os.path.join(QA_DIR, "check-manifest-hardening.py")],
+               env={"GX_REPO_ROOT": d})
+
+
+def test_manifest_hardening_accepts_a_clean_manifest():
+    with tempfile.TemporaryDirectory() as d:
+        _manifest_fixture(d)
+        r = _run_manifest_check(d)
+        assert r.returncode == 0, r.stdout.decode()
+
+
+def test_manifest_hardening_rejects_an_unexpected_exported_activity():
+    bad = GOOD_MANIFEST.replace(
+        '<activity android:name=".FolderPickerActivity" android:exported="false" />',
+        '<activity android:name=".FolderPickerActivity" android:exported="true" />')
+    with tempfile.TemporaryDirectory() as d:
+        _manifest_fixture(d, manifest=bad)
+        r = _run_manifest_check(d)
+        assert r.returncode != 0, "an unexpected exported activity must be refused"
+
+
+def test_manifest_hardening_rejects_a_missing_exported_flag():
+    bad = GOOD_MANIFEST.replace(
+        '<activity android:name=".FolderPickerActivity" android:exported="false" />',
+        '<activity android:name=".FolderPickerActivity" />')
+    with tempfile.TemporaryDirectory() as d:
+        _manifest_fixture(d, manifest=bad)
+        r = _run_manifest_check(d)
+        assert r.returncode != 0, "an activity with no explicit android:exported must be refused"
+
+
+def test_manifest_hardening_rejects_a_debuggable_manifest():
+    bad = GOOD_MANIFEST.replace(
+        '<application>', '<application android:debuggable="true">')
+    with tempfile.TemporaryDirectory() as d:
+        _manifest_fixture(d, manifest=bad)
+        r = _run_manifest_check(d)
+        assert r.returncode != 0, "android:debuggable=\"true\" must be refused"
+
+
+def test_manifest_hardening_rejects_an_undocumented_permission():
+    bad = GOOD_MANIFEST.replace(
+        '<uses-permission android:name="android.permission.INTERNET" />',
+        '<uses-permission android:name="android.permission.CAMERA" />')
+    with tempfile.TemporaryDirectory() as d:
+        _manifest_fixture(d, manifest=bad)
+        r = _run_manifest_check(d)
+        assert r.returncode != 0, "an unknown permission must be refused"
+
+
+def test_manifest_hardening_rejects_a_permission_absent_from_the_audit():
+    with tempfile.TemporaryDirectory() as d:
+        _manifest_fixture(d, audit="nothing relevant here\n")
+        r = _run_manifest_check(d)
+        assert r.returncode != 0, "a permission not named in the audit report must be refused"
+
+
+def test_the_committed_manifest_passes_its_own_hardening_check():
+    r = run([sys.executable, os.path.join(QA_DIR, "check-manifest-hardening.py")])
+    assert r.returncode == 0, r.stdout.decode()
+
+
+# --- the release gate itself --------------------------------------------------------------------
+
+PUBLISH_RELEASE_REL = os.path.join(".github", "workflows", "publish-release.yml")
+BUILD_ANDROID_REL = os.path.join(".github", "workflows", "build-android.yml")
+
+
+def _read(rel):
+    with open(os.path.join(REPO_ROOT, rel), encoding="utf-8") as f:
+        return f.read()
+
+
+def test_publish_workflow_pins_the_production_certificate():
+    """The publish gate must pin the expected certificate, and must fail when the secret is
+    absent -- otherwise a release signed by any key that is not the one rejected hash could ship."""
+    text = _read(PUBLISH_RELEASE_REL)
+    assert "--expect-cert-sha256" in text, \
+        "publish-release.yml must pin the expected certificate, not only reject a known-bad one"
+    assert "ANDROID_RELEASE_CERT_SHA256" in text, \
+        "publish-release.yml must read the production certificate from the secret"
+    # An unset secret must stop the release, not skip the pin.
+    assert "is not set" in text and "exit 1" in text, \
+        "publish-release.yml must fail when ANDROID_RELEASE_CERT_SHA256 is unset"
+
+
+def test_build_workflow_refuses_to_publish_an_ephemeral_build():
+    """A build with no production key (an ephemeral key) must never become a release."""
+    text = _read(BUILD_ANDROID_REL)
+    assert "GX_EPHEMERAL_SIGNING=true" in text, \
+        "build-android.yml must mark an ephemeral-key build"
+    # Both publish steps are gated on the build NOT being ephemeral.
+    assert text.count("steps.signkey.outputs.ephemeral != 'true'") >= 2, \
+        "the release steps must be gated on a non-ephemeral (production-key) build"
+    # The production certificate must be pinned against the produced APK, too.
+    assert "ANDROID_RELEASE_CERT_SHA256" in text, \
+        "build-android.yml must pin the production certificate"
+
+
 # --- release APK verification -------------------------------------------------------------------
 
 def test_verify_release_apk_refuses_a_non_apk():
@@ -321,7 +502,7 @@ DEBUG_DN = "CN=GeneralsX Android Debug, OU=GeneralsX, O=GeneralsX, C=US"
 PROD_DN = "CN=GeneralsX, O=GeneralsX, C=US"
 
 
-def _stub_build_tools(d, dn, cert_sha256, debuggable=False):
+def _stub_build_tools(d, dn, cert_sha256, debuggable=False, package="com.ports.generalsx"):
     """A build-tools dir with stub apksigner/aapt2, so the verifier's decision logic can be
     exercised without a real APK. Returns the dir path."""
     bt = os.path.join(d, "build-tools")
@@ -336,7 +517,7 @@ def _stub_build_tools(d, dn, cert_sha256, debuggable=False):
     os.chmod(apksigner, 0o755)
     aapt2 = os.path.join(bt, "aapt2")
     with open(aapt2, "w", encoding="utf-8") as f:
-        line = ("package: name='com.ports.generalsx' versionCode='10402'\n"
+        line = ("package: name='%s' versionCode='10402'\n" % package
                 + ("application-debuggable\n" if debuggable else ""))
         f.write("#!/bin/sh\ncat <<'EOF'\n%sEOF\nexit 0\n" % line)
     os.chmod(aapt2, 0o755)
@@ -384,6 +565,24 @@ def test_verify_release_apk_accepts_a_production_signed_apk():
         bt = _stub_build_tools(d, PROD_DN, "AA" * 32)
         r = _run_verifier(d, bt, ["--expect-cert-sha256", "AA" * 32])
         assert r.returncode == 0, r.stdout.decode()
+
+
+def test_verify_release_apk_rejects_a_wrong_package_id():
+    """An APK whose applicationId is not the one expected must be refused: the release is for
+    com.ports.generalsx and nothing else."""
+    with tempfile.TemporaryDirectory() as d:
+        bt = _stub_build_tools(d, PROD_DN, "AA" * 32, package="com.generalsx.zerohour")
+        r = _run_verifier(d, bt, ["--expect-cert-sha256", "AA" * 32])
+        assert r.returncode != 0, "a wrong package id must be refused"
+
+
+def test_verify_release_apk_rejects_a_wrong_production_certificate():
+    """A fingerprint that does not match --expect-cert-sha256 must be refused, even though the
+    APK is correctly signed and non-debuggable: the wrong key signed it."""
+    with tempfile.TemporaryDirectory() as d:
+        bt = _stub_build_tools(d, PROD_DN, "BB" * 32)
+        r = _run_verifier(d, bt, ["--expect-cert-sha256", "AA" * 32])
+        assert r.returncode != 0, "a wrong production certificate must be refused"
 
 
 # --- the rotation script, and the committed repository's own consistency -------------------------

@@ -10,13 +10,16 @@
 #
 # Pinned release: same build validated in the wild by the fadi-labib/
 # Generals-Android community port (v25.3.0-rc.11, targets Adreno 6xx/7xx).
-# No checksum pin here (network access to release assets wasn't available
-# when this script was written) -- validated by content instead: must unzip
-# to an AArch64 .so plus a meta.json naming it.
+#
+# GeneralsX @feature Android security 12/11/2026 The archive is pinned by SHA-256, so a moved tag
+# or a tampered release asset cannot change what this APK bundles. The hash of the driver library
+# inside it is the same value in CustomDriverPackage.VERIFIED_DRIVER_SHA256, which is what lets the
+# launcher mark this build verified at import time. When the pin is bumped, recompute both.
 set -euo pipefail
 
 TURNIP_VERSION="v25.3.0-rc.11"
 TURNIP_URL="https://github.com/K11MCH1/AdrenoToolsDrivers/releases/download/${TURNIP_VERSION}/Turnip_v25.3.0_R11.zip"
+TURNIP_ZIP_SHA256="0452bdd5e966ca94b58ba7c489db3648df6715d862e38cfa939ec62625293b40"
 DEST="${GX_DEFAULT_DRIVER:-${HOME}/GeneralsX/android-staging/default_driver}"
 TMP="$(mktemp -d)"
 trap 'rm -rf "${TMP}"' EXIT
@@ -28,6 +31,8 @@ fi
 
 echo "==> Downloading Turnip ${TURNIP_VERSION}"
 curl -fL -o "${TMP}/turnip.zip" "${TURNIP_URL}"
+echo "${TURNIP_ZIP_SHA256}  ${TMP}/turnip.zip" | sha256sum -c - >/dev/null \
+    || { echo "ERROR: ${TURNIP_URL} does not match the pinned SHA-256 (${TURNIP_ZIP_SHA256})"; exit 1; }
 unzip -q "${TMP}/turnip.zip" -d "${TMP}/extracted"
 
 META_FILE="$(find "${TMP}/extracted" -name meta.json | head -1)"

@@ -203,10 +203,14 @@
     <string name="online_subtitle">Zaloguj się, aby grać wieloosobowo online (playgenerals.online)</string>
     <string name="online_button_sign_out">Wyloguj</string>
     <string name="online_card_sign_in">Logowanie</string>
-    <string name="online_signin_help">Dotknij Zaloguj się. Za pierwszym razem może pojawić się prośba o wykluczenie tej aplikacji z optymalizacji baterii — zezwól na to, a następnie wróć i ponownie dotknij Zaloguj się. Otworzy się wtedy przeglądarka na playgenerals.online, już z jednorazowym kodem dla tego urządzenia. Wybierz tam Steam, Discord lub GameReplays, a następnie po prostu wróć do tej aplikacji — logowanie zakończy się samo.</string>
+    <string name="online_signin_help">Dotknij Zaloguj się. Otworzy się przeglądarka na playgenerals.online, już z jednorazowym kodem dla tego urządzenia. Wybierz tam Steam, Discord lub GameReplays, a następnie po prostu wróć do tej aplikacji — logowanie zakończy się samo.</string>
+    <string name="online_card_battery">Działanie w tle</string>
+    <string name="online_battery_help">Logowanie otwiera przeglądarkę i czeka na twój powrót. Na niektórych telefonach menedżer baterii może ograniczać to oczekiwanie, więc logowanie może zakończyć się dopiero przy następnym dotknięciu lub uruchomieniu. Możesz zezwolić aplikacji Generals na działanie w tle w systemowych ustawieniach baterii; jest to opcjonalne i wpływa tylko na to oczekiwanie.</string>
+    <string name="online_button_battery_settings">Otwórz ustawienia baterii</string>
+    <string name="online_battery_granted">Działanie w tle jest dozwolone.</string>
+    <string name="online_battery_not_granted">Działanie w tle nie jest dozwolone. Logowanie nadal działa; może zakończyć się dopiero przy następnym dotknięciu lub uruchomieniu.</string>
     <string name="online_button_sign_in">Zaloguj się</string>
     <string name="online_status_signing_in">Logowanie...</string>
-    <string name="online_status_battery_opt">Zezwól aplikacji Generals na działanie w tle na następnym ekranie, a następnie wróć i ponownie dotknij Zaloguj się — w przeciwnym razie Android może przerwać sprawdzanie logowania podczas przebywania w przeglądarce.</string>
     <string name="online_toast_no_browser">Brak dostępnej przeglądarki: %1$s</string>
     <string name="online_status_continue_browser">Kontynuuj w przeglądarce — wróć tutaj po zalogowaniu.</string>
     <string name="online_status_network_error">Błąd sieci — sprawdź połączenie i spróbuj ponownie.</string>
@@ -783,4 +787,11 @@
     <string name="update_install_opened">Dokończ instalację w instalatorze Androida.</string>
     <string name="update_install_cancelled">Instalacja została anulowana.</string>
 
+    <string name="setup_driver_activate_confirm_title">Aktywować ten sterownik?</string>
+    <string name="setup_driver_activate_confirm">%1$s to sterownik Vulkan firmy trzeciej. Działa wewnątrz tej aplikacji z jej uprawnieniami i nikt nie weryfikuje, kto go zbudował. Aktywuj tylko zaufane sterowniki. Działa od następnego uruchomienia.</string>
+    <string name="setup_driver_activate_confirm_verified">%1$s odpowiada kompilacji sterownika dołączanej do tej aplikacji i weryfikowanej przez SHA-256, więc jego zawartość jest znana. Mimo to działa wewnątrz tej aplikacji z jej uprawnieniami. Działa od następnego uruchomienia.</string>
+    <string name="setup_driver_activate">Aktywuj</string>
+    <string name="setup_toast_driver_import_duplicate">Import nieudany: plik .zip wymienia ten sam plik dwukrotnie</string>
+    <string name="setup_toast_driver_import_unexpected">Import nieudany: plik .zip zawiera nieoczekiwany plik (%1$s)</string>
+    <string name="online_battery_settings_unavailable">Nie udało się otworzyć ustawień baterii na tym urządzeniu. Znajdziesz je w ustawieniach Androida, w sekcji „Bateria”.</string>
 </resources>

@@ -65,6 +65,68 @@ final class UpdateManager {
         "https://raw.githubusercontent.com/MYSOREZ/GeneralsZH-Android-Port/";
 
     /**
+     * GeneralsX @feature Android security 12/11/2026 The only hosts an engine-update download may
+     * come from. The manifest and the engine libraries are served from {@link #RAW_ROOT}, but a
+     * signed manifest may name a URL, and any HTTP request can be redirected, so the final URL --
+     * after every redirect -- is checked against this list rather than trusted because the request
+     * started on the right host. {@code raw.githubusercontent.com} serves the branch files;
+     * {@code github.com} and the {@code *.githubusercontent.com} asset hosts are where a release
+     * asset URL redirects to. Anything else (or any non-https scheme) is refused.
+     */
+    static final String[] TRUSTED_UPDATE_HOSTS = {
+        "raw.githubusercontent.com",
+        "github.com",
+        "objects.githubusercontent.com",
+        "release-assets.githubusercontent.com",
+    };
+
+    /**
+     * True only for an https URL on one of {@link #TRUSTED_UPDATE_HOSTS}. Parsed as a URI and the
+     * scheme/host compared separately, so a prefix spoof ("https://raw.githubusercontent.com.evil")
+     * or a user-info trick ("https://raw.githubusercontent.com@evil") cannot pass.
+     */
+    static boolean isTrustedUpdateUrl(String url) {
+        return isTrustedHttpsUrl(url, TRUSTED_UPDATE_HOSTS);
+    }
+
+    /**
+     * GeneralsX @feature Android security 12/11/2026 The shared transport rule for anything this
+     * launcher downloads: https, no user-info, default port, and the host on an explicit allowlist.
+     * Compared on the parsed URI rather than the raw string, so neither a lookalike suffix nor a
+     * user-info component can pass; the caller checks the final URL again after redirects.
+     */
+    static boolean isTrustedHttpsUrl(String url, String[] trustedHosts) {
+        if (url == null || url.isEmpty()) {
+            return false;
+        }
+        try {
+            java.net.URI uri = new java.net.URI(url);
+            if (!"https".equalsIgnoreCase(uri.getScheme())) {
+                return false;
+            }
+            if (uri.getUserInfo() != null) {
+                return false;
+            }
+            int port = uri.getPort();
+            if (port != -1 && port != 443) {
+                return false;
+            }
+            String host = uri.getHost();
+            if (host == null) {
+                return false;
+            }
+            for (String trusted : trustedHosts) {
+                if (trusted.equalsIgnoreCase(host)) {
+                    return true;
+                }
+            }
+            return false;
+        } catch (java.net.URISyntaxException e) {
+            return false;
+        }
+    }
+
+    /**
      * GeneralsX @feature Android port 18/10/2026 Two channels. Releases read the {@code updates}
      * branch; a test build (assets/update_channel.txt = "test", written by the packaging script
      * when GX_UPDATE_CHANNEL=test) reads {@code updates-test}, so a test engine reaches testers
@@ -108,6 +170,14 @@ final class UpdateManager {
         "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEO4OqrpGbZmtfG6Sy8CwpO2suocjAnMI0jp2V/ZPW2IIPDKnnU2KndPVMYqP1RS5QTWNph1PZtQWAJDbH5ewUKQ==";
 
     static final String[] ENGINE_LIBS = { "libmain.so", "libmain60.so" };
+
+    /**
+     * GeneralsX @feature Android security 12/11/2026 A hard ceiling on one engine library, so a
+     * signed manifest that (by mistake or by a compromised signing key) names an absurd size
+     * cannot fill the phone's storage. An engine .so is tens of MB; 256 MB is far above any real
+     * build and far below what would be a storage-exhaustion attack.
+     */
+    static final long MAX_ENGINE_LIB_BYTES = 256L * 1024L * 1024L;
 
     private static final String PREFS = "gx_update";
     private static final String KEY_SERIAL = "serial";
@@ -510,11 +580,20 @@ final class UpdateManager {
                 break;
             }
             File out = new File(target, lib);
-            String sha = entry.getString("sha256");
+            // GeneralsX @feature Android security 12/11/2026 A downloadable native library must
+            // carry BOTH a real SHA-256 and a positive size in the signed manifest; without them
+            // there is nothing to verify the file against, so it is refused rather than fetched.
+            String sha = entry.optString("sha256", "").trim();
+            long size = entry.optLong("size", 0L);
+            if (!sha.matches("[0-9a-fA-F]{64}") || size <= 0 || size > MAX_ENGINE_LIB_BYTES) {
+                r.error = "engine entry " + lib + " has no usable sha256/size";
+                all = false;
+                break;
+            }
             if (out.isFile() && sha.equalsIgnoreCase(sha256(out))) {
                 continue;
             }
-            downloadEngineFile(entry.getString("url"), entry.optLong("size", 0L), sha, out);
+            downloadEngineFile(entry.getString("url"), size, sha, out);
         }
         if (!all) {
             r.error = "engine entry is missing a library";
@@ -638,6 +717,11 @@ final class UpdateManager {
         if (parent != null && !parent.isDirectory() && !parent.mkdirs()) {
             throw new IOException("cannot create " + parent);
         }
+        // The URL comes from the signed manifest, but a signed manifest is not a reason to skip
+        // the transport check: it is still https on a trusted host, and still that host after
+        // redirects (open() enforces both). A partial download lives at a .part path and is only
+        // renamed into place after the size and digest both match, so a killed download can never
+        // be activated.
         File tmp = new File(out.getPath() + ".part");
         HttpURLConnection conn = open(url);
         MessageDigest digest = MessageDigest.getInstance("SHA-256");
@@ -651,7 +735,9 @@ final class UpdateManager {
                 os.write(buf, 0, n);
                 digest.update(buf, 0, n);
                 written += n;
-                if (size > 0 && written > size) {
+                // Mandatory and bounded: the manifest must state a size, it must be within the
+                // absolute ceiling, and the inflated file must never exceed it.
+                if (written > size || written > MAX_ENGINE_LIB_BYTES) {
                     throw new IOException("engine file larger than the manifest says");
                 }
             }
@@ -659,7 +745,7 @@ final class UpdateManager {
             conn.disconnect();
         }
         String got = hex(digest.digest());
-        if ((size > 0 && written != size) || !got.equalsIgnoreCase(sha256)) {
+        if (written != size || !got.equalsIgnoreCase(sha256)) {
             tmp.delete();
             throw new IOException("engine file does not match the signed manifest: " + out.getName());
         }
@@ -674,11 +760,23 @@ final class UpdateManager {
     }
 
     private static HttpURLConnection open(String url) throws IOException {
+        // GeneralsX @feature Android security 12/11/2026 Every engine-update request is https on a
+        // trusted host, checked before the socket is opened (so a malformed or http URL never even
+        // connects) and again after redirects (so a redirect cannot move the fetch to an arbitrary
+        // server or downgrade it to http). HttpURLConnection follows redirects itself; the final
+        // URL is only known once the response line has been read.
+        if (!isTrustedUpdateUrl(url)) {
+            throw new IOException("refusing an untrusted update URL: " + url);
+        }
         HttpURLConnection conn = (HttpURLConnection) new URL(url).openConnection();
         conn.setConnectTimeout(15000);
         conn.setReadTimeout(60000);
         conn.setUseCaches(false);
         int status = conn.getResponseCode();
+        if (!isTrustedUpdateUrl(conn.getURL().toString())) {
+            conn.disconnect();
+            throw new IOException("update download redirected to an untrusted URL: " + conn.getURL());
+        }
         if (status < 200 || status >= 300) {
             conn.disconnect();
             throw new IOException("HTTP " + status + " for " + url);

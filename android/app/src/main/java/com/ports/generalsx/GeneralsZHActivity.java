@@ -234,22 +234,40 @@ public class GeneralsZHActivity extends SDLActivity {
         SetupActivity.writeSubtitlesMarker(this);
         writeZeroHourArtPath();
         Intent intent = getIntent();
-        String replay = intent != null ? intent.getStringExtra(EXTRA_REPLAY) : null;
+        // GeneralsX @bugfix Android security 12/11/2026 The replay extras are validated by a pure
+        // static helper, so every rule below (bare file name, bounded frame number, known flags)
+        // is unit-tested without a device. This Activity is exported, so the extras are
+        // attacker-controlled input.
+        boolean replayLaunch = appendReplayExtras(args, intent);
+        // GeneralsX @performance Android port 25/10/2026 The network trace marker is the check's
+        // own: the engine keeps it to this replay and off any game played after it in the same run.
+        if (replayLaunch && ReplayCheckActivity.traceTurnedOnByCheck(this)) {
+            args.add("-gxCheckTrace");
+        }
+        Log.i(TAG, "Replay check launch: " + args);
+        return args.toArray(new String[0]);
+    }
+
+    /**
+     * Translate the replay Intent extras into engine arguments, validating each one. Only the
+     * arguments named here can be produced, so an external caller cannot inject an arbitrary
+     * engine flag through an extra. Returns true when a replay was appended.
+     */
+    static boolean appendReplayExtras(java.util.List<String> args, Intent intent) {
+        if (intent == null) {
+            return false;
+        }
+        String replay = intent.getStringExtra(EXTRA_REPLAY);
         // GeneralsX @bugfix Android security 10/11/2026 Validate the replay name before it reaches
         // the engine. This Activity is exported (a home-screen shortcut and, in principle, any
         // other app can start it), and the extra is appended to the engine's own command line.
         // Only a plain replay file name is accepted: no directory components, no "..", no path
         // separators, and a bounded length. Anything else is ignored rather than passed through.
         if (!isSafeReplayName(replay)) {
-            return args.toArray(new String[0]);
+            return false;
         }
         args.add("-replay");
         args.add(replay);
-        // GeneralsX @performance Android port 25/10/2026 The network trace marker is the check's
-        // own: the engine keeps it to this replay and off any game played after it in the same run.
-        if (ReplayCheckActivity.traceTurnedOnByCheck(this)) {
-            args.add("-gxCheckTrace");
-        }
         int fastTo = intent.getIntExtra(EXTRA_FAST_TO, 0);
         // A frame number: positive, and not absurdly large (the marker is a 32-bit frame counter).
         if (fastTo > 0 && fastTo <= 0x7FFFFFFF) {
@@ -262,8 +280,7 @@ public class GeneralsZHActivity extends SDLActivity {
         if (intent.getBooleanExtra(EXTRA_CRC_EVERY_FRAME, false)) {
             args.add("-gxCrcEveryFrame");
         }
-        Log.i(TAG, "Replay check launch: " + args);
-        return args.toArray(new String[0]);
+        return true;
     }
 
     /** A bare replay file name: non-empty, bounded, no separators, no parent traversal. */

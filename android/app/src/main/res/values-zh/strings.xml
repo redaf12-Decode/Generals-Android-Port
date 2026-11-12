@@ -203,10 +203,14 @@
     <string name="online_subtitle">登录以使用在线多人游戏（playgenerals.online）</string>
     <string name="online_button_sign_out">退出登录</string>
     <string name="online_card_sign_in">登录</string>
-    <string name="online_signin_help">点击"登录"。第一次点击时可能会要求将此应用从电池优化中排除——请允许该请求，然后返回并再次点击"登录"。之后会打开一个浏览器，跳转到 playgenerals.online，并已附带此设备的一次性代码。在网页上选择 Steam、Discord 或 GameReplays，然后返回本应用即可；登录过程会自动完成。</string>
+    <string name="online_signin_help">点击"登录"。之后会打开一个浏览器，跳转到 playgenerals.online，并已附带此设备的一次性代码。在网页上选择 Steam、Discord 或 GameReplays，然后返回本应用即可；登录过程会自动完成。</string>
+    <string name="online_card_battery">后台运行</string>
+    <string name="online_battery_help">登录会打开浏览器并等待你返回。部分手机的电池管理会限制这一等待，因此登录可能只会在下次点击或启动时完成。你可以在系统电池设置中允许 Generals 在后台运行；这是可选项，只影响这一等待。</string>
+    <string name="online_button_battery_settings">打开电池设置</string>
+    <string name="online_battery_granted">已允许后台运行。</string>
+    <string name="online_battery_not_granted">未允许后台运行。登录仍可正常进行，只是可能要到下次点击或启动时才会完成。</string>
     <string name="online_button_sign_in">登录</string>
     <string name="online_status_signing_in">正在登录……</string>
-    <string name="online_status_battery_opt">请在下一个界面中允许 Generals 在后台运行，然后返回并再次点击"登录"——否则 Android 可能会在你使用浏览器期间中止登录检查。</string>
     <string name="online_toast_no_browser">没有可用的浏览器：%1$s</string>
     <string name="online_status_continue_browser">请在浏览器中继续操作——登录完成后返回此处。</string>
     <string name="online_status_network_error">网络错误——请检查连接后重试。</string>
@@ -783,4 +787,11 @@
     <string name="update_install_opened">请在 Android 安装程序中完成安装。</string>
     <string name="update_install_cancelled">安装已取消。</string>
 
+    <string name="setup_driver_activate_confirm_title">激活此驱动？</string>
+    <string name="setup_driver_activate_confirm">%1$s 是第三方 Vulkan 驱动。它在本应用内以应用权限运行，且无人验证其来源。请只激活你信任的驱动。下次启动时生效。</string>
+    <string name="setup_driver_activate_confirm_verified">%1$s 与本应用自带并通过 SHA-256 校验的驱动构建一致，因此其内容是已知的。它仍在本应用内以应用权限运行。下次启动时生效。</string>
+    <string name="setup_driver_activate">激活</string>
+    <string name="setup_toast_driver_import_duplicate">导入失败：.zip 中同一文件出现了两次</string>
+    <string name="setup_toast_driver_import_unexpected">导入失败：.zip 中包含意外文件（%1$s）</string>
+    <string name="online_battery_settings_unavailable">无法在此设备上打开电池设置。你可以在 Android 设置的"电池"中找到它们。</string>
 </resources>

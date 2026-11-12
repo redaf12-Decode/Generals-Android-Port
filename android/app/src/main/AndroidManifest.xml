@@ -63,15 +63,15 @@
          LAN lobby/match is active, so Wi-Fi drivers don't filter LAN broadcasts. -->
     <uses-permission android:name="android.permission.CHANGE_WIFI_MULTICAST_STATE" />
 
-    <!-- GeneralsX @bugfix Android port 10/07/2026 the sign-in flow backgrounds
-         this app for the whole browser round-trip (open playgenerals.online,
-         pick Steam/Discord/GameReplays, come back) — on some OEM battery
-         managers the poll timer got throttled hard enough that CheckLogin
-         never got a chance to run, so a login that visibly succeeded on the
-         website never actually completed in the app. Requesting exemption
-         from battery optimization (GeneralsOnlineActivity.onSignIn) fixes
-         that; this is the normal (non-dangerous) permission needed to even
-         show that system prompt. -->
+    <!-- GeneralsX @bugfix Android security 12/11/2026 Sign-in no longer fires a direct
+         ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS prompt. That request was a Play policy
+         concern and asked the user to decide something they could not judge at the moment of a
+         tap. The flow does not need the exemption: the login poll runs in the foreground and the
+         session refresh retries on the next launch. GeneralsOnlineActivity now shows a battery
+         card that explains the trade-off and opens the system battery settings
+         (ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS), where the player decides. This normal
+         (non-dangerous) permission is still declared because the card reads the current state
+         (isIgnoringBatteryOptimizations); the app never requests the exemption itself. -->
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
 
     <!-- GeneralsX @build Android port 09/11/2026 The update check downloads a newer APK and hands

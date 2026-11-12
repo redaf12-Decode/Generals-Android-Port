@@ -203,10 +203,14 @@
     <string name="online_subtitle">Prijavi sę za onlajn multiigru (playgenerals.online)</string>
     <string name="online_button_sign_out">Odjaviti sę</string>
     <string name="online_card_sign_in">Prijava</string>
-    <string name="online_signin_help">Klikni Prijaviti sę. Prvy klik može prositi izbaviti tu aplikaciju od optimizacije bateriji — dopusti to, potom vrni sę i znova klikni Prijaviti sę. Potom sę otvorja brauzer na playgenerals.online, već nosivši jednorazovy kod za tu děvicu. Izberi tam Steam, Discord ili GameReplays, potom prosto vrni sę v tu aplikaciju — prijava sę zaveršaje sama.</string>
+    <string name="online_signin_help">Klikni Prijaviti sę. Otvorja sę brauzer na playgenerals.online, već nosivši jednorazovy kod za tu děvicu. Izberi tam Steam, Discord ili GameReplays, potom vrni sę v tu aplikaciju — prijava sę zaveršaje sama.</string>
+    <string name="online_card_battery">Rabota na zadnem planě</string>
+    <string name="online_battery_help">Prijava otvorja brauzer i čeka tvoje vrćenje. Na něktorych telefonach upravitelj baterije može to čekanje omeziti, i prijava sę možno zaverši samo pri slědujućem kliku ili startu. Možeš dopustiti Generals rabotiti na zadnem planě v sistemskych nastavjenijach baterije; to jest neobligatorno i vpliva samo na to čekanje.</string>
+    <string name="online_button_battery_settings">Otvoriti nastavjenija baterije</string>
+    <string name="online_battery_granted">Rabota na zadnem planě jest dopuščena.</string>
+    <string name="online_battery_not_granted">Rabota na zadnem planě nije dopuščena. Prijava vsako rabotaje; možno sę zaverši samo pri slědujućem kliku ili startu.</string>
     <string name="online_button_sign_in">Prijaviti sę</string>
     <string name="online_status_signing_in">Prijavjuje sę...</string>
-    <string name="online_status_battery_opt">Dopusti Generals rabotiti na zadnem planě na sledujućem ekranu, potom vrni sę i znova klikni Prijaviti sę — inako Android može prekinuti prověrku prijavy, dokel ty sut v brauzeru.</string>
     <string name="online_toast_no_browser">Ne jest dostupny brauzer: %1$s</string>
     <string name="online_status_continue_browser">Prodolži v svojem brauzeru — vrni sę sjuda, kogda sę prijaviš.</string>
     <string name="online_status_network_error">Grěška sětje — prověri svoje spojenje i pokušaj znova.</string>
@@ -783,4 +787,11 @@
     <string name="update_install_opened">Završite ustanovjenje v Androidnom ustanovitelju.</string>
     <string name="update_install_cancelled">Ustanovjenje otkazano.</string>
 
+    <string name="setup_driver_activate_confirm_title">Aktivovati tuto pogonsku programmu?</string>
+    <string name="setup_driver_activate_confirm">%1$s jest pogonska programa Vulkan tretjej strany. Ona běži v tutom aplikovanju s jego pravami, i nikto neprověrja kto ju sdělal. Aktivujte samo pogonske programmy, ktorym věrujete. Vstupa v silu pri slědujučem startu.</string>
+    <string name="setup_driver_activate_confirm_verified">%1$s odpovědaje pogonskoj programě, ktoru tuto aplikovanje nosi i prověrjaje po SHA-256, tak jego soderžanje jest znano. Ona vsjejedno běži v tutom aplikovanju s jego pravami. Vstupa v silu pri slědujučem startu.</string>
+    <string name="setup_driver_activate">Aktivovati</string>
+    <string name="setup_toast_driver_import_duplicate">Import neuspěšny: .zip imenuje ten samy fajl dvakrat</string>
+    <string name="setup_toast_driver_import_unexpected">Import neuspěšny: .zip soderži neočekivany fajl (%1$s)</string>
+    <string name="online_battery_settings_unavailable">Ne bylo možno otvoriti nastavjenija baterije na toj děvici. Najdi je v nastavjenijach Androida, pod "Baterija".</string>
 </resources>

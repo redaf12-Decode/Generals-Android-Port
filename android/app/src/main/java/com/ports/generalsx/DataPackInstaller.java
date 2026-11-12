@@ -72,9 +72,34 @@ final class DataPackInstaller {
     private static final String MANIFEST_URL = "https://cdn.playgenerals.online/manifest.json";
 
     /**
-     * GeneralsX @feature Android port 27/09/2026 The package's own manifest address can be
+     * GeneralsX @feature Android security 12/11/2026 The only hosts the data package may be
+     * fetched from. The manifest and the ZIP are served from the GeneralsOnline CDN; the same
+     * repository raw host carries the fallback copy. Checked before the request and again after
+     * redirects, so a redirect cannot move the download to an arbitrary server or to http.
+     */
+    private static final String[] TRUSTED_HOSTS = {
+        "cdn.playgenerals.online",
+        "playgenerals.online",
+        "raw.githubusercontent.com",
+    };
+
+    /**
+     * GeneralsX @feature Android security 12/11/2026 A hard ceiling on the package download. The
+     * package is tens of MB; 512 MB is far above any real release and far below what would fill a
+     * phone's storage. The manifest's own size is required too, and must be positive and under
+     * this cap.
+     */
+    private static final long MAX_DOWNLOAD_BYTES = 512L * 1024L * 1024L;
+    /** A ceiling on the inflated package, so a zip bomb cannot fill storage while unzipping. */
+    private static final long MAX_UNCOMPRESSED_BYTES = 2048L * 1024L * 1024L;
+    /** A ceiling on entries, so a package cannot be an archive of a million tiny files. */
+    private static final int MAX_ENTRIES = 100000;
+
+    /**
+     * GeneralsX @feature Android security 12/11/2026 The package's own manifest address can be
      * changed from the signed update settings (datapack_manifest_url), so a move of the
-     * GeneralsOnline CDN does not need a new APK. Only an https address is taken.
+     * GeneralsOnline CDN does not need a new APK. Only an https address on a trusted host is
+     * taken; anything else falls back to the built-in CDN address.
      */
     static String manifestUrl(Context ctx) {
         String url = UpdateManager.remoteConfig(ctx, "datapack_manifest_url", MANIFEST_URL);
@@ -85,7 +110,7 @@ final class DataPackInstaller {
         if (url.startsWith(UpdateManager.RAW_ROOT)) {
             return MANIFEST_URL;
         }
-        return url.startsWith("https://") ? url : MANIFEST_URL;
+        return UpdateManager.isTrustedHttpsUrl(url, TRUSTED_HOSTS) ? url : MANIFEST_URL;
     }
 
     /** The version the GeneralsOnline CDN offers now, or null if it cannot be reached. */
@@ -121,6 +146,15 @@ final class DataPackInstaller {
      * with it -- they share the directory.
      */
     private static final String INSTALLED_LIST = "datapack-installed.json";
+
+    /**
+     * GeneralsX @feature Android security 12/11/2026 Where a package is unpacked before it is
+     * applied, and where the files it replaces are set aside. Both live beside the game data so the
+     * moves into place are renames on one filesystem, and both are removed once the install
+     * commits. Dot-prefixed so the engine's directory scan ignores them.
+     */
+    private static final String STAGING_DIR = ".gx-datapack-staging";
+    private static final String BACKUP_DIR = ".gx-datapack-backup";
 
     /** Where the engine looks: BuildUserDataPathFromRegistry's Android branch. */
     static File userDataDir() {
@@ -420,6 +454,25 @@ final class DataPackInstaller {
         }
     }
 
+    /**
+     * GeneralsX @feature Android security 12/11/2026 Returns null when the manifest's download
+     * URL, digest and size are all usable, or the reason it is not. Extracted so the rules are
+     * exercised by a plain JVM test rather than only on a phone: the manifest is fetched over the
+     * network but the decision about it is pure.
+     */
+    static String validateManifest(String downloadUrl, String sha256, long size) {
+        if (!UpdateManager.isTrustedHttpsUrl(downloadUrl, TRUSTED_HOSTS)) {
+            return "manifest download URL is not a trusted https address";
+        }
+        if (sha256 == null || !sha256.matches("[0-9a-fA-F]{64}")) {
+            return "manifest has no usable sha256";
+        }
+        if (size <= 0 || size > MAX_DOWNLOAD_BYTES) {
+            return "manifest has no usable size";
+        }
+        return null;
+    }
+
     private static Result installLocked(Context ctx, Progress progress) {
         File tempZip = null;
         // Not a 100 MB download that can only end in "could not create": the data goes to shared
@@ -437,8 +490,15 @@ final class DataPackInstaller {
             // leading space, and every update then failed as "checksum mismatch" on a correct download.
             String expectedSha = manifest.optString("sha256", "").trim();
 
-            if (downloadUrl.isEmpty() || !downloadUrl.startsWith("https://")) {
-                return Result.failure("manifest has no usable download URL");
+            // GeneralsX @feature Android security 12/11/2026 Every field the install depends on is
+            // now mandatory: a trusted https URL, a real SHA-256, and a positive size under the
+            // hard cap. The manifest is not independently signed, so a redirect to any other host
+            // is refused too (fetchText/download check the final URL). A package whose digest is
+            // absent or whose size is unknown is not installed at all.
+            String manifestProblem = validateManifest(downloadUrl, expectedSha, expectedSize);
+            if (manifestProblem != null) {
+                NetworkTrace.write(ctx, "[datapack] refusing the manifest: " + manifestProblem);
+                return Result.failure(manifestProblem);
             }
 
             NetworkTrace.write(ctx, "[datapack] manifest version=" + version
@@ -450,7 +510,7 @@ final class DataPackInstaller {
             tempZip = new File(ctx.getCacheDir(), "generalsonline-datapack.zip");
             String actualSha = download(downloadUrl, tempZip, expectedSize, progress);
 
-            if (!expectedSha.isEmpty() && !expectedSha.equalsIgnoreCase(actualSha)) {
+            if (!expectedSha.equalsIgnoreCase(actualSha)) {
                 // The manifest publishes a digest; ignoring it would make this
                 // a download that installs whatever arrived, which for files
                 // the game then treats as authoritative data is not a risk
@@ -492,12 +552,20 @@ final class DataPackInstaller {
     private static String fetchText(String url) throws IOException {
         HttpURLConnection conn = null;
         try {
+            if (!UpdateManager.isTrustedHttpsUrl(url, TRUSTED_HOSTS)) {
+                throw new IOException("refusing an untrusted manifest URL: " + url);
+            }
             conn = (HttpURLConnection) new URL(url).openConnection();
             conn.setConnectTimeout(15000);
             conn.setReadTimeout(20000);
             conn.setRequestProperty("Accept", "application/json");
 
             int status = conn.getResponseCode();
+            // After redirects the connection may sit on a different host; refuse anything that is
+            // not still https on a trusted host before a byte of the body is read.
+            if (!UpdateManager.isTrustedHttpsUrl(conn.getURL().toString(), TRUSTED_HOSTS)) {
+                throw new IOException("manifest redirected to an untrusted URL: " + conn.getURL());
+            }
             if (status != 200) {
                 throw new IOException("HTTP " + status + " from manifest");
             }
@@ -517,11 +585,17 @@ final class DataPackInstaller {
             throws IOException, java.security.NoSuchAlgorithmException {
         HttpURLConnection conn = null;
         try {
+            if (!UpdateManager.isTrustedHttpsUrl(url, TRUSTED_HOSTS)) {
+                throw new IOException("refusing an untrusted package URL: " + url);
+            }
             conn = (HttpURLConnection) new URL(url).openConnection();
             conn.setConnectTimeout(15000);
             conn.setReadTimeout(30000);
 
             int status = conn.getResponseCode();
+            if (!UpdateManager.isTrustedHttpsUrl(conn.getURL().toString(), TRUSTED_HOSTS)) {
+                throw new IOException("package redirected to an untrusted URL: " + conn.getURL());
+            }
             if (status != 200) {
                 throw new IOException("HTTP " + status + " downloading the package");
             }
@@ -542,6 +616,12 @@ final class DataPackInstaller {
                     out.write(buffer, 0, read);
                     digest.update(buffer, 0, read);
                     done += read;
+                    // GeneralsX @feature Android security 12/11/2026 Enforce the manifest's size
+                    // while streaming, so a server that ignores it cannot write more than the cap
+                    // to the phone's storage; the exact match is checked after the body ends.
+                    if (done > expectedSize || done > MAX_DOWNLOAD_BYTES) {
+                        throw new IOException("package larger than the manifest says");
+                    }
                     // One update per percent, not per buffer: 30MB in 64KB
                     // chunks is ~500 posts to the main thread otherwise.
                     long percent = total > 0 ? (done * 100 / total) : -1;
@@ -549,6 +629,10 @@ final class DataPackInstaller {
                         lastReported = percent;
                         progress.onDownloading(done, total);
                     }
+                }
+                // A truncated body is not a package: a short read must not be activated.
+                if (done != expectedSize) {
+                    throw new IOException("package download was incomplete");
                 }
             }
 
@@ -663,15 +747,43 @@ final class DataPackInstaller {
     }
 
     /** Extracts the wanted prefixes into targetRoot, listing what it wrote. */
-    private static List<String> extract(File zipFile, File targetRoot, long[] pcExeCrc)
+    static List<String> extract(File zipFile, File targetRoot, long[] pcExeCrc)
             throws IOException {
-        String rootPath = targetRoot.getCanonicalPath() + File.separator;
+        File staging = new File(targetRoot, STAGING_DIR);
+        deleteTree(staging);
+        if (!staging.mkdirs() && !staging.isDirectory()) {
+            throw new IOException("could not create the staging directory");
+        }
+        List<String> written;
+        try {
+            written = extractInto(zipFile, staging, pcExeCrc);
+            applyStaged(staging, targetRoot, written);
+        } finally {
+            deleteTree(staging);
+        }
+        return written;
+    }
+
+    /** Extracts the wanted prefixes into stageRoot (which must exist), listing what it wrote. */
+    private static List<String> extractInto(File zipFile, File stageRoot, long[] pcExeCrc)
+            throws IOException {
+        String rootPath = stageRoot.getCanonicalPath() + File.separator;
         List<String> written = new ArrayList<>();
+        // GeneralsX @feature Android security 12/11/2026 The archive is an untrusted list of paths
+        // from the network. Bound its shape before trusting any of it: a fixed entry budget, a cap
+        // on the total inflated size (a zip bomb), and no path written twice -- a duplicate is how
+        // a validator and the engine can end up reading different bytes under one name.
+        java.util.Set<String> seen = new java.util.HashSet<>();
+        long inflated = 0;
+        int entries = 0;
 
         try (ZipInputStream zip = new ZipInputStream(
                 new BufferedInputStream(new java.io.FileInputStream(zipFile)))) {
             ZipEntry entry;
             while ((entry = zip.getNextEntry()) != null) {
+                if (++entries > MAX_ENTRIES) {
+                    throw new IOException("package has too many entries");
+                }
                 String name = entry.getName().replace('\\', '/');
                 if (name.equalsIgnoreCase(PC_EXE_NAME)) {
                     pcExeCrcState(zip, pcExeCrc);
@@ -680,8 +792,11 @@ final class DataPackInstaller {
                 if (!isWanted(name)) {
                     continue;
                 }
+                if (!entry.isDirectory() && !seen.add(name)) {
+                    throw new IOException("package lists the same file twice: " + name);
+                }
 
-                File out = new File(targetRoot, name);
+                File out = new File(stageRoot, name);
                 // Zip slip: the entry name decides the path, and the entry
                 // name comes from a file off the network.
                 if (!out.getCanonicalPath().startsWith(rootPath)) {
@@ -698,8 +813,10 @@ final class DataPackInstaller {
                     throw new IOException("could not create " + parent.getAbsolutePath());
                 }
 
+                // Count the bytes as they are written, not from the header, so a lying entry size
+                // cannot get past the cap; the extraction is abandoned the moment it is exceeded.
                 try (OutputStream dest = new FileOutputStream(out)) {
-                    copy(zip, dest);
+                    inflated = copyBounded(zip, dest, inflated, MAX_UNCOMPRESSED_BYTES);
                 }
                 written.add(name);
             }
@@ -709,6 +826,80 @@ final class DataPackInstaller {
             throw new IOException("package contained none of the expected data");
         }
         return written;
+    }
+
+    /**
+     * GeneralsX @feature Android security 12/11/2026 Moves the staged files into the game data,
+     * setting aside any file it replaces so a failure part-way can be undone. The whole package is
+     * unpacked and verified before this runs, so the only way to fail here is a filesystem error --
+     * and if that happens every file already moved is put back, leaving the directory as it was
+     * rather than half old and half new. The backup is removed only after every move succeeded.
+     */
+    private static void applyStaged(File stageRoot, File targetRoot, List<String> written)
+            throws IOException {
+        File backupRoot = new File(targetRoot, BACKUP_DIR);
+        deleteTree(backupRoot);
+        if (!backupRoot.mkdirs() && !backupRoot.isDirectory()) {
+            throw new IOException("could not create the backup directory");
+        }
+        List<String> moved = new ArrayList<>();
+        List<String> replaced = new ArrayList<>();
+        try {
+            for (String name : written) {
+                File src = new File(stageRoot, name);
+                File dst = new File(targetRoot, name);
+                File parent = dst.getParentFile();
+                if (parent != null && !parent.isDirectory() && !parent.mkdirs()) {
+                    throw new IOException("could not create " + parent.getAbsolutePath());
+                }
+                if (dst.exists()) {
+                    File saved = new File(backupRoot, name);
+                    File savedParent = saved.getParentFile();
+                    if (savedParent != null && !savedParent.isDirectory() && !savedParent.mkdirs()) {
+                        throw new IOException("could not create " + savedParent.getAbsolutePath());
+                    }
+                    if (!dst.renameTo(saved)) {
+                        throw new IOException("could not set aside " + dst);
+                    }
+                    replaced.add(name);
+                }
+                if (!src.renameTo(dst)) {
+                    throw new IOException("could not install " + name);
+                }
+                moved.add(name);
+            }
+        } catch (IOException e) {
+            // Undo: take back the files this install wrote, then put the originals back.
+            for (String name : moved) {
+                new File(targetRoot, name).delete();
+            }
+            for (String name : replaced) {
+                File saved = new File(backupRoot, name);
+                File dst = new File(targetRoot, name);
+                File parent = dst.getParentFile();
+                if (parent != null && !parent.isDirectory()) {
+                    parent.mkdirs();
+                }
+                saved.renameTo(dst);
+            }
+            deleteTree(backupRoot);
+            throw e;
+        }
+        deleteTree(backupRoot);
+    }
+
+    /** Removes a directory and everything under it. Best effort: used on staging and backups. */
+    private static void deleteTree(File dir) {
+        if (dir == null || !dir.exists()) {
+            return;
+        }
+        File[] children = dir.listFiles();
+        if (children != null) {
+            for (File child : children) {
+                deleteTree(child);
+            }
+        }
+        dir.delete();
     }
 
     private static boolean isWanted(String name) {
@@ -726,6 +917,25 @@ final class DataPackInstaller {
         while ((read = in.read(buffer)) > 0) {
             out.write(buffer, 0, read);
         }
+    }
+
+    /**
+     * GeneralsX @feature Android security 12/11/2026 Copies while accumulating the running total
+     * and refuses to exceed {@code cap}, so a package that inflates without bound is stopped
+     * mid-write rather than after it has filled the phone.
+     */
+    private static long copyBounded(InputStream in, OutputStream out, long already, long cap)
+            throws IOException {
+        byte[] buffer = new byte[64 * 1024];
+        int read;
+        while ((read = in.read(buffer)) > 0) {
+            already += read;
+            if (already > cap) {
+                throw new IOException("package expands beyond the allowed size");
+            }
+            out.write(buffer, 0, read);
+        }
+        return already;
     }
 
     private static String toHex(byte[] bytes) {

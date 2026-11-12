@@ -203,10 +203,14 @@
     <string name="online_subtitle">برای بازی چندنفره آنلاین وارد شوید (playgenerals.online)</string>
     <string name="online_button_sign_out">خروج از حساب</string>
     <string name="online_card_sign_in">ورود</string>
-    <string name="online_signin_help">روی «ورود» ضربه بزنید. ممکن است در اولین ضربه از شما خواسته شود این برنامه را از بهینه‌سازی باتری مستثنی کنید — آن را اجازه دهید، سپس بازگردید و دوباره روی «ورود» ضربه بزنید. سپس مرورگری باز می‌شود که به playgenerals.online می‌رود و از قبل حاوی یک کد یک‌بارمصرف برای این دستگاه است. در آنجا Steam، Discord یا GameReplays را انتخاب کنید و سپس فقط به این برنامه بازگردید؛ فرآیند به‌طور خودکار کامل می‌شود.</string>
+    <string name="online_signin_help">روی «ورود» ضربه بزنید. مرورگری باز می‌شود که به playgenerals.online می‌رود و از قبل حاوی یک کد یک‌بارمصرف برای این دستگاه است. در آنجا Steam، Discord یا GameReplays را انتخاب کنید و سپس به این برنامه بازگردید؛ فرآیند به‌طور خودکار کامل می‌شود.</string>
+    <string name="online_card_battery">اجرا در پس‌زمینه</string>
+    <string name="online_battery_help">ورود یک مرورگر باز می‌کند و منتظر بازگشت شما می‌ماند. در برخی گوشی‌ها مدیر باتری ممکن است این انتظار را محدود کند، بنابراین ورود شاید فقط با ضربه یا اجرای بعدی کامل شود. می‌توانید در تنظیمات باتری سیستم به Generals اجازه دهید در پس‌زمینه اجرا شود؛ این اختیاری است و فقط بر همان انتظار اثر دارد.</string>
+    <string name="online_button_battery_settings">باز کردن تنظیمات باتری</string>
+    <string name="online_battery_granted">اجرا در پس‌زمینه مجاز است.</string>
+    <string name="online_battery_not_granted">اجرا در پس‌زمینه مجاز نیست. ورود همچنان کار می‌کند؛ شاید فقط با ضربه یا اجرای بعدی کامل شود.</string>
     <string name="online_button_sign_in">ورود</string>
     <string name="online_status_signing_in">در حال ورود...</string>
-    <string name="online_status_battery_opt">در صفحه بعدی اجازه دهید Generals در پس‌زمینه اجرا شود، سپس بازگردید و دوباره روی «ورود» ضربه بزنید — در غیر این صورت ممکن است اندروید بررسی ورود را در حالی که در مرورگر هستید متوقف کند.</string>
     <string name="online_toast_no_browser">هیچ مرورگری در دسترس نیست: %1$s</string>
     <string name="online_status_continue_browser">در مرورگر خود ادامه دهید — پس از ورود به اینجا بازگردید.</string>
     <string name="online_status_network_error">خطای شبکه — اتصال خود را بررسی کرده و دوباره تلاش کنید.</string>
@@ -783,4 +787,11 @@
     <string name="update_install_opened">نصب را در نصب‌کننده اندروید کامل کنید.</string>
     <string name="update_install_cancelled">نصب لغو شد.</string>
 
+    <string name="setup_driver_activate_confirm_title">این درایور فعال شود؟</string>
+    <string name="setup_driver_activate_confirm">%1$s یک درایور Vulkan شخص ثالث است. با مجوزهای همین برنامه درون آن اجرا می‌شود و کسی سازندهٔ آن را تأیید نمی‌کند. فقط درایورهایی را فعال کنید که به آن‌ها اعتماد دارید. از اجرای بعدی اعمال می‌شود.</string>
+    <string name="setup_driver_activate_confirm_verified">%1$s با نسخه‌ای از درایور که این برنامه همراه دارد و با SHA-256 تأیید شده مطابقت دارد، پس محتوای آن شناخته‌شده است. با این حال با مجوزهای همین برنامه درون آن اجرا می‌شود. از اجرای بعدی اعمال می‌شود.</string>
+    <string name="setup_driver_activate">فعال‌سازی</string>
+    <string name="setup_toast_driver_import_duplicate">ورود ناموفق: فایل .zip یک پرونده را دو بار فهرست کرده است</string>
+    <string name="setup_toast_driver_import_unexpected">ورود ناموفق: فایل .zip یک پرونده غیرمنتظره دارد (%1$s)</string>
+    <string name="online_battery_settings_unavailable">باز کردن تنظیمات باتری در این دستگاه ممکن نشد. می‌توانید آن‌ها را در تنظیمات اندروید، بخش «باتری» پیدا کنید.</string>
 </resources>

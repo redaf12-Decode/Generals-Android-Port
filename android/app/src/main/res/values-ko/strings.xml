@@ -203,10 +203,14 @@
     <string name="online_subtitle">온라인 멀티플레이어를 위해 로그인하세요 (playgenerals.online)</string>
     <string name="online_button_sign_out">로그아웃</string>
     <string name="online_card_sign_in">로그인</string>
-    <string name="online_signin_help">로그인을 누르세요. 처음 누르면 이 앱을 배터리 최적화에서 제외할지 묻는 화면이 나타날 수 있습니다 — 허용한 다음 돌아와서 로그인을 다시 누르세요. 그러면 이 기기용 일회용 코드가 이미 포함된 상태로 playgenerals.online 브라우저가 열립니다. 거기서 Steam, Discord 또는 GameReplays를 선택한 다음 이 앱으로 돌아오기만 하면 로그인이 자동으로 완료됩니다.</string>
+    <string name="online_signin_help">로그인을 누르세요. 이 기기용 일회용 코드가 이미 포함된 상태로 playgenerals.online 브라우저가 열립니다. 거기서 Steam, Discord 또는 GameReplays를 선택한 다음 이 앱으로 돌아오기만 하면 로그인이 자동으로 완료됩니다.</string>
+    <string name="online_card_battery">백그라운드 실행</string>
+    <string name="online_battery_help">로그인은 브라우저를 열고 돌아오기를 기다립니다. 일부 휴대폰에서는 배터리 관리자가 이 대기를 제한하여 다음 탭이나 실행 때에야 로그인이 완료될 수 있습니다. 시스템 배터리 설정에서 Generals의 백그라운드 실행을 허용할 수 있습니다. 선택 사항이며 그 대기에만 영향을 줍니다.</string>
+    <string name="online_button_battery_settings">배터리 설정 열기</string>
+    <string name="online_battery_granted">백그라운드 실행이 허용되었습니다.</string>
+    <string name="online_battery_not_granted">백그라운드 실행이 허용되지 않았습니다. 로그인은 계속 작동하며, 다음 탭이나 실행 때 완료될 수 있습니다.</string>
     <string name="online_button_sign_in">로그인</string>
     <string name="online_status_signing_in">로그인 중...</string>
-    <string name="online_status_battery_opt">다음 화면에서 Generals가 백그라운드에서 실행되도록 허용한 다음 돌아와서 로그인을 다시 누르세요 — 그렇지 않으면 브라우저에 있는 동안 Android가 로그인 확인을 중단할 수 있습니다.</string>
     <string name="online_toast_no_browser">사용 가능한 브라우저가 없습니다: %1$s</string>
     <string name="online_status_continue_browser">브라우저에서 계속 진행하세요 — 로그인 후 여기로 돌아오세요.</string>
     <string name="online_status_network_error">네트워크 오류 — 연결 상태를 확인한 후 다시 시도하세요.</string>
@@ -783,4 +787,11 @@
     <string name="update_install_opened">Android 설치 프로그램에서 설치를 완료하세요.</string>
     <string name="update_install_cancelled">설치가 취소되었습니다.</string>
 
+    <string name="setup_driver_activate_confirm_title">이 드라이버를 활성화할까요?</string>
+    <string name="setup_driver_activate_confirm">%1$s은(는) 서드파티 Vulkan 드라이버입니다. 이 앱의 권한으로 앱 안에서 실행되며, 누가 만들었는지 검증하지 않습니다. 신뢰하는 드라이버만 활성화하세요. 다음 실행부터 적용됩니다.</string>
+    <string name="setup_driver_activate_confirm_verified">%1$s은(는) 이 앱이 함께 제공하고 SHA-256으로 검증하는 드라이버 빌드와 일치하므로 내용이 알려져 있습니다. 그래도 이 앱의 권한으로 앱 안에서 실행됩니다. 다음 실행부터 적용됩니다.</string>
+    <string name="setup_driver_activate">활성화</string>
+    <string name="setup_toast_driver_import_duplicate">가져오기 실패: .zip에 같은 파일이 두 번 있습니다</string>
+    <string name="setup_toast_driver_import_unexpected">가져오기 실패: .zip에 예상치 못한 파일이 있습니다 (%1$s)</string>
+    <string name="online_battery_settings_unavailable">이 기기에서 배터리 설정을 열 수 없습니다. Android 설정의 "배터리"에서 찾을 수 있습니다.</string>
 </resources>

@@ -103,6 +103,7 @@ public class GeneralsOnlineActivity extends Activity {
     private TextView statusText;
     private MaterialButton signInButton;
     private MaterialButton signOutButton;
+    private TextView batteryStatus;
 
     private int pollAttempt = 0;
     private boolean busy = false;
@@ -143,6 +144,13 @@ public class GeneralsOnlineActivity extends Activity {
         buildUi();
         refreshStatus();
         maybeSilentReauth();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // The battery-settings screen may have changed the state while this Activity was away.
+        refreshBatteryStatus();
     }
 
     @Override
@@ -189,6 +197,11 @@ public class GeneralsOnlineActivity extends Activity {
         }
         signOutButton = UiKit.button(statusCard, UiKit.BTN_DANGER, R.drawable.ic_gzh_trash,
             getString(R.string.online_button_sign_out), this::onSignOut);
+
+        // GeneralsX @feature Android security 12/11/2026 A non-intrusive battery card: it explains
+        // why sign-in may finish late on some phones and offers the system battery settings, rather
+        // than firing a direct exemption request during sign-in.
+        buildBatteryCard(page);
 
         LinearLayout stepsCard = UiKit.card(page);
         UiKit.sectionHeader(stepsCard, R.drawable.ic_gzh_check,
@@ -670,36 +683,61 @@ public class GeneralsOnlineActivity extends Activity {
         }).start();
     }
 
-    // GeneralsX @bugfix Android port 10/07/2026 the sign-in flow backgrounds
-    // this Activity for the whole browser round-trip; without a battery
-    // exemption, some OEM battery managers throttle the poll timer hard
-    // enough that CheckLogin never actually runs, so a login that visibly
-    // succeeded on the website never completes here. First tap requests the
-    // exemption (and stops there -- no browser yet); once granted (or if it
-    // already was), the next tap proceeds with the real sign-in.
-    private boolean ensureNotBatteryOptimized() {
+    // GeneralsX @bugfix Android security 12/11/2026 Sign-in no longer asks for a battery-optimization
+    // exemption. That was a direct Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS prompt,
+    // fired automatically on the first tap -- a request the user cannot properly judge and that
+    // Play discourages. The login poll already runs while the app is in the foreground, and the
+    // session refresh retries on the next launch, so the flow works without it. The battery card
+    // (buildBatteryCard) now explains the trade-off and opens the system battery settings, where
+    // the player can allow background running if their OEM needs it.
+    //
+    // A battery card that explains rather than demands: it states why sign-in may finish late on
+    // some phones and offers the system battery settings as an optional action. Nothing here
+    // requests the exemption directly, and no exemption is required for the game to work.
+    private void buildBatteryCard(LinearLayout page) {
+        LinearLayout card = UiKit.card(page);
+        UiKit.sectionHeader(card, R.drawable.ic_gzh_info,
+            getString(R.string.online_card_battery), false);
+        UiKit.supporting(card, getString(R.string.online_battery_help));
+        batteryStatus = UiKit.supporting(card, "");
+        UiKit.button(card, UiKit.BTN_OUTLINE, R.drawable.ic_gzh_sliders,
+            getString(R.string.online_button_battery_settings), this::openBatterySettings);
+        refreshBatteryStatus();
+    }
+
+    private boolean isIgnoringBatteryOptimizations() {
         android.os.PowerManager pm = (android.os.PowerManager) getSystemService(POWER_SERVICE);
-        if (pm != null && pm.isIgnoringBatteryOptimizations(getPackageName())) {
-            return true;
+        return pm != null && pm.isIgnoringBatteryOptimizations(getPackageName());
+    }
+
+    private void refreshBatteryStatus() {
+        if (batteryStatus == null) {
+            return;
         }
+        batteryStatus.setText(isIgnoringBatteryOptimizations()
+            ? R.string.online_battery_granted : R.string.online_battery_not_granted);
+    }
+
+    /**
+     * Opens the system battery settings for this app. This is the app's battery-optimization
+     * screen (ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS), not a one-tap exemption prompt: the
+     * player decides there, in Android's own UI, whether to allow background running.
+     */
+    private void openBatterySettings() {
         try {
-            Intent intent = new Intent(android.provider.Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS,
-                Uri.parse("package:" + getPackageName()));
-            startActivity(intent);
+            startActivity(new Intent(android.provider.Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS));
         } catch (Exception e) {
-            // Some OEMs don't support this action; fall through and let sign-in
-            // proceed anyway rather than blocking the user entirely.
-            return true;
+            try {
+                startActivity(new Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                    Uri.parse("package:" + getPackageName())));
+            } catch (Exception e2) {
+                Toast.makeText(this, R.string.online_battery_settings_unavailable, Toast.LENGTH_LONG).show();
+            }
         }
-        statusText.setText(R.string.online_status_battery_opt);
-        return false;
     }
 
     private void onSignIn() {
         if (busy) {
-            return;
-        }
-        if (!ensureNotBatteryOptimized()) {
             return;
         }
         busy = true;

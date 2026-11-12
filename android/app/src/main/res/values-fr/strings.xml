@@ -203,10 +203,14 @@
     <string name="online_subtitle">Connectez-vous pour le multijoueur en ligne (playgenerals.online)</string>
     <string name="online_button_sign_out">Se déconnecter</string>
     <string name="online_card_sign_in">Connexion</string>
-    <string name="online_signin_help">Appuyez sur Se connecter. Le premier appui peut demander d\'exempter cette application de l\'optimisation de la batterie — autorisez-le, puis revenez et appuyez à nouveau sur Se connecter. Un navigateur s\'ouvre alors sur playgenerals.online, déjà avec un code à usage unique pour cet appareil. Choisissez Steam, Discord ou GameReplays, puis revenez simplement à cette application ; la connexion se termine d\'elle-même.</string>
+    <string name="online_signin_help">Appuyez sur Se connecter. Un navigateur s\'ouvre sur playgenerals.online, déjà avec un code à usage unique pour cet appareil. Choisissez Steam, Discord ou GameReplays, puis revenez simplement à cette application ; la connexion se termine d\'elle-même.</string>
+    <string name="online_card_battery">Exécution en arrière-plan</string>
+    <string name="online_battery_help">La connexion ouvre un navigateur et attend votre retour. Sur certains téléphones, le gestionnaire de batterie peut limiter cette attente, et la connexion ne se termine alors qu\'au prochain appui ou lancement. Vous pouvez autoriser Generals à s\'exécuter en arrière-plan dans les réglages de batterie du système ; c\'est facultatif et cela n\'affecte que cette attente.</string>
+    <string name="online_button_battery_settings">Ouvrir les réglages de batterie</string>
+    <string name="online_battery_granted">L\'exécution en arrière-plan est autorisée.</string>
+    <string name="online_battery_not_granted">L\'exécution en arrière-plan n\'est pas autorisée. La connexion fonctionne quand même ; elle se termine peut-être seulement au prochain appui ou lancement.</string>
     <string name="online_button_sign_in">Se connecter</string>
     <string name="online_status_signing_in">Connexion en cours...</string>
-    <string name="online_status_battery_opt">Autorisez Generals à s\'exécuter en arrière-plan sur l\'écran suivant, puis revenez et appuyez à nouveau sur Se connecter — sinon Android pourrait interrompre la vérification de connexion pendant que vous êtes dans le navigateur.</string>
     <string name="online_toast_no_browser">Aucun navigateur disponible : %1$s</string>
     <string name="online_status_continue_browser">Continuez dans votre navigateur — revenez ici une fois connecté.</string>
     <string name="online_status_network_error">Erreur réseau — vérifiez votre connexion et réessayez.</string>
@@ -783,4 +787,11 @@
     <string name="update_install_opened">Terminez l’installation dans le programme d’installation Android.</string>
     <string name="update_install_cancelled">L’installation a été annulée.</string>
 
+    <string name="setup_driver_activate_confirm_title">Activer ce pilote ?</string>
+    <string name="setup_driver_activate_confirm">%1$s est un pilote Vulkan tiers. Il s\'exécute dans cette application avec ses autorisations, et rien ne vérifie qui l\'a créé. N\'activez que des pilotes de confiance. Prend effet au prochain lancement.</string>
+    <string name="setup_driver_activate_confirm_verified">%1$s correspond à une version du pilote fournie avec cette application et vérifiée par SHA-256, son contenu est donc connu. Il s\'exécute malgré tout dans cette application avec ses autorisations. Prend effet au prochain lancement.</string>
+    <string name="setup_driver_activate">Activer</string>
+    <string name="setup_toast_driver_import_duplicate">Échec de l\'import : le .zip liste deux fois le même fichier</string>
+    <string name="setup_toast_driver_import_unexpected">Échec de l\'import : le .zip contient un fichier inattendu (%1$s)</string>
+    <string name="online_battery_settings_unavailable">Impossible d\'ouvrir les réglages de batterie sur cet appareil. Vous les trouverez dans les paramètres Android, sous « Batterie ».</string>
 </resources>

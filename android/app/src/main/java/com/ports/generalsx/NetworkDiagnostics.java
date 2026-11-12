@@ -189,7 +189,14 @@ final class NetworkDiagnostics {
         r.append("android     : ").append(Build.VERSION.RELEASE)
             .append(" (API ").append(Build.VERSION.SDK_INT).append(")\n");
         r.append("device      : ").append(Build.MANUFACTURER).append(' ').append(Build.MODEL).append('\n');
-        r.append("install id  : ").append(installId(ctx)).append('\n');
+        // GeneralsX @bugfix Android security 12/11/2026 The install id, and the machine_guid /
+        // mac_addr / vol_serial sent to the GeneralsOnline API, are NOT real hardware identifiers:
+        // they are a random per-install UUID and values derived from it (see installId /
+        // syntheticMac / syntheticVolumeSerial). Say so in the shared report, so a reader -- or a
+        // bug report pasted in a forum -- cannot mistake them for the device's actual MAC or
+        // serial.
+        r.append("install id  : ").append(installId(ctx))
+            .append(" (random per install; not a hardware id)\n");
         r.append('\n');
     }
 

@@ -2316,6 +2316,32 @@ public class SetupActivity extends Activity {
     }
 
     private void onActivateDriver(final DriverLibrary.Entry entry) {
+        // GeneralsX @feature Android security 12/11/2026 An imported driver is a native library
+        // from outside the app that will be dlopen()ed and run with the app's own permissions.
+        // Nothing verifies its author, so the switch is confirmed explicitly and the consequence
+        // is stated plainly -- never applied silently.
+        // A driver whose main library matches a hash this port vouches for (the bundled Turnip
+        // build) is named as such; anything else is stated as unverified, because the adrenotools
+        // format carries no publisher signature and the hash is the only thing that can be checked.
+        boolean verified = false;
+        try {
+            verified = CustomDriverPackage.isVerifiedDriver(
+                new File(entry.dir, entry.libraryName()));
+        } catch (java.io.IOException e) {
+            verified = false;
+        }
+        int messageRes = verified
+            ? R.string.setup_driver_activate_confirm_verified
+            : R.string.setup_driver_activate_confirm;
+        new com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.setup_driver_activate_confirm_title)
+            .setMessage(getString(messageRes, entry.displayName()))
+            .setPositiveButton(R.string.setup_driver_activate, (d, w) -> doActivateDriver(entry))
+            .setNegativeButton(android.R.string.cancel, null)
+            .show();
+    }
+
+    private void doActivateDriver(final DriverLibrary.Entry entry) {
         if (DriverLibrary.activate(driversRoot(), entry)) {
             refreshCustomDriverStatus();
             Toast.makeText(this, getString(R.string.setup_toast_driver_activated, entry.displayName()),
@@ -2426,6 +2452,11 @@ public class SetupActivity extends Activity {
                     e.args.length > 0 ? e.args[0] : "");
             case TOO_LARGE:
                 return getString(R.string.setup_toast_driver_import_too_large);
+            case DUPLICATE_ENTRY:
+                return getString(R.string.setup_toast_driver_import_duplicate);
+            case UNEXPECTED_FILE:
+                return getString(R.string.setup_toast_driver_import_unexpected,
+                    e.args.length > 0 ? e.args[0] : "");
             case MIN_API:
                 return getString(R.string.setup_toast_driver_import_min_api,
                     e.args.length > 1 ? e.args[0] : "", e.args.length > 1 ? e.args[1] : "");
