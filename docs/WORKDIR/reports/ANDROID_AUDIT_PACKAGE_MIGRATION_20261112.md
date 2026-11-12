@@ -147,7 +147,20 @@ Checked while auditing, all negative (no fix needed, recorded so it is not re-in
 |---|---|---|
 | 43183697992 | `android-unit-tests.yml` | **all steps success** — JVM unit tests (381), Android Lint, package-migration guard, committed-secret scan, trust-anchor check, signing security tests, translation check, launcher-only APK build |
 | 43183275023 | `android-unit-tests.yml` | failed — 1 of 381 tests (`inspectStateClassifiesEveryFilesystemShape`), fixed in `0934983` |
-| 43183313038 | `build-android.yml` (`android-vulkan`) | native build (both engines, JNI symbol change) — see §8 |
+| 43183313038 | `build-android.yml` (`android-vulkan`) | **success, 35m** — both engines at both rates built and packaged; the JNI rename compiles |
+
+The native run's own gates passed: `Package APK`, `Verify APK is a signed, non-debuggable release`,
+`Verify APK contains every library libmain.so needs`. `apksigner verify --verbose --print-certs`
+reported v2 signature `true`, `Number of signers: 1`, package `com.ports.generalsx`.
+
+One honest note on that certificate: it is **not** the production certificate, because the owner has
+not set the release secrets yet. `build-android.yml` (lines ~523–575) deliberately falls back to a
+throwaway keystore (`CN=GeneralsX CI validation, O=GeneralsX, C=US`, digest `6267abc4…3c36e8`) so the
+release variant still builds and is still proved non-debuggable, and it says so with a warning. That
+is the "fail closed" design from the earlier security work — never debug signing — not a production
+release. With `ANDROID_RELEASE_KEYSTORE_BASE64` and the rest set, the same job uses the production
+keystore and checks its fingerprint against `ANDROID_RELEASE_CERT_SHA256` (the
+`D1:CE:EC:…:92:FF` certificate in §4). A real release therefore still requires §7.
 
 Local Python: `tests/run_tests.py` → **23 passed, 0 failed**. `check-no-old-package`,
 `check-trust-anchors`, `check-update-metadata`, `check-no-committed-secrets` all pass.
@@ -165,9 +178,9 @@ step.
 
 1. **Secrets not configured.** Rotation is code-complete but not live. A release without them fails
    closed.
-2. **Native build of the JNI rename** is the one change that only a native compile can prove; it is
-   covered by `build-android.yml` run 43183313038 (result in §6 when it finishes). The Java-side
-   guard already asserts both symbol spellings are consistent across Java and C++.
+2. **Native build of the JNI rename — confirmed.** `build-android.yml` run 43183313038 compiled and
+   packaged both engines at both rates with the new `Java_com_ports_generalsx_…` exports. The Java-side
+   guard also asserts the two spellings agree across Java and C++.
 3. **In-place update for existing debug-signed installs** needs the v3 lineage, which needs the old
    debug keystore secret. Without it, existing installs need a one-time uninstall/reinstall — the
    game data is on shared storage and is not touched by an uninstall.
