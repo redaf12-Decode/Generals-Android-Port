@@ -194,6 +194,13 @@ jobs:
       - name: Validate update metadata
         run: python3 scripts/qa/android/check-update-metadata.py
 
+      # GeneralsX @feature Android security 12/11/2026 The application's Java now lives under
+      # com/ports/generalsx, matching the applicationId. This fails the job if any source, the
+      # manifest or the native JNI symbols still name the old com.generalsx.zerohour -- a leftover
+      # that compiles but produces a silent UnsatisfiedLinkError for the text editor bridge.
+      - name: Check Java package migration
+        run: python3 scripts/qa/android/check-no-old-package.py
+
       # GeneralsX @build Android security 10/11/2026 A committed keystore or a stray key file is a
       # release-integrity defect, not a style one. Fail the job rather than warn.
       - name: Scan for committed signing material

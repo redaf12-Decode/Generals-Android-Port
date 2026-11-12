@@ -42,9 +42,9 @@ REPO_ROOT = os.environ.get("GX_REPO_ROOT") or os.path.dirname(
 
 ANCHORS = {
     "metadata": os.path.join(REPO_ROOT, "android", "app", "src", "main", "java", "com",
-                             "generalsx", "zerohour", "UpdateChecker.java"),
+                             "ports", "generalsx", "UpdateChecker.java"),
     "engine_java": os.path.join(REPO_ROOT, "android", "app", "src", "main", "java", "com",
-                                "generalsx", "zerohour", "UpdateManager.java"),
+                                "ports", "generalsx", "UpdateManager.java"),
     "engine_native": os.path.join(REPO_ROOT, "GeneralsMD", "Code", "GameEngine", "Source",
                                   "Common", "GXSignedSettings.cpp"),
 }

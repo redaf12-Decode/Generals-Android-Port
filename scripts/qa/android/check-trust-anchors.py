@@ -38,9 +38,9 @@ REPO_ROOT = os.environ.get("GX_REPO_ROOT") or os.path.dirname(
     os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 UPDATE_CHECKER = os.path.join(REPO_ROOT, "android", "app", "src", "main", "java",
-                              "com", "generalsx", "zerohour", "UpdateChecker.java")
+                              "com", "ports", "generalsx", "UpdateChecker.java")
 UPDATE_MANAGER = os.path.join(REPO_ROOT, "android", "app", "src", "main", "java",
-                              "com", "generalsx", "zerohour", "UpdateManager.java")
+                              "com", "ports", "generalsx", "UpdateManager.java")
 SIGNED_SETTINGS = os.path.join(REPO_ROOT, "GeneralsMD", "Code", "GameEngine", "Source",
                                "Common", "GXSignedSettings.cpp")
 UPDATE_JSON = os.path.join(REPO_ROOT, "update.json")

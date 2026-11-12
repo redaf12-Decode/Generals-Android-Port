@@ -23,9 +23,9 @@ REPO_ROOT = os.environ.get("GX_REPO_ROOT") or os.path.dirname(
 
 SOURCES = {
     "metadata": (os.path.join(REPO_ROOT, "android", "app", "src", "main", "java", "com",
-                              "generalsx", "zerohour", "UpdateChecker.java"), "PUBLIC_KEY_B64"),
+                              "ports", "generalsx", "UpdateChecker.java"), "PUBLIC_KEY_B64"),
     "engine": (os.path.join(REPO_ROOT, "android", "app", "src", "main", "java", "com",
-                            "generalsx", "zerohour", "UpdateManager.java"), "PUBLIC_KEY_B64"),
+                            "ports", "generalsx", "UpdateManager.java"), "PUBLIC_KEY_B64"),
 }
 
 

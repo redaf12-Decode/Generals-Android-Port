@@ -24,10 +24,8 @@ REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__fi
 QA_DIR = os.path.join(REPO_ROOT, "scripts", "qa", "android")
 UPDATE_DIR = os.path.join(REPO_ROOT, "scripts", "update")
 
-UPDATE_CHECKER_REL = os.path.join("android", "app", "src", "main", "java", "com", "generalsx",
-                                  "zerohour", "UpdateChecker.java")
-UPDATE_MANAGER_REL = os.path.join("android", "app", "src", "main", "java", "com", "generalsx",
-                                  "zerohour", "UpdateManager.java")
+UPDATE_CHECKER_REL = os.path.join("android", "app", "src", "main", "java", "com", "ports", "generalsx", "UpdateChecker.java")
+UPDATE_MANAGER_REL = os.path.join("android", "app", "src", "main", "java", "com", "ports", "generalsx", "UpdateManager.java")
 SIGNED_SETTINGS_REL = os.path.join("GeneralsMD", "Code", "GameEngine", "Source", "Common",
                                    "GXSignedSettings.cpp")
 
@@ -76,7 +74,7 @@ def write(path, text):
 
 
 def java_with_key(key_b64):
-    return ('package com.generalsx.zerohour;\n'
+    return ('package com.ports.generalsx;\n'
             'final class X {\n'
             '    static final String PUBLIC_KEY_B64 =\n'
             '        "%s";\n'
@@ -255,7 +253,7 @@ def test_trust_anchors_reject_a_retired_literal_in_source():
         retired = ("MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEFjy+4K0lTRmnwQe+nQqXreCMtJehCl1wiYNgq5Rr/MHWk"
                    "Dukps0eUbmuyxSenyFL4T5zo+WBIFeLDO5PXFoG/A==")
         body = _anchor_fixture(d, meta_pub, eng_pub, extra_files={
-            "android/app/src/main/java/com/generalsx/zerohour/Leftover.java":
+            "android/app/src/main/java/com/ports/generalsx/Leftover.java":
                 java_with_key(retired),
         })
         write(os.path.join(d, "update.json.sig"), sign_b64(meta_priv, body))

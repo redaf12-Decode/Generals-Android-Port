@@ -23,7 +23,7 @@ REPO_ROOT = os.environ.get("GX_REPO_ROOT") or os.path.dirname(
 UPDATE_JSON = os.path.join(REPO_ROOT, "update.json")
 UPDATE_SIG = os.path.join(REPO_ROOT, "update.json.sig")
 CHECKER = os.path.join(REPO_ROOT, "android", "app", "src", "main", "java",
-                       "com", "generalsx", "zerohour", "UpdateChecker.java")
+                       "com", "ports", "generalsx", "UpdateChecker.java")
 
 TRUSTED_HOST = "github.com"
 TRUSTED_PATH_PREFIX = "/redaf12-Decode/Generals-Android-Port/releases/download/"
