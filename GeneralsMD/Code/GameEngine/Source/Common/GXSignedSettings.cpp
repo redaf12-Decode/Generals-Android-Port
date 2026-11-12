@@ -37,10 +37,15 @@
 namespace
 {
 #if defined(__ANDROID__)
-	// SubjectPublicKeyInfo of the update signing key: the same bytes as the launcher's
-	// UpdateManager.PUBLIC_KEY_B64.
+	// SubjectPublicKeyInfo of the engine-update signing key: byte-for-byte the same as the
+	// launcher's UpdateManager.PUBLIC_KEY_B64, so the engine and the launcher trust one
+	// engine-update identity. GeneralsX @feature Android security 12/11/2026 Rotated with the
+	// launcher's copy (the first generation, SPKI SHA-256
+	// 631c9268592960106c859ea89d91538d94df20396dc0b1190132c228d1a7baee, is retired). Kept in
+	// step by scripts/update/rotate-signing-keys.py and checked by
+	// scripts/qa/android/check-trust-anchors.py.
 	const char kPublicKeyB64[] =
-		"MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEFjy+4K0lTRmnwQe+nQqXreCMtJehCl1wiYNgq5Rr/MHWkDukps0eUbmuyxSenyFL4T5zo+WBIFeLDO5PXFoG/A==";
+		"MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEO4OqrpGbZmtfG6Sy8CwpO2suocjAnMI0jp2V/ZPW2IIPDKnnU2KndPVMYqP1RS5QTWNph1PZtQWAJDbH5ewUKQ==";
 
 	bool readFile(const std::string &path, std::string &out, size_t limit)
 	{

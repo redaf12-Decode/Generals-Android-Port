@@ -91,9 +91,21 @@ final class UpdateManager {
         return RAW_ROOT + (isTestChannel(ctx) ? "updates-test/" : "updates/");
     }
 
-    /** SubjectPublicKeyInfo (DER, base64) of the update signing key. */
+    /**
+     * SubjectPublicKeyInfo (DER, base64) of the engine-update signing key.
+     *
+     * GeneralsX @feature Android security 12/11/2026 Rotated. This is a fresh generation of the
+     * engine-update key; the first generation (SPKI SHA-256
+     * 631c9268592960106c859ea89d91538d94df20396dc0b1190132c228d1a7baee) is retired and no longer
+     * trusted. The native engine carries the SAME bytes in GXSignedSettings.cpp, so the launcher
+     * and the engine trust one engine-update identity, not two. It is deliberately a different key
+     * from UpdateChecker's metadata key: the two signing domains stay independent. The value must
+     * equal the public half of the UPDATE_SIGNING_KEY secret;
+     * scripts/update/rotate-signing-keys.py rewrites it in step with a new key, and
+     * scripts/qa/android/check-trust-anchors.py fails CI if the Java and native anchors drift apart.
+     */
     static final String PUBLIC_KEY_B64 =
-        "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEFjy+4K0lTRmnwQe+nQqXreCMtJehCl1wiYNgq5Rr/MHWkDukps0eUbmuyxSenyFL4T5zo+WBIFeLDO5PXFoG/A==";
+        "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEO4OqrpGbZmtfG6Sy8CwpO2suocjAnMI0jp2V/ZPW2IIPDKnnU2KndPVMYqP1RS5QTWNph1PZtQWAJDbH5ewUKQ==";
 
     static final String[] ENGINE_LIBS = { "libmain.so", "libmain60.so" };
 

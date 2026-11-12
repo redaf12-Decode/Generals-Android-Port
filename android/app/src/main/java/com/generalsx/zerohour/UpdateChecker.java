@@ -69,9 +69,19 @@ final class UpdateChecker {
      * repository -- it is a GitHub Actions secret and the metadata is signed at release time
      * (scripts/update/generate-update-json.py + the release workflow). The format is the same
      * SubjectPublicKeyInfo (DER, base64) the engine-update manifest already uses.
+     *
+     * GeneralsX @feature Android security 12/11/2026 Rotated. This is a fresh generation of the
+     * update-metadata key; the first generation (SPKI SHA-256
+     * 89d7abc6c96ebc12774ae3523c3ee0b8da506f4561b1db5ef7d0787e4bc0088b) is retired and no longer
+     * trusted. The metadata signing domain is independent of the engine-update domain below
+     * (UpdateManager / GXSignedSettings): one key never signs the other's document, so a rotation
+     * in one domain cannot silently change the other's trust. The value must equal the public half
+     * of the UPDATE_METADATA_SIGNING_KEY secret; scripts/update/rotate-signing-keys.py rewrites it
+     * in step with a new key, and scripts/qa/android/check-trust-anchors.py fails CI if the three
+     * pinned anchors ever disagree with each other, stop parsing as P-256, or carry a retired key.
      */
     static final String PUBLIC_KEY_B64 =
-        "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE/KZ+Tz9g/zR2Fp5E3drAjbOuJXveYBUsbVzbVfFZLT1AZI3SniD6OUw5gQSmB68unf5HBbrY5tw3WKa6IWDOpw==";
+        "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE4QNKzQ4y0NN2Qkev6FLNauAtINS7f7Xc8I84ZjCCETqS5bVKTJ9mKVUNtDPvsXLNcArURHPeOMpb3/2rgz9IzQ==";
 
     /** A few kilobytes is generous for this file; anything larger is not ours and is refused. */
     private static final int MAX_BYTES = 128 * 1024;
