@@ -318,6 +318,76 @@ def test_verify_release_apk_refuses_when_the_toolchain_is_missing():
         assert r.returncode != 0, "a missing apksigner must fail the check"
 
 
+DEBUG_CERT_SHA256 = "644a3b0f8234c6ea8960ece9b55a161c00966b8dd522d2558d84883f4f77c48e"
+DEBUG_DN = "CN=GeneralsX Android Debug, OU=GeneralsX, O=GeneralsX, C=US"
+PROD_DN = "CN=GeneralsX, O=GeneralsX, C=US"
+
+
+def _stub_build_tools(d, dn, cert_sha256, debuggable=False):
+    """A build-tools dir with stub apksigner/aapt2, so the verifier's decision logic can be
+    exercised without a real APK. Returns the dir path."""
+    bt = os.path.join(d, "build-tools")
+    os.makedirs(bt, exist_ok=True)
+    apksigner = os.path.join(bt, "apksigner")
+    with open(apksigner, "w", encoding="utf-8") as f:
+        f.write("#!/bin/sh\ncat <<'EOF'\n"
+                "Signer #1 certificate DN: %s\n"
+                "Signer #1 certificate SHA-256 digest: %s\n"
+                "Verified using v2 scheme (APK Signature Scheme v2): true\n"
+                "EOF\nexit 0\n" % (dn, cert_sha256))
+    os.chmod(apksigner, 0o755)
+    aapt2 = os.path.join(bt, "aapt2")
+    with open(aapt2, "w", encoding="utf-8") as f:
+        line = ("package: name='com.ports.generalsx' versionCode='10402'\n"
+                + ("application-debuggable\n" if debuggable else ""))
+        f.write("#!/bin/sh\ncat <<'EOF'\n%sEOF\nexit 0\n" % line)
+    os.chmod(aapt2, 0o755)
+    return bt
+
+
+def _run_verifier(d, bt, extra):
+    apk = os.path.join(d, "x.apk")
+    if not os.path.isfile(apk):
+        with open(apk, "wb") as f:
+            f.write(b"PK\x03\x04")
+    return run([sys.executable, os.path.join(QA_DIR, "verify-release-apk.py"),
+                "--apk", apk, "--build-tools", bt] + extra)
+
+
+def test_verify_release_apk_rejects_a_rejected_certificate():
+    """A certificate on the reject list (the committed debug key) must be refused even when no
+    expected fingerprint was given."""
+    with tempfile.TemporaryDirectory() as d:
+        bt = _stub_build_tools(d, DEBUG_DN, DEBUG_CERT_SHA256)
+        r = _run_verifier(d, bt, ["--reject-cert-sha256", DEBUG_CERT_SHA256])
+        assert r.returncode != 0, "a rejected (compromised) certificate must be refused"
+
+
+def test_verify_release_apk_rejects_a_debug_certificate_by_subject():
+    """Even without a reject list, a certificate whose subject is a debug certificate is refused,
+    so a debug-signed release cannot slip through on fingerprint alone."""
+    with tempfile.TemporaryDirectory() as d:
+        bt = _stub_build_tools(d, DEBUG_DN, DEBUG_CERT_SHA256)
+        r = _run_verifier(d, bt, ["--expect-cert-sha256", DEBUG_CERT_SHA256])
+        assert r.returncode != 0, "a debug certificate must be refused by subject"
+
+
+def test_verify_release_apk_rejects_a_debuggable_apk():
+    with tempfile.TemporaryDirectory() as d:
+        bt = _stub_build_tools(d, PROD_DN, "AA" * 32, debuggable=True)
+        r = _run_verifier(d, bt, [])
+        assert r.returncode != 0, "a debuggable APK must be refused"
+
+
+def test_verify_release_apk_accepts_a_production_signed_apk():
+    """The positive control: a non-debuggable APK with a non-debug certificate and the expected
+    fingerprint passes."""
+    with tempfile.TemporaryDirectory() as d:
+        bt = _stub_build_tools(d, PROD_DN, "AA" * 32)
+        r = _run_verifier(d, bt, ["--expect-cert-sha256", "AA" * 32])
+        assert r.returncode == 0, r.stdout.decode()
+
+
 # --- the rotation script, and the committed repository's own consistency -------------------------
 
 def test_the_rotation_script_rewrites_all_anchors_and_re_signs():

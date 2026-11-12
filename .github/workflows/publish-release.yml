@@ -61,6 +61,21 @@ jobs:
           echo "apk=${ASSET}" >> "$GITHUB_OUTPUT"
           echo "dir=${DIR}" >> "$GITHUB_OUTPUT"
 
+      - name: Verify the APK's signing identity
+        # GeneralsX @bugfix Android security 12/11/2026 The release must prove its identity before
+        # it is published. A debuggable APK, or one signed with the committed debug certificate
+        # (SHA-256 644a3b0f…, the key that got the app flagged), must never become a release.
+        # This is the check that was missing when the v1.2.9 asset shipped as a debug build.
+        run: |
+          set -euo pipefail
+          # The verifier finds apksigner/aapt2 from the SDK (ANDROID_HOME/ANDROID_SDK_ROOT, both
+          # pre-set on the runner) or from PATH, and fails if neither is present, so the gate can
+          # never be skipped by a missing tool.
+          python3 scripts/qa/android/verify-release-apk.py \
+            --apk "${{ steps.files.outputs.apk }}" \
+            --expect-package com.ports.generalsx \
+            --reject-cert-sha256 644a3b0f8234c6ea8960ece9b55a161c00966b8dd522d2558d84883f4f77c48e
+
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
         with:

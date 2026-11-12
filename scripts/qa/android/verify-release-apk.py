@@ -73,6 +73,9 @@ def main():
     ap.add_argument("--expect-package", default="com.ports.generalsx")
     ap.add_argument("--expect-cert-sha256", default="",
                     help="colon- or space-separated SHA-256 of the expected signing certificate")
+    ap.add_argument("--reject-cert-sha256", action="append", default=[],
+                    help="a certificate SHA-256 the APK must NOT be signed with (repeatable); "
+                         "use for a known-compromised key such as a committed debug keystore")
     ap.add_argument("--build-tools", default="",
                     help="a specific build-tools directory (default: the newest under the SDK)")
     ap.add_argument("--require-rotation", action="store_true",
@@ -114,6 +117,18 @@ def main():
             fail("APK certificate does not match the expected production certificate\n"
                  "  expected: %s\n  actual:   %s" % (want, cert_sha256))
         print("Certificate matches the expected production certificate.")
+
+    # A compromised certificate (a committed debug keystore) must never sign a release, whatever
+    # the expected fingerprint is. Refuse it explicitly, and refuse the debug-certificate shape
+    # (its subject carries "Android Debug") as a second, independent line of defence.
+    rejected = {normalise_fingerprint(v) for v in args.reject_cert_sha256}
+    if cert_sha256 in rejected:
+        fail("the APK is signed with a rejected (compromised) certificate: %s" % cert_sha256)
+    m_dn = re.search(r"Signer #1 certificate DN:\s*(.+)", text)
+    signer_dn = m_dn.group(1).strip() if m_dn else ""
+    if "Android Debug" in signer_dn:
+        fail("the APK is signed with a debug certificate (%r); a release must use the "
+             "production key" % signer_dn)
 
     # Badging: package id and the debuggable flag.
     badging = subprocess.run([aapt2, "dump", "badging", args.apk],
