@@ -199,6 +199,21 @@ jobs:
       - name: Scan for committed signing material
         run: python3 scripts/qa/android/check-no-committed-secrets.py
 
+      # GeneralsX @build Android security 12/11/2026 The three pinned trust anchors (metadata key,
+      # launcher engine-update key, native engine-update key) must agree, parse as P-256, be
+      # different keys for the two domains, verify the committed update.json.sig, and carry no
+      # retired key. A half-done rotation otherwise stays silent until an update is refused.
+      - name: Check signing trust anchors
+        run: python3 scripts/qa/android/check-trust-anchors.py
+
+      # GeneralsX @build Android security 12/11/2026 The signing self-tests: the accept/reject
+      # matrix for update metadata and engine manifests, the trust-anchor invariants, the
+      # committed-secret scan and the release-APK verifier, all against throwaway keys generated
+      # in the test. No production key is ever a fixture. Dependency-free (standard library +
+      # openssl), so it needs nothing installed.
+      - name: Run signing security tests
+        run: python3 tests/run_tests.py
+
       # GeneralsX @build Android CI 06/11/2026 The translation rules AGENTS.md asks for, checked
       # as a script over res/values*/strings.xml: every locale declares the same string names as
       # values/, no translation is empty where English has text, and no printf argument was

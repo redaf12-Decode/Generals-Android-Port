@@ -17,7 +17,9 @@ import os
 import re
 import sys
 
-REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+# The repository root. Overridable so the signing self-test can point the check at a fixture tree.
+REPO_ROOT = os.environ.get("GX_REPO_ROOT") or os.path.dirname(
+    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 UPDATE_JSON = os.path.join(REPO_ROOT, "update.json")
 UPDATE_SIG = os.path.join(REPO_ROOT, "update.json.sig")
 CHECKER = os.path.join(REPO_ROOT, "android", "app", "src", "main", "java",

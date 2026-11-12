@@ -35,6 +35,19 @@ jobs:
           openssl dgst -sha256 -sign "$RUNNER_TEMP/key.pem" manifest.json | base64 -w0 > manifest.json.sig
           echo >> manifest.json.sig
           rm -f "$RUNNER_TEMP/key.pem"
+      # GeneralsX @feature Android security 12/11/2026 The signature is only useful if it verifies
+      # against the key the launcher and the engine actually pin. Sign with a secret that has
+      # drifted from UpdateManager.PUBLIC_KEY_B64 and every device would reject the manifest; fail
+      # here instead of publishing it. The pinned key is read from source, so a rotation that
+      # updated one but not the other cannot slip through.
+      - name: Verify the signature against the pinned engine-update key
+        run: |
+          set -euo pipefail
+          python3 scripts/qa/android/print-pinned-key.py engine > "$RUNNER_TEMP/engine.pub.pem"
+          base64 -d manifest.json.sig > "$RUNNER_TEMP/manifest.sig"
+          openssl dgst -sha256 -verify "$RUNNER_TEMP/engine.pub.pem" \
+            -signature "$RUNNER_TEMP/manifest.sig" manifest.json
+          rm -f "$RUNNER_TEMP/engine.pub.pem" "$RUNNER_TEMP/manifest.sig"
       - name: Replace the branch's single commit
         run: |
           git config user.name "github-actions[bot]"

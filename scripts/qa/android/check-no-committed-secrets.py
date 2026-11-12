@@ -14,7 +14,9 @@ import re
 import subprocess
 import sys
 
-REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+# The repository root. Overridable so the signing self-test can point the scan at a fixture tree.
+REPO_ROOT = os.environ.get("GX_REPO_ROOT") or os.path.dirname(
+    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 # Keystore containers are always signing material. .pem/.key may be public material (a CA
 # bundle, a public key), so those are judged by content below, not by name.

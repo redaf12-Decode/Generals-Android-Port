@@ -87,6 +87,19 @@ jobs:
             --sign-key "$RUNNER_TEMP/metadata-key.pem"
           rm -f "$RUNNER_TEMP/metadata-key.pem"
 
+      - name: Verify the signature against the pinned metadata key
+        # GeneralsX @feature Android security 12/11/2026 update.json.sig is only useful if it
+        # verifies against UpdateChecker.PUBLIC_KEY_B64. A secret that has drifted from the pinned
+        # anchor would publish metadata every launcher rejects; catch it here. The pinned key is
+        # read from source so a half-done rotation cannot publish.
+        run: |
+          set -euo pipefail
+          python3 scripts/qa/android/print-pinned-key.py metadata > "$RUNNER_TEMP/meta.pub.pem"
+          base64 -d update.json.sig > "$RUNNER_TEMP/update.sig"
+          openssl dgst -sha256 -verify "$RUNNER_TEMP/meta.pub.pem" \
+            -signature "$RUNNER_TEMP/update.sig" update.json
+          rm -f "$RUNNER_TEMP/meta.pub.pem" "$RUNNER_TEMP/update.sig"
+
       - name: Reject placeholder or inconsistent metadata
         # The exact failure the launcher used to be shipped with: an all-zero sha256 and a zero
         # size. Fail the publish rather than commit them.
