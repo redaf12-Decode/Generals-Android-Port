@@ -12,6 +12,7 @@ package com.ports.generalsx;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
@@ -542,6 +543,91 @@ public class ModScriptsBackupTest {
 
         assertTrue(scripts().isDirectory());
         assertFalse(backup().exists());
+        assertEquals("AI-SCRIPTS", read(new File(scripts(), "SkirmishScripts.scb")));
+    }
+
+    // ------------------------------------------------- the recovery state machine
+
+    /**
+     * GeneralsX @feature Android port 12/11/2026 Every filesystem shape maps to the state the
+     * recovery decision is made from, read from disk rather than remembered.
+     */
+    @Test
+    public void inspectStateClassifiesEveryFilesystemShape() throws IOException {
+        // Fresh install, no mod on: the scripts folder is in place.
+        makeScripts();
+        assertEquals(ModScriptsBackup.State.ORIGINAL_PRESENT, ModScriptsBackup.inspectState(app));
+
+        // A mod on with the folder still in place: a state to reconcile.
+        setModsOn(1);
+        assertEquals(ModScriptsBackup.State.MODS_ENABLED, ModScriptsBackup.inspectState(app));
+
+        // After the move: the backup is the steady state while the mod is on.
+        assertTrue(ModScriptsBackup.apply(app).renamed);
+        assertEquals(ModScriptsBackup.State.BACKUP_PRESENT, ModScriptsBackup.inspectState(app));
+
+        // Both present: a conflict, never merged.
+        assertTrue(scripts().mkdirs() || scripts().isDirectory());
+        assertEquals(ModScriptsBackup.State.CONFLICT, ModScriptsBackup.inspectState(app));
+
+        // A marker that records this game but neither folder present: a restore is pending.
+        assertTrue(scripts().delete() || !scripts().exists());
+        assertTrue(backup().delete() || !backup().exists());
+        assertEquals(ModScriptsBackup.State.RESTORE_PENDING, ModScriptsBackup.inspectState(app));
+
+        // Reconcile clears the stale marker and reports nothing to do.
+        assertFalse(ModScriptsBackup.sync(app).restored);
+        assertEquals(ModScriptsBackup.State.ORIGINAL_PRESENT, ModScriptsBackup.inspectState(app));
+    }
+
+    /**
+     * A valid backup (a mod on and the backup holding SkirmishScripts.scb) is recognised as the
+     * stand-in for Data\Scripts; a backup with the mods off, or without the file, is not.
+     */
+    @Test
+    public void aValidBackupIsRecognisedAsTheSkirmishStandIn() throws IOException {
+        makeScripts();
+        setModsOn(1);
+        assertTrue(ModScriptsBackup.apply(app).renamed);
+        assertNotNull("a mod is on and the backup holds SkirmishScripts.scb",
+            ModScriptsBackup.activeBackupWithSkirmish(app, game));
+
+        // Mods off: the backup is not a stand-in (the folder should be in place).
+        setModsAllOff(1);
+        assertNull("no mod on", ModScriptsBackup.activeBackupWithSkirmish(app, game));
+
+        // A backup without the file is not a stand-in even with a mod on.
+        setModsOn(1);
+        assertTrue(new File(backup(), "SkirmishScripts.scb").delete());
+        assertNull("the backup has no SkirmishScripts.scb",
+            ModScriptsBackup.activeBackupWithSkirmish(app, game));
+
+        // The integrity checker still reports the missing scripts, since the backup is not valid.
+        assertTrue("a backup without SkirmishScripts.scb is not a stand-in",
+            SetupActivity.reportsMissingSkirmishScripts(app, game));
+    }
+
+    /**
+     * A rename that completed but whose marker never got written (a crash in the window between
+     * them) is recovered from the filesystem on the next launch, and the folder still comes back
+     * when the last mod is switched off.
+     */
+    @Test
+    public void anInterruptedRenameIsRecoveredFromTheFilesystem() throws IOException {
+        makeScripts();
+        setModsOn(1);
+        // Simulate the crash: move the folder aside by hand, with no marker written.
+        assertTrue(scripts().renameTo(backup()));
+        assertNull("no marker", ModScriptsBackup.recordedGamePath(app));
+
+        // The next sync sees the backup, remembers it, and leaves it alone.
+        assertFalse(ModScriptsBackup.sync(app).renamed);
+        assertEquals(game.getAbsolutePath(), ModScriptsBackup.recordedGamePath(app));
+
+        // Switching the last mod off brings it back.
+        setModsAllOff(1);
+        assertTrue(ModScriptsBackup.sync(app).restored);
+        assertTrue(scripts().isDirectory());
         assertEquals("AI-SCRIPTS", read(new File(scripts(), "SkirmishScripts.scb")));
     }
 }

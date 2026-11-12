@@ -30,6 +30,7 @@ package com.ports.generalsx;
 
 import android.Manifest;
 import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.FeatureInfo;
@@ -349,15 +350,17 @@ public class SetupActivity extends Activity {
         // time this screen comes back to the foreground; onLaunchGame()
         // re-applies the landscape lock itself the next time it's needed.
         setRequestedOrientation(android.content.pm.ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED);
+        // GeneralsX @bugfix Android port 12/11/2026 Recover the scripts backup BEFORE anything reads
+        // the game folder's state. ModScriptsBackup.recover() reconciles any pending rename, the
+        // active mod state and the backup from the filesystem; refreshStatus() and the integrity
+        // check then see the reconciled state and recognise a valid scriptsbackup as the stand-in
+        // for Data\Scripts. Running them in the old order reported "SkirmishScripts.scb is missing"
+        // for the whole window between a mod being switched on and the next resume.
+        ModScriptsBackup.recover(this);
         refreshStatus();
         refreshGeneralsOnlineStatus();
         loadDxvkConfigIntoEditor();
         refreshDiagnosticsSwitches();
-        // GeneralsX @feature Android port 07/11/2026 The optional scripts backup (ModScriptsBackup):
-        // with the option on and a mod switched on, the game folder's Data\Scripts is moved aside
-        // here, and put back when the last mod is switched off or the option is turned off. This is
-        // the launch path as well as the return path, so it runs before the game can read either.
-        ModScriptsBackup.recover(this);
     }
 
     // GeneralsX @feature Android port launcher-ui-2026 08/09/2026 The launcher
@@ -3298,8 +3301,28 @@ public class SetupActivity extends Activity {
         return false;
     }
 
+    /**
+     * GeneralsX @bugfix Android port 12/11/2026 Whether the integrity check should report the
+     * loose SkirmishScripts.scb as missing for {@code dir}. It is missing only when the folder has
+     * no such file (loose or inside an archive) <em>and</em> no valid scriptsbackup stands in for it.
+     * The scripts backup moves Data\Scripts aside as Data\scriptsbackup while a mod is on, so on
+     * disk the file is elsewhere, but it is not gone; a backup the other game owns, or one left with
+     * the mods off, is not accepted, so a stale backup never masks a genuine absence.
+     */
+    static boolean reportsMissingSkirmishScripts(Context ctx, File dir) {
+        if (hasSkirmishScripts(dir)) {
+            return false;
+        }
+        return ModScriptsBackup.activeBackupWithSkirmish(ctx, dir) == null;
+    }
+
     /** Data\Scripts\SkirmishScripts.scb in the folder, any letter case, or inside one of its archives. */
-    private static boolean hasSkirmishScripts(File dir) {
+    static boolean hasSkirmishScripts(File dir) {
+        // Directly inside too: a scriptsbackup folder is a renamed Data\Scripts and so holds the
+        // file one level in, not under a nested Data\Scripts.
+        if (dir != null && findFileIgnoreCase(dir, "skirmishscripts.scb")) {
+            return true;
+        }
         File level = dir;
         for (String part : new String[] { "data", "scripts", "skirmishscripts.scb" }) {
             File[] children = level.listFiles();
@@ -3965,7 +3988,7 @@ public class SetupActivity extends Activity {
         // .big files plays, but every AI player keeps its command center and one idle dozer for the
         // whole match (issue #64). Found loose, or inside an archive (some repacks put it there),
         // it is fine.
-        if (!hasSkirmishScripts(dir)) {
+        if (reportsMissingSkirmishScripts(this, dir)) {
             issues.add(getString(R.string.setup_folder_issue_no_ai_scripts));
         }
 

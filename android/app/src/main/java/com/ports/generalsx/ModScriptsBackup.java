@@ -86,7 +86,78 @@ final class ModScriptsBackup {
         static final Result FAILED = new Result(false, false, false, true);
     }
 
+    /**
+     * GeneralsX @feature Android port 12/11/2026 The recovery state of the selected game's scripts
+     * folder, derived from the filesystem rather than from a remembered intent, so recovery after a
+     * crash inspects what is actually on disk instead of blindly repeating the last operation.
+     */
+    enum State {
+        /** {@code Data\Scripts} is in place and there is no backup: the steady state with no mods. */
+        ORIGINAL_PRESENT,
+        /** {@code Data\scriptsbackup} is in place and there is no scripts folder: the steady state with a mod on. */
+        BACKUP_PRESENT,
+        /** The scripts folder is in place but this game has a mod switched on, so it should be aside. */
+        MODS_ENABLED,
+        /** A marker records a moved folder that is not back yet (a crash mid-restore, or a folder since removed). */
+        RESTORE_PENDING,
+        /** Both folders exist: never merged or overwritten, only reported. */
+        CONFLICT,
+        /** The scripts folder could not be moved (a permission or filesystem error). */
+        ERROR
+    }
+
     private ModScriptsBackup() {}
+
+    /**
+     * GeneralsX @feature Android port 12/11/2026 The state of the selected game's scripts folder,
+     * read from the filesystem. This is the value the recovery decision is made from, so a crash at
+     * any point in a rename leaves a state that the next launch can classify and finish.
+     */
+    static State inspectState(Context ctx) {
+        File data = dataDir(ctx);
+        if (data == null) {
+            return State.ORIGINAL_PRESENT;  // no game folder chosen yet: nothing to reconcile
+        }
+        boolean scriptsThere = scriptsDir(ctx) != null;
+        boolean backupThere = backupDir(ctx) != null;
+        if (scriptsThere && backupThere) {
+            return State.CONFLICT;
+        }
+        if (backupThere) {
+            return State.BACKUP_PRESENT;
+        }
+        if (scriptsThere) {
+            if (!ModManager.anyEnabled(ctx)) {
+                return State.ORIGINAL_PRESENT;
+            }
+            // The mods want the folder aside: this is a state to reconcile. Report ERROR now when
+            // the data directory plainly cannot be written, so the caller can warn before trying.
+            return data.canWrite() ? State.MODS_ENABLED : State.ERROR;
+        }
+        // Neither folder is there. A marker that still records this game means a restore never
+        // finished (or the folder was removed by hand): a state to reconcile, not a fresh install.
+        return recordedGamePath(ctx) != null ? State.RESTORE_PENDING : State.ORIGINAL_PRESENT;
+    }
+
+    /**
+     * GeneralsX @feature Android port 12/11/2026 The backup folder that is a valid stand-in for the
+     * given game folder's scripts, or null. It is valid only when a {@code scriptsbackup} directory
+     * exists under that folder's data directory, holds {@code SkirmishScripts.scb}, and the game
+     * that owns the folder has at least one mod switched on -- which is the only reason the folder
+     * is set aside. A backup left by the other game, or with the mods off, is not a stand-in, so a
+     * stale or unrelated backup never masks a genuinely missing scripts folder.
+     */
+    static File activeBackupWithSkirmish(Context ctx, File game) {
+        if (game == null || !game.isDirectory() || !ModManager.anyEnabledForPath(ctx, game.getAbsolutePath())) {
+            return null;
+        }
+        File data = findDataDir(game);
+        File backup = data == null ? null : findChild(data, BACKUP_DIR);
+        if (backup == null || !backup.isDirectory()) {
+            return null;
+        }
+        return SetupActivity.hasSkirmishScripts(backup) ? backup : null;
+    }
 
     // ------------------------------------------------------------------ option
 
@@ -370,8 +441,17 @@ final class ModScriptsBackup {
         return new File(ctx.getFilesDir(), STATE_FILE);
     }
 
+    /**
+     * GeneralsX @feature Android port 12/11/2026 Writes the recovery marker atomically: a temp file
+     * in the same directory is written and then renamed over the marker, so a crash while writing
+     * never leaves a half-written marker that recovery would misread. The rename is the only step
+     * that can be interrupted, and a same-directory rename is atomic on every filesystem this port
+     * runs on, so the marker is either the old value or the new one.
+     */
     private static void writeState(Context ctx, String gamePath, String originalName) {
-        try (Writer w = new OutputStreamWriter(new FileOutputStream(stateFile(ctx), false),
+        File file = stateFile(ctx);
+        File tmp = new File(file.getParentFile(), file.getName() + ".tmp");
+        try (Writer w = new OutputStreamWriter(new FileOutputStream(tmp, false),
                 StandardCharsets.UTF_8)) {
             w.write(gamePath);
             w.write('\n');
@@ -379,6 +459,22 @@ final class ModScriptsBackup {
             w.write('\n');
         } catch (IOException e) {
             android.util.Log.w(TAG, "could not write the scripts backup marker", e);
+            tmp.delete();
+            return;
+        }
+        if (!tmp.renameTo(file)) {
+            // Fall back to an in-place write rather than lose the marker; the window is tiny.
+            try (Writer w = new OutputStreamWriter(new FileOutputStream(file, false),
+                    StandardCharsets.UTF_8)) {
+                w.write(gamePath);
+                w.write('\n');
+                w.write(originalName == null ? SCRIPTS_DIR : originalName);
+                w.write('\n');
+            } catch (IOException e) {
+                android.util.Log.w(TAG, "could not write the scripts backup marker", e);
+            } finally {
+                tmp.delete();
+            }
         }
     }
 
