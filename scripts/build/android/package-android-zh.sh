@@ -392,6 +392,16 @@ if [[ ! -f "${APK}" ]]; then
 fi
 echo "==> APK: ${APK}"
 
+# GeneralsX @feature Android security 12/11/2026 A local RELEASE build can attach the signing-key
+# rotation lineage too, so an APK built on the dev machine installs over one signed with the old
+# (public) debug key without an uninstall. It needs the old keystore, which the repository does not
+# carry: point GX_RELEASE_LINEAGE_KEYSTORE at it (it is public, from Git history). CI passes the
+# same path from its secret and calls the same script.
+if [[ "${VARIANT}" == "release" && -n "${GX_RELEASE_LINEAGE_KEYSTORE:-}" ]]; then
+    echo "==> applying signing-key rotation lineage (existing installs update in place)"
+    APK="${APK}" ./scripts/build/android/apply-signing-lineage.sh
+fi
+
 if [[ $DO_INSTALL -eq 1 ]]; then
     command -v adb >/dev/null 2>&1 || { echo "ERROR: adb not found on PATH"; exit 1; }
     echo "==> adb install -r"

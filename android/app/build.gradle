@@ -9,17 +9,42 @@ plugins {
 // well-known password were removed: a keystore in a public repository is a
 // compromised key, because anyone can sign an APK Android accepts as an update
 // to this app.
-def gxReleaseStoreFile = System.getenv('GX_RELEASE_STORE_FILE') ?: project.findProperty('gxReleaseStoreFile')
-def gxReleaseStorePassword = System.getenv('GX_RELEASE_STORE_PASSWORD') ?: project.findProperty('gxReleaseStorePassword')
-def gxReleaseKeyAlias = System.getenv('GX_RELEASE_KEY_ALIAS') ?: project.findProperty('gxReleaseKeyAlias')
-def gxReleaseKeyPassword = System.getenv('GX_RELEASE_KEY_PASSWORD') ?: project.findProperty('gxReleaseKeyPassword')
+//
+// GeneralsX @feature Android security 12/11/2026 Local development: the same four
+// values may live in a gitignored android/keystore.properties (GX_RELEASE_* names),
+// so a developer never exports environment variables or edits this file. CI still
+// supplies them through the environment (secrets). The lookup order is
+// environment -> keystore.properties -> -P property, and nothing here has a
+// default: a release with any of the four missing is refused (see the task guard
+// at the bottom of this file).
+def gxSigningProps = new Properties()
+def gxSigningPropsFile = rootProject.file('keystore.properties')
+if (gxSigningPropsFile.isFile()) {
+    gxSigningPropsFile.withInputStream { gxSigningProps.load(it) }
+}
+def gxSigningValue = { String envName, String propName ->
+    System.getenv(envName) ?: gxSigningProps.getProperty(envName) ?: project.findProperty(propName)
+}
+def gxReleaseStoreFile = gxSigningValue('GX_RELEASE_STORE_FILE', 'gxReleaseStoreFile')
+def gxReleaseStorePassword = gxSigningValue('GX_RELEASE_STORE_PASSWORD', 'gxReleaseStorePassword')
+def gxReleaseKeyAlias = gxSigningValue('GX_RELEASE_KEY_ALIAS', 'gxReleaseKeyAlias')
+def gxReleaseKeyPassword = gxSigningValue('GX_RELEASE_KEY_PASSWORD', 'gxReleaseKeyPassword')
+// GeneralsX @feature Android security 12/11/2026 Optional: the SHA-256 of the expected signing
+// certificate, colon-separated uppercase hex as `keytool -list -v` prints it. When set, the
+// release build verifies its own signing certificate against it (see the guard at the bottom),
+// so a build signed with the wrong key fails here rather than after it is published.
+def gxReleaseCertSha256 = gxSigningValue('GX_RELEASE_CERT_SHA256', 'gxReleaseCertSha256')
+// All four release values are required together; a partial set is a misconfiguration, not a
+// fallback.
+def gxReleaseConfigured = [gxReleaseStoreFile, gxReleaseStorePassword, gxReleaseKeyAlias,
+                           gxReleaseKeyPassword].every { it }
 // A debug keystore may still be supplied (CI needs a stable debug key so
 // consecutive debug builds install over each other); it too comes from the
 // environment, never from the repository.
-def gxDebugStoreFile = System.getenv('GX_DEBUG_KEYSTORE') ?: project.findProperty('gxDebugKeystore')
-def gxDebugStorePassword = System.getenv('GX_DEBUG_STORE_PASSWORD') ?: project.findProperty('gxDebugStorePassword')
-def gxDebugKeyAlias = System.getenv('GX_DEBUG_KEY_ALIAS') ?: project.findProperty('gxDebugKeyAlias')
-def gxDebugKeyPassword = System.getenv('GX_DEBUG_KEY_PASSWORD') ?: project.findProperty('gxDebugKeyPassword')
+def gxDebugStoreFile = System.getenv('GX_DEBUG_KEYSTORE') ?: gxSigningProps.getProperty('GX_DEBUG_KEYSTORE') ?: project.findProperty('gxDebugKeystore')
+def gxDebugStorePassword = System.getenv('GX_DEBUG_STORE_PASSWORD') ?: gxSigningProps.getProperty('GX_DEBUG_STORE_PASSWORD') ?: project.findProperty('gxDebugStorePassword')
+def gxDebugKeyAlias = System.getenv('GX_DEBUG_KEY_ALIAS') ?: gxSigningProps.getProperty('GX_DEBUG_KEY_ALIAS') ?: project.findProperty('gxDebugKeyAlias')
+def gxDebugKeyPassword = System.getenv('GX_DEBUG_KEY_PASSWORD') ?: gxSigningProps.getProperty('GX_DEBUG_KEY_PASSWORD') ?: project.findProperty('gxDebugKeyPassword')
 
 android {
     namespace 'com.generalsx.zerohour'
@@ -37,12 +62,16 @@ android {
                 keyPassword gxDebugKeyPassword
             }
         }
-        if (gxReleaseStoreFile) {
+        if (gxReleaseConfigured) {
             release {
                 storeFile file(gxReleaseStoreFile)
                 storePassword gxReleaseStorePassword
                 keyAlias gxReleaseKeyAlias
                 keyPassword gxReleaseKeyPassword
+                // The production keystore is a JKS/PKCS12 container; AGP detects the type from
+                // the file. enableV1/V2/V3 are AGP defaults (v1 on for minSdk<24 only, v2 and v3
+                // on), which is what a modern release wants: v2/v3 is what the launcher's own
+                // ApkInstaller certificate check and Android 9+ require.
             }
         }
     }
@@ -151,7 +180,7 @@ android {
             // Null when no production key was supplied. The release packaging
             // tasks below then fail with a clear message, rather than emitting
             // an unsigned -- or worse, debug-signed -- "release".
-            signingConfig gxReleaseStoreFile ? signingConfigs.release : null
+            signingConfig gxReleaseConfigured ? signingConfigs.release : null
         }
 
         // GeneralsX @build Android CI 06/11/2026 Launcher-only variant, for CI that must not
@@ -221,14 +250,67 @@ android {
 // configuration-time throw, so that debug builds, unit tests and lint (which a
 // developer runs without any signing material) are unaffected while
 // assembleRelease / bundleRelease / packageRelease fail immediately.
-if (!gxReleaseStoreFile) {
+//
+// GeneralsX @feature Android security 12/11/2026 The guard is stricter now: it
+// fires when ANY of the four release values is missing (not merely the store
+// file), and when GX_RELEASE_CERT_SHA256 is set it verifies the produced APK's
+// own signing certificate against that fingerprint, so a build signed with the
+// wrong key fails here instead of after publication. The fingerprint check uses
+// the same apksigner that CI uses, resolved from the Android SDK the build is
+// already using; a missing apksigner is a hard error, never a silent pass.
+if (!gxReleaseConfigured) {
     tasks.matching { it.name in ['assembleRelease', 'bundleRelease', 'packageRelease'] }.configureEach {
         doFirst {
             throw new GradleException(
                 "Release signing is not configured. Set GX_RELEASE_STORE_FILE, " +
                 "GX_RELEASE_STORE_PASSWORD, GX_RELEASE_KEY_ALIAS and GX_RELEASE_KEY_PASSWORD " +
-                "(GitHub Actions secrets, or a local keystore.properties). " +
+                "(GitHub Actions secrets, or a local android/keystore.properties). " +
                 "See docs/HOWTO/SIGNING_KEY_ROTATION.md.")
+        }
+    }
+}
+
+// GeneralsX @feature Android security 12/11/2026 Verify the release APK's signing certificate
+// against GX_RELEASE_CERT_SHA256 when it is configured. Runs after packageRelease so it sees the
+// final, signed artifact. The expected value is colon-separated uppercase hex, exactly what
+// `keytool -list -v` prints; comparison is case-insensitive on the colons stripped.
+if (gxReleaseCertSha256) {
+    tasks.matching { it.name == 'packageRelease' }.configureEach {
+        doLast {
+            def apk = file("$buildDir/outputs/apk/release/app-release.apk")
+            if (!apk.isFile()) {
+                throw new GradleException("Release APK not found at ${apk}")
+            }
+            def sdkDir = android.sdkDirectory
+            def buildTools = new File(sdkDir, 'build-tools')
+            def apksigner = buildTools.listFiles()?.findAll { it.isDirectory() }
+                ?.sort { it.name }?.reverse()?.collect { new File(it, 'apksigner') }
+                ?.find { it.isFile() }
+            if (apksigner == null) {
+                throw new GradleException(
+                    "apksigner not found under ${buildTools}; cannot verify the release certificate " +
+                    "against GX_RELEASE_CERT_SHA256. Install Android build-tools or unset " +
+                    "GX_RELEASE_CERT_SHA256.")
+            }
+            def out = new ByteArrayOutputStream()
+            exec {
+                commandLine apksigner.absolutePath, 'verify', '--print-certs', apk.absolutePath
+                standardOutput = out
+                errorOutput = out
+                ignoreExitValue = true
+            }
+            def text = out.toString()
+            if (!text.contains('Signer #1 certificate SHA-256 digest:')) {
+                throw new GradleException("apksigner could not read the release APK's certificate:\n" + text)
+            }
+            def actual = (text =~ /Signer #1 certificate SHA-256 digest:\s*([0-9a-fA-F:]+)/)[0][1]
+            def normalise = { String v -> v.replace(':', '').toUpperCase() }
+            if (normalise(actual) != normalise(gxReleaseCertSha256)) {
+                throw new GradleException(
+                    "Release APK signing certificate does not match GX_RELEASE_CERT_SHA256.\n" +
+                    "  expected: ${gxReleaseCertSha256}\n  actual:   ${actual}")
+            }
+            logger.lifecycle("Release APK certificate SHA-256 verified: ${actual}")
         }
     }
 }
