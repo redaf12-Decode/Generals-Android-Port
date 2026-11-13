@@ -330,11 +330,6 @@ public class SetupActivity extends Activity {
         refreshGeneralsOnlineStatus();
         loadDxvkConfigIntoEditor();
         refreshDiagnosticsSwitches();
-        // GeneralsX @feature Android port 07/11/2026 The optional scripts backup (ModScriptsBackup):
-        // with the option on and a mod switched on, the game folder's Data\Scripts is moved aside
-        // here, and put back when the last mod is switched off or the option is turned off. This is
-        // the launch path as well as the return path, so it runs before the game can read either.
-        ModScriptsBackup.recover(this);
     }
 
     // GeneralsX @feature Android port launcher-ui-2026 08/09/2026 The launcher
@@ -4505,10 +4500,6 @@ public class SetupActivity extends Activity {
                 .setMessage(R.string.mods_safe_message)
                 .setPositiveButton(R.string.mods_safe_without, (d, w) -> {
                     ModManager.switchOff(this, null);
-                    // GeneralsX @bugfix Android port 07/11/2026 Safe start switches the mods off
-                    // outside the Mods screen, so it has to put the scripts folder back too --
-                    // otherwise starting without mods would leave Data\Scripts disabled.
-                    ModScriptsBackup.sync(this);
                     showTab(currentTab);
                     launchGameNow();
                 })
@@ -4516,7 +4507,6 @@ public class SetupActivity extends Activity {
             if (lastOn) {
                 b.setNeutralButton(getString(R.string.mods_safe_without_last, last), (d, w) -> {
                     ModManager.switchOff(this, last);
-                    ModScriptsBackup.sync(this);
                     showTab(currentTab);
                     launchGameNow();
                 });

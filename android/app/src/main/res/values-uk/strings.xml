@@ -456,16 +456,6 @@
     <string name="mods_legacy_title">Встановлені по-старому (у папці гри)</string>
     <string name="mods_legacy_help">Ці архіви починаються з «!» і лежать просто в папці гри: вони завантажуються завжди, нижче модів зі списку, і тут не вимикаються. «Перенести в mods» зробить такий архів модом цього списку — увімкненим, тож він і далі завантажуватиметься.</string>
     <string name="mods_folder_help">Папка модів: %1$s. Кожен мод — папка в ній зі своїми .big; mod.ini (Name, Version, Author, Description, Image, Url) і картинка cover, preview, logo або icon показуються тут, якщо вони є в мода.</string>
-    <string name="mods_scripts_backup_title">Папка скриптів</string>
-    <string name="mods_scripts_backup_switch">Автоматично вимикати папку Data\Scripts</string>
-    <string name="mods_scripts_backup_switch_desc">Вмикається автоматично при ввімкненні будь-якого моду й вимикається лише при вимкненні останнього моду. Поки вона ввімкнена, папка Data\Scripts гри перейменовується на scriptsbackup і повертається при вимкненні.</string>
-    <string name="mods_scripts_backup_help">Прибирається, поки мод увімкнено: %1$s. Нічого не видаляється, а наявна папка scriptsbackup ніколи не перезаписується. Повертається автоматично, коли вимикається останній мод цієї гри.</string>
-    <string name="mods_scripts_backup_done">Data\Scripts тепер %1$s.</string>
-    <string name="mods_scripts_backup_restored">Data\Scripts повернулася на місце.</string>
-    <string name="mods_scripts_backup_active">Data\Scripts прибрано як scriptsbackup.</string>
-    <string name="mods_scripts_backup_idle">Data\Scripts на місці.</string>
-    <string name="mods_scripts_backup_conflict">Існують і Data\Scripts, і Data\scriptsbackup, тому нічого не змінено. Приберіть одну вручну й спробуйте знову.</string>
-    <string name="mods_scripts_backup_failed">Не вдалося перейменувати папку Data\Scripts; мод усе одно увімкнено.</string>
     <string name="mods_home_none">Без модів</string>
     <string name="mods_home_enabled">Увімкнено модів: %1$d</string>
     <string name="mods_home_all_off">Встановлено модів: %1$d, усі вимкнені</string>

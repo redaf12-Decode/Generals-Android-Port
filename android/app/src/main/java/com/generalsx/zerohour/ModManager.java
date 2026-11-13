@@ -96,44 +96,6 @@ final class ModManager {
         return SetupActivity.isGeneralsSelected(ctx) ? PREF_ORDER_GENERALS : PREF_ORDER;
     }
 
-    private static String orderKeyFor(String game) {
-        return SetupActivity.GAME_GENERALS.equals(game) ? PREF_ORDER_GENERALS : PREF_ORDER;
-    }
-
-    /**
-     * GeneralsX @feature Android port 07/11/2026 Whether the selected game's saved list has at
-     * least one mod switched on, without walking the mods folder (ModScriptsBackup asks this on
-     * every resume and every start). The list is what listMods() saves, and writeActiveList()
-     * calls that before the engine reads it, so the two never disagree for long.
-     */
-    static boolean anyEnabled(Context ctx) {
-        return anyEnabledFor(ctx, SetupActivity.getSelectedGame(ctx));
-    }
-
-    /** The same, for the game a recorded path belongs to (ModScriptsBackup's marker). */
-    static boolean anyEnabledForPath(Context ctx, String gamePath) {
-        if (gamePath == null || gamePath.trim().isEmpty()) {
-            return false;
-        }
-        if (gamePath.equals(SetupActivity.getSavedGamePath(ctx))) {
-            return anyEnabled(ctx);
-        }
-        String other = SetupActivity.isGeneralsSelected(ctx)
-            ? SetupActivity.GAME_ZERO_HOUR : SetupActivity.GAME_GENERALS;
-        String otherPath = SetupActivity.getSavedGamePath(ctx, other);
-        return gamePath.equals(otherPath) && anyEnabledFor(ctx, other);
-    }
-
-    private static boolean anyEnabledFor(Context ctx, String game) {
-        SharedPreferences prefs = ctx.getSharedPreferences(SetupActivity.PREFS_NAME, Context.MODE_PRIVATE);
-        for (String line : prefs.getString(orderKeyFor(game), "").split("\n")) {
-            if (line.startsWith("1|")) {
-                return true;
-            }
-        }
-        return false;
-    }
-
     /** The other game than the one picked on Home (SetupActivity.GAME_*). */
     static String otherGame(Context ctx) {
         return SetupActivity.isGeneralsSelected(ctx) ? SetupActivity.GAME_ZERO_HOUR : SetupActivity.GAME_GENERALS;

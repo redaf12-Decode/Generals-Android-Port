@@ -212,12 +212,6 @@ public class GeneralsZHActivity extends SDLActivity {
         if (SetupActivity.isSkipIntroEnabled(this)) {
             args.add("-nologo");
         }
-        // GeneralsX @feature Android port 07/11/2026 Last line of defence for the optional scripts
-        // backup (ModScriptsBackup): SetupActivity.onResume() already did this before the Activity
-        // was started, and the Mods screen before the switch was saved, so this normally finds
-        // nothing to do -- but it runs on every launch path (replay, shortcut) and before the
-        // engine scans the folder, which is where a stale Data\Scripts would break a mod.
-        ModScriptsBackup.sync(this);
         // GeneralsX @feature Android port 18/10/2026 The mods switched on in the launcher's Mods
         // screen, in their order, for the game being started (ModManager, GXManagedMods.h). Written
         // here so both engines, a replay and every way of starting the game read the same list.

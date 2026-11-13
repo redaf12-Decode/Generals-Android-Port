@@ -1,5 +1,10 @@
 # Mods: automatic `data/scripts` backup (07/11/2026)
 
+> **Removed on 13/11/2026.** The feature this report describes — `ModScriptsBackup`, the Mods-screen
+> switch, the `mods_scripts_backup_*` strings in all 13 locales, and the two test classes — was taken
+> out at the owner's request. The launcher no longer renames `Data\Scripts` for any reason. This file
+> is kept as the record of what was built and why; the code it names no longer exists.
+
 ## What was asked
 
 An option in the existing Mods section that renames the game folder's `data/scripts` directory to
