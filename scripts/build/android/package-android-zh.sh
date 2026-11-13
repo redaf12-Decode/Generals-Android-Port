@@ -356,19 +356,23 @@ fi
 # GX_ANDROID_VERSION_CODE / GX_ANDROID_VERSION_NAME let a manual CI dispatch
 # (or a local one-off build) override either without editing build.gradle;
 # leave both unset to just build whatever is committed there.
-# (Plain string, not a bash array: an empty array expanded with "${arr[@]}"
-# under `set -u` throws "unbound variable" on bash < 4.4 — still the default
-# /bin/bash on macOS, which this script also runs on.)
-GRADLE_VERSION_ARG=""
+# GeneralsX @bugfix Android port 13/11/2026 A real array, so a version string
+# containing a space (e.g. "1.2.9 B2") stays ONE argument. The old plain string
+# expanded unquoted word-split, and the tail reached Gradle as a task name --
+# "Task 'B2' not found in root project 'GeneralsXZH'", a CI failure that killed
+# the whole APK build. The array always holds at least "assembleDebug", so
+# "${arr[@]}" is safe under `set -u` even on bash 3.2 (the macOS default),
+# where an *empty* array is not.
+GRADLE_ARGS=(assembleDebug)
 if [[ -n "${GX_ANDROID_VERSION_CODE:-}" ]]; then
-    GRADLE_VERSION_ARG="-PandroidVersionCode=${GX_ANDROID_VERSION_CODE}"
+    GRADLE_ARGS+=("-PandroidVersionCode=${GX_ANDROID_VERSION_CODE}")
 fi
 if [[ -n "${GX_ANDROID_VERSION_NAME:-}" ]]; then
-    GRADLE_VERSION_ARG="${GRADLE_VERSION_ARG} -PandroidVersionName=${GX_ANDROID_VERSION_NAME}"
+    GRADLE_ARGS+=("-PandroidVersionName=${GX_ANDROID_VERSION_NAME}")
 fi
 
-echo "==> ${GRADLE_CMD} assembleDebug ${GRADLE_VERSION_ARG}"
-"${GRADLE_CMD}" assembleDebug ${GRADLE_VERSION_ARG}
+echo "==> ${GRADLE_CMD} ${GRADLE_ARGS[*]}"
+"${GRADLE_CMD}" "${GRADLE_ARGS[@]}"
 
 APK="${ANDROID_DIR}/app/build/outputs/apk/debug/app-debug.apk"
 if [[ ! -f "${APK}" ]]; then
