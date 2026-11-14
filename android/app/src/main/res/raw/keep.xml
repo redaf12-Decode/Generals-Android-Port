@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  GeneralsX @build Android R8 protection 14/11/2026
+
+  Resource shrinker guard for the launcher's palette lookup.
+
+  ThemeHelper resolves a screen's colours at runtime by BUILDING the resource
+  name and asking the platform for it:
+
+      res.getIdentifier("gzh_navy_" + role, "color", packageName)
+      res.getIdentifier("gzh_accent_" + accent + "_" + role, "color", packageName)
+      res.getIdentifier("gzh_day_accent_" + accent + "_primary", "color", packageName)
+
+  The shrinker only sees resources the code reaches through a generated R.*
+  reference, so a colour used ONLY this way looks unused and would be deleted.
+  The app would then silently fall back to the wrong colour (getIdentifier
+  returns 0 and ThemeHelper falls through to the base palette) instead of
+  crashing, which is exactly the kind of failure a build has no way to catch.
+
+  Every name this lookup can produce starts with "gzh_", so keeping that prefix
+  keeps all of them: the base palette (values/colors.xml), the navy and day
+  palettes (values/colors_palettes.xml) and the accent colours
+  (values/colors_accents.xml, values/colors_accents_day.xml).
+
+  The pattern is a prefix wildcard, not "@color/*": the launcher's own R.color
+  references and the theme/drawable references keep everything else, and keeping
+  every colour would blunt the shrinker for no reason.
+
+  The colors that ARE reached through R.color.* (UiKit.color(), the theme XML)
+  need no entry here: the shrinker sees those references itself.
+-->
+<resources xmlns:tools="http://schemas.android.com/tools"
+    tools:keep="@color/gzh_*" />

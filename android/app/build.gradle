@@ -105,10 +105,36 @@ android {
             signingConfig signingConfigs.debug
         }
         release {
-            minifyEnabled false
+            // GeneralsX @build Android R8 protection 14/11/2026 R8 obfuscates and
+            // shrinks the launcher's Java on the release variant only. debug stays
+            // unminified so a stack trace from a sideload build is readable and so
+            // the local dev loop (scripts/build/android/*.sh) is unchanged.
+            //
+            // IMPORTANT: the APK this project ships today is the DEBUG variant --
+            // package-android-zh.sh runs `assembleDebug` and both build-local-sandboxed.sh
+            // and build-android.yml copy app-debug.apk. So this configuration protects
+            // the release variant, and does NOT yet protect what users install. Moving
+            // the pipeline to `assembleRelease` is ROADMAP P4.2; it is deliberately not
+            // done here because it also drops the `debuggable` flag and needs a device
+            // pass over every JNI entry point first. Until then, the protection below is
+            // verified by CI on the release artifact and is ready to take effect the
+            // moment the pipeline switches. See docs/ANDROID_CODE_PROTECTION.md.
+            //
+            // shrinkResources is only honoured when minifyEnabled is on -- the
+            // resource shrinker works off R8's knowledge of which resources the
+            // code actually reaches. Resources reached only through
+            // Resources.getIdentifier() are invisible to it, which is what
+            // res/raw/keep.xml guards (ThemeHelper's palette lookup).
+            //
+            // proguard-android-optimize.txt is the AGP-bundled default with the
+            // -optimizationpasses pass enabled; the project's own rules are in
+            // proguard-rules.pro (JNI, reflection and entry-point keeps).
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
             // Sideload builds sign with the same fixed debug key; Play
             // distribution is out of scope for a GPL port of a game whose
-            // assets the user must own.
+            // assets the user must own. R8 does not touch the signing identity.
             signingConfig signingConfigs.debug
         }
 

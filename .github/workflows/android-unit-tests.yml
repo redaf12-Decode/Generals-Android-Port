@@ -214,6 +214,60 @@ jobs:
           print("Launcher-only APK: %d entries, 0 native libraries, classes.dex present." % len(names))
           PY
 
+      # GeneralsX @build Android R8 protection 14/11/2026 The release variant is the one that
+      # ships obfuscated (android/app/build.gradle: minifyEnabled true, shrinkResources true).
+      # Building it here is what proves R8 actually runs end to end -- a green debug build says
+      # nothing about it, because debug is deliberately unminified. AGP fails this task on any
+      # R8 error, a missing class, a duplicate class or a resource-shrinking error, so a
+      # successful exit is itself the check for all four; the step after it asserts the output.
+      - name: Build R8-protected release APK and AAB
+        working-directory: android
+        run: |
+          gradle :app:assembleRelease :app:bundleRelease --no-daemon --console=plain
+
+      # GeneralsX @build Android R8 protection 14/11/2026 Verify what R8 produced, not just that
+      # it exited 0: that the mapping was generated, that the launcher's non-entry-point classes
+      # were really obfuscated (a keep rule that widened to a package would show up only here),
+      # that every JNI-bound class and method name survived (the native half names them as
+      # strings, so a rename is invisible until the app dies on device), that the shrinker kept
+      # the colours ThemeHelper resolves by name, and that the signing certificate and package
+      # identity are unchanged. See scripts/qa/android/check-r8-protection.py.
+      - name: Verify R8 protection
+        env:
+          APKSIGNER: /opt/android-sdk/build-tools/${{ env.BUILD_TOOLS }}/apksigner
+          AAPT2: /opt/android-sdk/build-tools/${{ env.BUILD_TOOLS }}/aapt2
+        run: python3 scripts/qa/android/check-r8-protection.py
+
+      # GeneralsX @build Android R8 protection 14/11/2026 The release APK and AAB carry the
+      # obfuscated launcher; upload them so a reviewer can install the protected build without
+      # rebuilding it.
+      - name: Upload release APK and AAB
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: launcher-release-r8
+          path: |
+            android/app/build/outputs/apk/release/*.apk
+            android/app/build/outputs/bundle/release/*.aab
+          if-no-files-found: warn
+          retention-days: 14
+
+      # GeneralsX @build Android R8 protection 14/11/2026 mapping.txt is what turns an obfuscated
+      # stack trace back into a readable one, so it must be kept -- but it is also a complete map
+      # of the app's internals, so it must not travel with the APK. It is uploaded on its own,
+      # under its own name, never into the release artifact above, and never as a release asset
+      # or a committed file. This repository is private, so an Actions artifact is readable only
+      # to people who already have repository access; that is the access restriction. A shorter
+      # retention than the APK keeps the map from lingering after the build it describes is gone.
+      - name: Upload R8 mapping file (restricted)
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: r8-mapping-release
+          path: android/app/build/outputs/mapping/release/mapping.txt
+          if-no-files-found: warn
+          retention-days: 30
+
       # GeneralsX @build Android CI 06/11/2026 `if: always()`, so a failing lint run still leaves
       # its report behind -- the report is the thing you need when the step above went red. The
       # unit-test report paths that used to be listed here were dropped along with the
