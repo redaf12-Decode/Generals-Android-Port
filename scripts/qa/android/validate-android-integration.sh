@@ -259,7 +259,7 @@ fi
 
 # Standard Android system libraries a staged .so is allowed to resolve against
 # without being shipped in jniLibs (they are provided by the platform linker).
-ANDROID_SYSTEM_LIBS_RE='libc\.so|libm\.so|libdl\.so|liblog\.so|libandroid\.so|libEGL\.so|libGLESv2\.so|libGLESv3\.so|libvulkan\.so|libOpenSLES\.so|libaaudio\.so|libz\.so|libjnigraphics\.so|libmediandk\.so|libsync\.so|libnativewindow\.so|libcamera2ndk\.so|libstdc\+\+\.so|libc\+\+_shared\.so'
+ANDROID_SYSTEM_LIBS_RE='libc\.so|libm\.so|libdl\.so|liblog\.so|libandroid\.so|libEGL\.so|libGLESv1_CM\.so|libGLESv2\.so|libGLESv3\.so|libvulkan\.so|libOpenSLES\.so|libaaudio\.so|libz\.so|libjnigraphics\.so|libmediandk\.so|libsync\.so|libnativewindow\.so|libnativehelper\.so|libcamera2ndk\.so|libOpenCL\.so|libstdc\+\+\.so|libc\+\+_shared\.so|libcutils\.so|libutils\.so|libhardware\.so|libhidlbase\.so|libvndksupport\.so|libbase\.so'
 
 check_elf_needed() {
     local dir="$1"
