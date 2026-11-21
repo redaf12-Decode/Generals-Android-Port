@@ -1,0 +1,28 @@
+{
+  "$comment": "Reforged engine source pin for the Android integration. The Android build checks out THIS commit into reforged-engine/ and verifies it before applying any adaptation layer. Update procedure: change 'commit' (and 'commit_message'/'pinned_on') to a verified olcay commit, then re-run the Phase-3 adaptation validation. Never use a floating 'main' for production builds.",
+  "repository": "https://github.com/olcayseygan/CnCGeneralsZH-Reforged.git",
+  "branch": "main",
+  "commit": "b79aa63b7a35e51e59e135d64fc08df00113fcfd",
+  "commit_message": "feat(gameengine): put the skirmish AI's rating on an Elo scale",
+  "pinned_on": "2026-11-21",
+  "checkout_dir": "reforged-engine",
+  "submodules": [],
+  "license": "GPL-3.0-only (see LICENSE.md in the engine tree)",
+  "game_assets": "NOT included. The user supplies their own legally-owned Zero Hour game data; the build never downloads or packages game assets.",
+  "third_party": {
+    "note": "Fetched by the engine's own Tools/vendor.sh at pinned commits, not by this manifest. Recorded here for traceability.",
+    "sdl3": { "version": "3.4.16", "commit": "fa2c02bb6e21974a89ea9824bc53c9932abe5f9c", "source": "Tools/vendor.sh" },
+    "gamespy": { "repo": "TheSuperHackers/GamespySDK", "commit": "b1b77d8", "source": "Tools/vendor.sh" },
+    "freetype": { "version": "2.14.3", "source": "Tools/vendor.sh" },
+    "glslang": { "source": "Tools/vendor.sh" },
+    "spirv_cross": { "source": "Tools/vendor.sh" },
+    "ffmpeg": { "source": "committed prebuilt under GeneralsMD/Code/Libraries/Source/FFmpeg/dist" },
+    "miniaudio": { "source": "vendored under GeneralsMD/Code/Libraries/Source/miniaudio" }
+  },
+  "adaptation_layer": {
+    "note": "Android-specific changes applied to the checked-out engine at build time (never committed into the engine tree). Phase 3+ will add the C1-class CMake/bionic patch (verified applicable to this commit) and the re-derived C4-class game-library patch.",
+    "verified_applicable": ["reforged-c1-android.patch"],
+    "requires_rederivation": ["reforged-c4-game-library.patch"],
+    "provenance": "louay0khaled/zero-hour-reforged-android-mod probe/patches/"
+  }
+}

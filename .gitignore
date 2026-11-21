@@ -108,3 +108,6 @@ android-staging/
 # is disabled on this fork, so a ~40MB binary can't go into version control
 # at all even if it were source), not something to commit.
 /GeneralsXZH-android-local.apk
+
+# Reforged engine checkout (fetched by scripts/build/android/fetch-reforged-engine.sh; never committed)
+reforged-engine/
