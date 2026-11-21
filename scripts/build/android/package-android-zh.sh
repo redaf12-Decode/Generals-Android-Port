@@ -206,6 +206,17 @@ fi
 echo "==> Staged $(ls "${JNILIBS}" | wc -l | tr -d ' ') native libraries:"
 ls -la "${JNILIBS}"
 
+# GeneralsX @build Android port Phase 2 (Reforged integration adaptation)
+# Static validation of the staged native payload: every .so is genuinely
+# AArch64 (no desktop toolchain slipping through) and the required runtime set
+# is present. This is the packaged-artifact gate the build script's in-build
+# libmain.so check does not cover. Reads artifacts only; never mutates them.
+# See docs/android-port/REFERENCE-ADAPTATION-AUDIT.md and
+# scripts/qa/android/validate-android-integration.sh.
+echo "==> Validating staged native libraries"
+"${PROJECT_ROOT}/scripts/qa/android/validate-android-integration.sh" --lib-dir "${JNILIBS}" \
+    || { echo "ERROR: staged native library validation failed (see above)."; exit 1; }
+
 # --- 2. SDL3 Java glue -------------------------------------------------------
 SDL_JAVA_SRC="${BUILD_DIR}/_deps/sdl3-src/android-project/app/src/main/java/org/libsdl/app"
 if [[ ! -d "${SDL_JAVA_SRC}" ]]; then
