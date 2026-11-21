@@ -1,28 +1,38 @@
 {
-  "$comment": "Reforged engine source pin for the Android integration. The Android build checks out THIS commit into reforged-engine/ and verifies it before applying any adaptation layer. Update procedure: change 'commit' (and 'commit_message'/'pinned_on') to a verified olcay commit, then re-run the Phase-3 adaptation validation. Never use a floating 'main' for production builds.",
+  "$comment": "Reforged engine source pin for the Android integration. The Android build checks out THIS commit into reforged-engine/ and verifies it before applying any adaptation layer. Update procedure: change 'commit' (and 'commit_message'/'pinned_on'), then RE-DERIVE and re-verify the Android adaptation layer (reforged/android-adaptation/patches/) against the new revision -- the patches are NOT expected to apply to an arbitrary newer commit. Never use a floating 'main' for production builds.",
   "repository": "https://github.com/olcayseygan/CnCGeneralsZH-Reforged.git",
   "branch": "main",
-  "commit": "b79aa63b7a35e51e59e135d64fc08df00113fcfd",
-  "commit_message": "feat(gameengine): put the skirmish AI's rating on an Elo scale",
+  "commit": "61dbc593fb4eecb7af891b80c4c491c3ad2b791d",
+  "commit_message": "build(cmake): version 4.0.0",
   "pinned_on": "2026-11-21",
+  "pin_rationale": "This is the olcay revision that louay0khaled/zero-hour-reforged-android-mod pins (REFORGED_PIN) and against which its Android adaptation layer (reforged-c1-android.patch + reforged-c4-game-library.patch, after reforged-frame-selfcheck-entry.patch) is verified to apply and to produce the Android shared-library target (add_library(rfx_game SHARED ...)). Newer olcay main (e.g. b79aa63) does NOT accept the C4 patch without re-derivation of ~14.8k lines, which cannot be verified without a build; pinning here is the only build-achievable configuration. Verified locally: c1 + frame-selfcheck-entry + frame-selfcheck-mali-tolerances + c4 all apply cleanly (git apply --check) and the CMake target is present.",
+  "adaptation_louay_pin": "d240f2af734cb6c69ddf301c12c473b79a909056",
   "checkout_dir": "reforged-engine",
   "submodules": [],
   "license": "GPL-3.0-only (see LICENSE.md in the engine tree)",
   "game_assets": "NOT included. The user supplies their own legally-owned Zero Hour game data; the build never downloads or packages game assets.",
   "third_party": {
-    "note": "Fetched by the engine's own Tools/vendor.sh at pinned commits, not by this manifest. Recorded here for traceability.",
-    "sdl3": { "version": "3.4.16", "commit": "fa2c02bb6e21974a89ea9824bc53c9932abe5f9c", "source": "Tools/vendor.sh" },
+    "note": "Fetched by the engine's own Tools/vendor.sh at pinned commits (run after checkout, before rfx-jni-prefix/gamespy-pthread patches). Recorded here for traceability.",
+    "sdl3": { "version": "3.4.16", "source": "Tools/vendor.sh" },
     "gamespy": { "repo": "TheSuperHackers/GamespySDK", "commit": "b1b77d8", "source": "Tools/vendor.sh" },
-    "freetype": { "version": "2.14.3", "source": "Tools/vendor.sh" },
+    "freetype": { "source": "Tools/vendor.sh" },
     "glslang": { "source": "Tools/vendor.sh" },
     "spirv_cross": { "source": "Tools/vendor.sh" },
-    "ffmpeg": { "source": "committed prebuilt under GeneralsMD/Code/Libraries/Source/FFmpeg/dist" },
-    "miniaudio": { "source": "vendored under GeneralsMD/Code/Libraries/Source/miniaudio" }
+    "ffmpeg": { "version": "8.1.2", "source": "Tools/ffmpeg-build-posix.sh (built for the Android target via C4's FFMPEG_POSIX_CFLAGS)" },
+    "miniaudio": { "source": "vendored under GeneralsMD/Code/Libraries/Source/miniaudio (header-only, compiled into the engine)" }
   },
   "adaptation_layer": {
-    "note": "Android-specific changes applied to the checked-out engine at build time (never committed into the engine tree). Phase 3+ will add the C1-class CMake/bionic patch (verified applicable to this commit) and the re-derived C4-class game-library patch.",
-    "verified_applicable": ["reforged-c1-android.patch"],
-    "requires_rederivation": ["reforged-c4-game-library.patch"],
+    "note": "Android-specific changes applied to the checked-out engine at build time (never committed into the engine tree). Vendored verbatim from louay (pinned adaptation_louay_pin) under reforged/android-adaptation/patches/, applied in the order below by scripts/build/android/build-reforged-engine.sh.",
+    "order": [
+      "reforged-c1-android.patch",
+      "reforged-frame-selfcheck-entry.patch",
+      "reforged-frame-selfcheck-mali-tolerances.patch",
+      "( run Tools/vendor.sh here to populate SDL3/GameSpy/FreeType/glslang )",
+      "reforged-rfx-jni-prefix.patch",
+      "gamespy-android-pthread.patch",
+      "reforged-c4-game-library.patch"
+    ],
+    "output_target": "rfx_game -> librfx_game.so (renamed libmain.so for packaging)",
     "provenance": "louay0khaled/zero-hour-reforged-android-mod probe/patches/"
   }
 }
