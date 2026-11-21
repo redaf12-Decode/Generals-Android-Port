@@ -117,11 +117,15 @@ cmake -S "$SRC/GeneralsMD/Code" -B "$BUILD" -G Ninja \
     -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
 
 # --- optional build-only self-check gate (ships nothing) -------------------
+# Builds the frame selfcheck to prove the c1 CMake/bionic adaptation and the
+# Android cross-compile work before the (much longer) full game build. The
+# selfcheck is a test harness, NOT the engine: it does not export SDL_main (that
+# is verified on librfx_game.so below), so this gate only asserts that it built.
 if [[ "$SKIP_SELFCHECK" != "1" ]]; then
-    log "Building sdl_gpu_frame_selfcheck (build-only gate)"
+    log "Building sdl_gpu_frame_selfcheck (build-only compile gate)"
     cmake --build "$BUILD" --target sdl_gpu_frame_selfcheck -j"$JOBS"
-    "$NM" -D "$BUILD/libsdl_gpu_frame_selfcheck.so" | grep -q " T SDL_main" \
-        || die "selfcheck: SDL_main not exported"
+    [[ -f "$BUILD/libsdl_gpu_frame_selfcheck.so" ]] || die "selfcheck: library not produced"
+    log "selfcheck built OK"
 fi
 
 # --- stage 6: c4 game-library patch ----------------------------------------

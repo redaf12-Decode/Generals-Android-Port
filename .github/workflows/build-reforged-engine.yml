@@ -115,6 +115,13 @@ jobs:
           mkdir -p logs
           ./scripts/build/android/build-reforged-engine.sh 2>&1 | tee logs/build-reforged-engine.log
 
+      - name: Save ccache
+        if: always()
+        uses: actions/cache/save@v5
+        with:
+          path: ~/.cache/ccache
+          key: ccache-reforged-${{ github.run_id }}
+
       - name: Verify artifacts
         run: |
           set -euo pipefail
