@@ -377,6 +377,16 @@ public class GeneralsZHActivity extends SDLActivity {
 
     @Override
     public void loadLibraries() {
+        // GeneralsX @feature Android port Phase 6 (Reforged integration adaptation)
+        // Diagnostics for native-library load failures. Log each library before the
+        // load and, on failure, a detailed entry naming the missing library and the
+        // real contents of nativeLibraryDir, so logcat explains a launch that would
+        // otherwise die at SDL's own "couldn't load library" box with no detail.
+        // The UnsatisfiedLinkError is rethrown unchanged, so behavior is identical
+        // when every library is present -- this only adds diagnostics.
+        final String libDirPath = getApplicationInfo() != null
+                ? getApplicationInfo().nativeLibraryDir
+                : null;
         for (String lib : getLibraries()) {
             // Signed engine updates are Zero Hour's (UpdateManager.ENGINE_LIBS).
             if ("main".equals(lib) || "main60".equals(lib)) {
@@ -395,8 +405,36 @@ public class GeneralsZHActivity extends SDLActivity {
                     }
                 }
             }
-            System.loadLibrary(lib);
+            Log.i(TAG, "Loading native library: lib" + lib + ".so (nativeLibraryDir=" + libDirPath + ")");
+            try {
+                System.loadLibrary(lib);
+            } catch (UnsatisfiedLinkError e) {
+                Log.e(TAG, "FAILED to load native library lib" + lib + ".so: " + e.getMessage()
+                        + describeNativeLibraryDir(libDirPath), e);
+                throw e;
+            }
         }
+    }
+
+    // GeneralsX @feature Android port Phase 6 (Reforged integration adaptation)
+    // A one-line, allocation-light summary of nativeLibraryDir for the load-failure
+    // log: either the file count and names, or why the directory is unreadable.
+    private static String describeNativeLibraryDir(String libDirPath) {
+        if (libDirPath == null) {
+            return " | nativeLibraryDir is null";
+        }
+        File[] libs = new File(libDirPath).listFiles();
+        if (libs == null) {
+            return " | nativeLibraryDir " + libDirPath + " is not a readable directory";
+        }
+        StringBuilder sb = new StringBuilder(" | nativeLibraryDir (").append(libs.length).append("): ");
+        for (int i = 0; i < libs.length; i++) {
+            if (i > 0) {
+                sb.append(", ");
+            }
+            sb.append(libs[i].getName());
+        }
+        return sb.toString();
     }
 
     @Override

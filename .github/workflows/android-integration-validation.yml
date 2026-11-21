@@ -1,0 +1,73 @@
+name: Android Integration Validation
+
+# GeneralsX @test Android port Phase 6 (Reforged integration adaptation)
+#
+# Fast, build-free self-test of scripts/qa/android/validate-android-integration.sh.
+# It constructs a synthetic AArch64 payload from the committed ANGLE prebuilt
+# libraries (real AArch64 ELF), runs the validator against it, and asserts both a
+# positive result (payload complete -> PASS) and a negative result (a required
+# library removed -> FAIL, non-zero exit). This proves the packaged-artifact gate
+# actually catches a broken payload, without a ~15 minute engine build.
+#
+# Deliberately workflow_dispatch only: no push/PR trigger, in keeping with the
+# repository owner's decision to keep unattended CI runs off every commit (see
+# build-android.yml and android-unit-tests.yml for the same reasoning). The
+# repository owner starts this by hand when the validator or its wiring changes.
+#
+# The full end-to-end run of the validator against a real packaged APK happens
+# inside scripts/build/android/package-android-zh.sh during the Build Android
+# workflow.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  self-test:
+    name: validator self-test (positive + negative)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Build synthetic AArch64 fixture
+        run: |
+          set -euo pipefail
+          FIX="$(mktemp -d)"
+          mkdir -p "$FIX/lib/arm64-v8a" "$FIX/java/org/libsdl/app"
+          ANGLE="Core/Libraries/Source/d3d8gles/angle-prebuilt/arm64-v8a"
+          test -f "$ANGLE/libGLESv2_angle.so"
+          # Real AArch64 ELF for both the SDL stand-in and the engine stand-in.
+          cp "$ANGLE/libGLESv2_angle.so" "$FIX/lib/arm64-v8a/libSDL3.so"
+          # Export JNI_OnLoad so the SDL JNI-registration check finds it.
+          printf 'JNI_OnLoad' >> "$FIX/lib/arm64-v8a/libSDL3.so"
+          cp "$ANGLE/libEGL_angle.so" "$FIX/lib/arm64-v8a/libmain.so"
+          printf 'class SDLActivity {}\n' > "$FIX/java/org/libsdl/app/SDLActivity.java"
+          echo "FIX=$FIX" >> "$GITHUB_ENV"
+          echo "Fixture at $FIX"
+
+      - name: Positive validation (complete payload -> RESULT: PASS)
+        run: |
+          set -euo pipefail
+          OUT="$(GX_VALIDATE_REQUIRED_LIBS='libSDL3.so libmain.so' \
+            scripts/qa/android/validate-android-integration.sh \
+            --lib-dir "$FIX/lib/arm64-v8a" --java-sdl "$FIX/java")"
+          printf '%s\n' "$OUT"
+          printf '%s\n' "$OUT" | grep -q 'RESULT: PASS'
+
+      - name: Negative validation (missing engine -> RESULT: FAIL, exit 1)
+        run: |
+          set -euo pipefail
+          rm -f "$FIX/lib/arm64-v8a/libmain.so"
+          set +e
+          OUT="$(GX_VALIDATE_REQUIRED_LIBS='libSDL3.so libmain.so' \
+            scripts/qa/android/validate-android-integration.sh \
+            --lib-dir "$FIX/lib/arm64-v8a" --java-sdl "$FIX/java" 2>&1)"
+          RC=$?
+          set -e
+          printf '%s\n' "$OUT"
+          test "$RC" -eq 1
+          printf '%s\n' "$OUT" | grep -q 'RESULT: FAIL'
