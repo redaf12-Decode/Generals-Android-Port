@@ -33,7 +33,7 @@
 
 set -euo pipefail
 
- PROG="$(basename "${BASH_SOURCE[0]}")"
+PROG="$(basename "${BASH_SOURCE[0]}")"
 
 # Repo root derived from this script's location (scripts/qa/android/ -> repo root),
 # so source-level checks (Phase 4) work without extra arguments.
@@ -177,8 +177,8 @@ fi
 ENGINE_LIB_BASES=("main" "main60" "generals" "generals60")
 
 # True if a dynamic symbol name appears in the library. Uses readelf --dyn-syms
-# when available, else falls back to `strings` (the name lives in .dynstr for any
-# exported symbol, including a stripped library).
+# when available, else falls back to a binary-safe grep (the name lives verbatim
+# in .dynstr for any exported symbol, including a stripped library).
 lib_exports_symbol() {
     local file="$1" sym="$2"
     if [[ -n "${READELF}" ]] && "${READELF}" --dyn-syms "${file}" 2>/dev/null | grep -qw "${sym}"; then
@@ -417,7 +417,9 @@ if [[ -n "${APK}" ]]; then
     check_apk "${APK}"
 fi
 
-# === Phase 6 sections are appended by that phase ===========================
+# Phase 6 added no new static section; its runtime contribution is the logcat
+# load-failure diagnostics in GeneralsZHActivity.loadLibraries() plus the fast
+# CI self-test workflow (.github/workflows/android-integration-validation.yml).
 
 # --- summary -----------------------------------------------------------------
 section "Summary"
