@@ -16,6 +16,11 @@
 #   validate-android-integration.sh --lib-dir <dir>      # staged jniLibs/arm64-v8a
 #   validate-android-integration.sh --apk <file.apk>      # packaged APK (Phase 5+)
 #
+#   --lib-dir <dir>    directory of staged shared libraries (jniLibs/arm64-v8a).
+#   --java-sdl <dir>   staged SDL Java root (android/app/src/main/java-sdl); enables
+#                      the single-SDLActivity / JNI registration consistency checks.
+#   --apk <file>       packaged APK (Phase 5+ APK-content checks).
+#
 # Environment:
 #   ANDROID_NDK_HOME   optional; when set, its llvm-readelf is preferred over the
 #                      host readelf for ELF inspection.
@@ -42,12 +47,14 @@ die() { printf 'ERROR %s: %s\n' "$PROG" "$*" >&2; exit 2; }
 
 # --- argument parsing --------------------------------------------------------
 LIB_DIR=""
+JAVA_SDL=""
 APK=""
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        --lib-dir) LIB_DIR="${2:-}"; shift 2 ;;
-        --apk)     APK="${2:-}"; shift 2 ;;
-        -h|--help) sed -n '2,40p' "${BASH_SOURCE[0]}"; exit 0 ;;
+        --lib-dir)  LIB_DIR="${2:-}"; shift 2 ;;
+        --java-sdl) JAVA_SDL="${2:-}"; shift 2 ;;
+        --apk)      APK="${2:-}"; shift 2 ;;
+        -h|--help)  sed -n '2,40p' "${BASH_SOURCE[0]}"; exit 0 ;;
         *) die "unknown argument '$1'" ;;
     esac
 done
@@ -152,7 +159,93 @@ if [[ -n "${LIB_DIR}" ]]; then
     check_required_libs "${LIB_DIR}" "${required[@]}"
 fi
 
-# === Phase 3/4/5/6 sections are appended by their phases =====================
+# === Phase 3: SDL3 / JNI integration =========================================
+# The target runs one SDL3 stack end to end: the launcher loads "SDL3" first
+# (GeneralsZHActivity.getLibraries()), then one engine built from the same
+# in-tree SDL3 source the Java glue is staged from. These checks guard the
+# invariants the reference's second-SDL-layer hack (stage-rfx-glue.py +
+# reforged-rfx-jni-prefix.patch) would violate, and confirm the JNI native-
+# method registration entry point is actually exported by libSDL3.so.
+
+# Engine base names the launcher can System.loadLibrary() (SetupActivity
+# .engineLibraries() + the "SDL3" literal in GeneralsZHActivity.getLibraries()).
+ENGINE_LIB_BASES=("main" "main60" "generals" "generals60")
+
+# True if a dynamic symbol name appears in the library. Uses readelf --dyn-syms
+# when available, else falls back to `strings` (the name lives in .dynstr for any
+# exported symbol, including a stripped library).
+lib_exports_symbol() {
+    local file="$1" sym="$2"
+    if [[ -n "${READELF}" ]] && "${READELF}" --dyn-syms "${file}" 2>/dev/null | grep -qw "${sym}"; then
+        return 0
+    fi
+    # Portable fallback: an exported dynamic symbol's name lives verbatim in the
+    # binary's string table (.dynstr), so a binary-safe grep finds it even in a
+    # stripped library and without binutils installed.
+    grep -aq "${sym}" "${file}"
+}
+
+check_sdl_java_layer() {
+    local dir="$1"
+    [[ -d "${dir}" ]] || { fail "SDL Java root not found: ${dir}"; return; }
+    local count
+    count="$(find "${dir}" -name 'SDLActivity.java' -type f | wc -l | tr -d ' ')"
+    if [[ "${count}" == "1" ]]; then
+        pass "exactly one SDLActivity.java in the staged SDL Java layer"
+    elif [[ "${count}" == "0" ]]; then
+        fail "no SDLActivity.java under ${dir}"
+    else
+        fail "${count} SDLActivity.java files under ${dir} (competing SDLActivity implementations)"
+    fi
+    # The reference's rfx glue renames the SDL Java package to org.libsdl.apprfx
+    # so two SDL versions can coexist. That is exactly the duplicate-SDL layering
+    # this adaptation must not introduce.
+    if find "${dir}" -type d -path '*/org/libsdl/apprfx' | grep -q .; then
+        fail "org.libsdl.apprfx package present (duplicate SDL Java layer)"
+    else
+        pass "no duplicate org.libsdl.apprfx SDL layer"
+    fi
+}
+
+check_jni_entry_points() {
+    local dir="$1"
+    # libSDL3.so must export JNI_OnLoad: SDL_android.c registers every
+    # Java_org_libsdl_app_* native method from there (dynamic registration, not
+    # exported Java_ symbols), so its presence is the SDL JNI presence proof.
+    if [[ -f "${dir}/libSDL3.so" ]]; then
+        if lib_exports_symbol "${dir}/libSDL3.so" "JNI_OnLoad"; then
+            pass "libSDL3.so exports JNI_OnLoad (SDL native-method registration present)"
+        else
+            fail "libSDL3.so does not export JNI_OnLoad (SDL JNI registration missing)"
+        fi
+    else
+        fail "libSDL3.so missing (launcher loads \"SDL3\" first)"
+    fi
+    # At least one engine library the launcher can name must be present.
+    local found=0 name
+    for name in "${ENGINE_LIB_BASES[@]}"; do
+        [[ -f "${dir}/lib${name}.so" ]] && { found=1; break; }
+    done
+    if [[ "${found}" -eq 1 ]]; then
+        pass "at least one engine library present (${ENGINE_LIB_BASES[*]} family)"
+    else
+        fail "no engine library present (expected one of: ${ENGINE_LIB_BASES[*]})"
+    fi
+}
+
+# --- Phase 3 driver ----------------------------------------------------------
+if [[ -n "${LIB_DIR}" && -d "${LIB_DIR}" ]]; then
+    section "SDL3 / JNI integration: JNI entry points"
+    check_jni_entry_points "${LIB_DIR}"
+    if [[ -n "${JAVA_SDL}" ]]; then
+        section "SDL3 / JNI integration: SDL Java layer"
+        check_sdl_java_layer "${JAVA_SDL}"
+    else
+        info "skipping SDL Java layer checks (no --java-sdl given)"
+    fi
+fi
+
+# === Phase 4/5/6 sections are appended by their phases =====================
 
 # --- summary -----------------------------------------------------------------
 section "Summary"

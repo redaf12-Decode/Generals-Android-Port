@@ -206,17 +206,6 @@ fi
 echo "==> Staged $(ls "${JNILIBS}" | wc -l | tr -d ' ') native libraries:"
 ls -la "${JNILIBS}"
 
-# GeneralsX @build Android port Phase 2 (Reforged integration adaptation)
-# Static validation of the staged native payload: every .so is genuinely
-# AArch64 (no desktop toolchain slipping through) and the required runtime set
-# is present. This is the packaged-artifact gate the build script's in-build
-# libmain.so check does not cover. Reads artifacts only; never mutates them.
-# See docs/android-port/REFERENCE-ADAPTATION-AUDIT.md and
-# scripts/qa/android/validate-android-integration.sh.
-echo "==> Validating staged native libraries"
-"${PROJECT_ROOT}/scripts/qa/android/validate-android-integration.sh" --lib-dir "${JNILIBS}" \
-    || { echo "ERROR: staged native library validation failed (see above)."; exit 1; }
-
 # --- 2. SDL3 Java glue -------------------------------------------------------
 SDL_JAVA_SRC="${BUILD_DIR}/_deps/sdl3-src/android-project/app/src/main/java/org/libsdl/app"
 if [[ ! -d "${SDL_JAVA_SRC}" ]]; then
@@ -242,6 +231,20 @@ if [[ -d "${PATCH_DIR}" ]]; then
         patch -p1 -d "${JAVA_SDL}" < "${patch_file}"
     done
 fi
+
+# GeneralsX @build Android port Phase 2/3 (Reforged integration adaptation)
+# Static validation of the staged native payload (AArch64 architecture, required
+# shared libraries, JNI entry points) and the staged SDL Java layer (exactly one
+# SDLActivity, no duplicate org.libsdl.apprfx layer). This is the packaged-artifact
+# gate the build script's in-build libmain.so check does not cover. It runs here,
+# after both the native libraries and the SDL Java glue are staged, and reads
+# artifacts only -- it never mutates the build. See
+# docs/android-port/REFERENCE-ADAPTATION-AUDIT.md and
+# scripts/qa/android/validate-android-integration.sh.
+echo "==> Validating staged native libraries + SDL Java layer"
+"${PROJECT_ROOT}/scripts/qa/android/validate-android-integration.sh" \
+    --lib-dir "${JNILIBS}" --java-sdl "${JAVA_SDL}" \
+    || { echo "ERROR: staged Android integration validation failed (see above)."; exit 1; }
 
 # --- 3. runtime assets -------------------------------------------------------
 mkdir -p "${ASSETS}"
