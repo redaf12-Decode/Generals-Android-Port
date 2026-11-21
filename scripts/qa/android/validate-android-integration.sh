@@ -323,7 +323,101 @@ if [[ -n "${LIB_DIR}" && -d "${LIB_DIR}" ]]; then
     check_elf_needed "${LIB_DIR}"
 fi
 
-# === Phase 5/6 sections are appended by their phases ========================
+# === Phase 5: runtime packaging and game data ================================
+# The target keeps user game data OUT of the APK (the user selects a folder via
+# FolderPickerActivity / MANAGE_EXTERNAL_STORAGE) and ships only a small runtime
+# asset set (fonts, dxvk.conf, DefaultOptions.ini, fallback Turnip driver). These
+# checks verify the manifest/permission configuration and, for a packaged APK,
+# that it carries only arm64-v8a native libraries and the runtime assets -- no
+# full game data, no desktop binaries, no foreign ABIs.
+
+check_manifest() {
+    local root="$1"
+    local m="${root}/android/app/src/main/AndroidManifest.xml"
+    [[ -f "${m}" ]] || { info "AndroidManifest.xml not found (skipping manifest checks)"; return; }
+    local s; s="$(cat "${m}")"
+
+    grep -q 'android:name=".GeneralsZHActivity"' <<< "${s}" \
+        && pass "manifest: game surface activity (.GeneralsZHActivity) declared" \
+        || fail "manifest: .GeneralsZHActivity not declared (the SDLActivity game surface)"
+    grep -q 'android.permission.INTERNET' <<< "${s}" \
+        && pass "manifest: INTERNET permission declared" \
+        || fail "manifest: INTERNET permission missing (GeneralsOnline needs it)"
+    # Existing user-data mechanism: MANAGE_EXTERNAL_STORAGE (FolderPickerActivity).
+    # Guard against its accidental removal; do not add new broad permissions here.
+    grep -q 'android.permission.MANAGE_EXTERNAL_STORAGE' <<< "${s}" \
+        && pass "manifest: MANAGE_EXTERNAL_STORAGE (user game-data folder mechanism) declared" \
+        || fail "manifest: MANAGE_EXTERNAL_STORAGE missing (folder picker cannot browse)"
+    # adrenotools needs real on-disk .so files (nativeLibraryDir); extractNativeLibs
+    # must not be forced false in the manifest (useLegacyPackaging handles it).
+    if grep -qE 'android:extractNativeLibs="false"' <<< "${s}"; then
+        fail "manifest: android:extractNativeLibs=\"false\" (breaks adrenotools nativeLibraryDir)"
+    else
+        pass "manifest: extractNativeLibs not forced false"
+    fi
+}
+
+check_apk() {
+    local apk="$1"
+    [[ -f "${apk}" ]] || { fail "APK not found: ${apk}"; return; }
+    command -v zipinfo >/dev/null 2>&1 || { info "zipinfo not available: skipping APK content checks"; return; }
+    local names; names="$(zipinfo -1 "${apk}" 2>/dev/null)" || { fail "cannot read APK: ${apk}"; return; }
+
+    local name
+    for name in libSDL3.so libmain.so; do
+        if grep -qx "lib/arm64-v8a/${name}" <<< "${names}"; then
+            pass "APK: lib/arm64-v8a/${name} present"
+        else
+            fail "APK: lib/arm64-v8a/${name} missing"
+        fi
+    done
+    if grep -qE '^lib/(armeabi-v7a|x86|x86_64)/.+\.so$' <<< "${names}"; then
+        fail "APK ships non-arm64 ABI libraries (armeabi-v7a/x86/x86_64)"
+    else
+        pass "APK: only arm64-v8a native libraries (no foreign ABIs)"
+    fi
+    if grep -qE '\.so$' <<< "${names}" && grep -E '\.so$' <<< "${names}" | grep -qvE '^lib/arm64-v8a/'; then
+        fail "APK: a .so file sits outside lib/arm64-v8a/"
+    else
+        pass "APK: every .so is under lib/arm64-v8a/"
+    fi
+    if grep -qiE '\.big$' <<< "${names}"; then
+        fail "APK packages .big game archives (game data must stay user-provided)"
+    else
+        pass "APK: no .big game archives packaged"
+    fi
+    if grep -qiE '\.(exe|dll)(/|$)' <<< "${names}"; then
+        fail "APK contains desktop binaries (.exe/.dll)"
+    else
+        pass "APK: no desktop .exe/.dll binaries"
+    fi
+    grep -qE '^assets/gamedata/fonts/.+' <<< "${names}" \
+        && pass "APK: runtime fonts present (assets/gamedata/fonts)" \
+        || fail "APK: runtime fonts missing (assets/gamedata/fonts)"
+    grep -qE '^assets/gamedata/dxvk.conf$' <<< "${names}" \
+        && pass "APK: dxvk.conf present" \
+        || fail "APK: dxvk.conf missing (assets/gamedata)"
+
+    # Size summary (uncompressed content + top contributors).
+    if command -v unzip >/dev/null 2>&1; then
+        local total; total="$(unzip -l "${apk}" 2>/dev/null | awk 'NR>3 && $1 ~ /^[0-9]+$/ && NF>=4 {s+=$1} END{print s+0}')"
+        info "APK on disk: $(du -h "${apk}" | cut -f1); uncompressed content: ${total} bytes"
+        local line
+        while read -r line; do
+            [[ -n "${line}" ]] && info "APK size contributor: ${line}"
+        done < <(unzip -l "${apk}" 2>/dev/null | awk 'NR>3 && $1 ~ /^[0-9]+$/ && NF>=4 {n=$4; sub(/\/$/,"",n); split(n,a,"/"); key=(a[1]=="lib" && a[2]!="")?"lib/"a[2]:a[1]; sum[key]+=$1} END{for(k in sum) printf "%10d bytes  %s/\n", sum[k], k}' | sort -rn | head -6)
+    fi
+}
+
+# --- Phase 5 driver ----------------------------------------------------------
+section "Runtime packaging: manifest and permissions"
+check_manifest "${REPO_ROOT}"
+if [[ -n "${APK}" ]]; then
+    section "Runtime packaging: APK contents"
+    check_apk "${APK}"
+fi
+
+# === Phase 6 sections are appended by that phase ===========================
 
 # --- summary -----------------------------------------------------------------
 section "Summary"
