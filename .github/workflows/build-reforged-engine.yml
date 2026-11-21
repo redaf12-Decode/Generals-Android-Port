@@ -1,0 +1,153 @@
+name: Build Reforged Engine (Android)
+
+# Builds the ACTUAL olcay Reforged engine as an Android ARM64 shared library
+# (librfx_game.so -> libmain.so) and verifies it. This is the Reforged-engine
+# acceptance: a real arm64 build of the olcay engine, NOT a launcher-only APK
+# and NOT a static validation script. See
+# docs/reforged-integration/SOURCE-TO-TARGET-INTEGRATION-MAP.md.
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - Afork
+    paths:
+      - 'reforged/**'
+      - 'scripts/build/android/build-reforged-engine.sh'
+      - 'scripts/build/android/fetch-reforged-engine.sh'
+      - 'docs/reforged-integration/**'
+      - '.github/workflows/build-reforged-engine.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  reforged-engine:
+    name: reforged-engine@arm64-v8a
+    runs-on: ubuntu-latest
+    # The Reforged engine builds its own SDL3/FFmpeg/FreeType/glslang/SPIRV-Cross
+    # and the whole game (~1.6M LOC), so a cold run is long. ccache + caches below
+    # keep re-runs incremental.
+    timeout-minutes: 240
+    env:
+      NDK_VERSION: "27.2.12479018"
+      CMDLINE_TOOLS_VERSION: "13114758"
+      CMDLINE_TOOLS_SHA1: "5fdcc763663eefb86a5b8879697aa6088b041e70"
+
+    steps:
+      - name: Checkout host (Afork)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: false
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Restore Android SDK cache
+        id: cache-android-sdk
+        uses: actions/cache/restore@v5
+        with:
+          path: /opt/android-sdk
+          key: android-sdk-${{ env.CMDLINE_TOOLS_VERSION }}-ndk${{ env.NDK_VERSION }}-p35-bt35
+
+      - name: Install Android SDK (cmdline-tools + NDK + platform + build-tools)
+        if: steps.cache-android-sdk.outputs.cache-hit != 'true'
+        run: |
+          set -euo pipefail
+          curl -fL --retry 3 -o /tmp/cmdline-tools.zip \
+            "https://dl.google.com/android/repository/commandlinetools-linux-${{ env.CMDLINE_TOOLS_VERSION }}_latest.zip"
+          echo "${{ env.CMDLINE_TOOLS_SHA1 }}  /tmp/cmdline-tools.zip" | sha1sum -c -
+          sudo mkdir -p /opt/android-sdk/cmdline-tools
+          sudo unzip -q /tmp/cmdline-tools.zip -d /opt/android-sdk/cmdline-tools
+          sudo mv /opt/android-sdk/cmdline-tools/cmdline-tools /opt/android-sdk/cmdline-tools/latest
+          sudo chown -R "$(id -u):$(id -g)" /opt/android-sdk
+          rm /tmp/cmdline-tools.zip
+          SDKMANAGER=/opt/android-sdk/cmdline-tools/latest/bin/sdkmanager
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" --install "ndk;${{ env.NDK_VERSION }}" "platforms;android-35" "build-tools;35.0.0" "platform-tools"
+
+      - name: Export Android SDK environment
+        run: |
+          set -euo pipefail
+          echo "ANDROID_HOME=/opt/android-sdk" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=/opt/android-sdk" >> "$GITHUB_ENV"
+          echo "ANDROID_NDK_HOME=/opt/android-sdk/ndk/${{ env.NDK_VERSION }}" >> "$GITHUB_ENV"
+          test -f "/opt/android-sdk/ndk/${{ env.NDK_VERSION }}/build/cmake/android.toolchain.cmake" \
+            || { echo "::error::NDK toolchain file missing after install"; exit 1; }
+
+      - name: Install build tools (ninja, meson, pkg-config, glslang, ccache, zlib)
+        run: |
+          set -euo pipefail
+          sudo rm -f /etc/apt/sources.list.d/google-chrome.list \
+                     /etc/apt/sources.list.d/microsoft-prod.list
+          sudo apt-get update -qq || sudo apt-get update -qq || true
+          sudo apt-get install -y -qq --no-install-recommends \
+            ninja-build meson pkg-config glslang-tools ccache zlib1g-dev
+          meson --version
+          ninja --version
+          glslangValidator --version | head -1
+          ccache --version | head -1
+
+      - name: Restore ccache
+        id: cache-ccache
+        uses: actions/cache/restore@v5
+        with:
+          path: ~/.cache/ccache
+          key: ccache-reforged-${{ github.run_id }}
+          restore-keys: |
+            ccache-reforged-
+
+      - name: Configure ccache
+        run: |
+          set -euo pipefail
+          ccache --set-config=max_size=4G
+          ccache --set-config=compiler_check=content
+          ccache --zero-stats
+          echo "CCACHE_DIR=$HOME/.cache/ccache" >> "$GITHUB_ENV"
+
+      - name: Build the actual Reforged engine (arm64-v8a)
+        run: |
+          set -o pipefail
+          mkdir -p logs
+          ./scripts/build/android/build-reforged-engine.sh 2>&1 | tee logs/build-reforged-engine.log
+
+      - name: Verify artifacts
+        run: |
+          set -euo pipefail
+          LIB=libmain.so
+          test -f "$LIB" || { echo "::error::$LIB not produced"; exit 1; }
+          READELF="$(ls "${ANDROID_NDK_HOME}"/toolchains/llvm/prebuilt/*/bin/llvm-readelf | head -1)"
+          NM="$(ls "${ANDROID_NDK_HOME}"/toolchains/llvm/prebuilt/*/bin/llvm-nm | head -1)"
+          echo "--- ELF header ---"
+          "$READELF" -h "$LIB" | grep -E "Class|Machine|Type"
+          "$READELF" -h "$LIB" | grep -q "AArch64" || { echo "::error::not AArch64"; exit 1; }
+          "$READELF" -h "$LIB" | grep -q "DYN"     || { echo "::error::not a shared object"; exit 1; }
+          echo "--- SDL_main export ---"
+          "$NM" -D "$LIB" | grep " T SDL_main" || { echo "::error::SDL_main not exported"; exit 1; }
+          echo "--- DT_NEEDED ---"
+          "$READELF" -d "$LIB" | grep NEEDED || true
+          echo "Reforged engine library verified: $LIB"
+          ls -la "$LIB"
+
+      - name: Collect symbol table
+        if: always()
+        run: |
+          set -euo pipefail
+          [ -f libmain.so ] || exit 0
+          NM="$(ls "${ANDROID_NDK_HOME}"/toolchains/llvm/prebuilt/*/bin/llvm-nm | head -1)"
+          mkdir -p symbols
+          "$NM" -D libmain.so > "symbols/libmain-run${{ github.run_number }}.symbols.txt"
+
+      - name: Upload Reforged engine library
+        uses: actions/upload-artifact@v4
+        with:
+          name: reforged-engine-libmain
+          path: |
+            libmain.so
+            symbols/*.symbols.txt
+            logs/*.log
+          if-no-files-found: error
