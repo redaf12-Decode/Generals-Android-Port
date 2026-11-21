@@ -33,7 +33,12 @@
 
 set -euo pipefail
 
-PROG="$(basename "${BASH_SOURCE[0]}")"
+ PROG="$(basename "${BASH_SOURCE[0]}")"
+
+# Repo root derived from this script's location (scripts/qa/android/ -> repo root),
+# so source-level checks (Phase 4) work without extra arguments.
+_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "${_SCRIPT_DIR}/../../.." && pwd)"
 
 # --- output helpers ----------------------------------------------------------
 FAILS=0
@@ -245,7 +250,80 @@ if [[ -n "${LIB_DIR}" && -d "${LIB_DIR}" ]]; then
     fi
 fi
 
-# === Phase 4/5/6 sections are appended by their phases =====================
+# === Phase 4: native dependency compatibility ================================
+# Android/AArch64 has no bionic pthread_cancel and a reduced set of system
+# libraries. These checks verify the staged libraries' runtime dependency
+# (DT_NEEDED) closure resolves against the staged set or standard Android system
+# libraries, and guard the pthread-cancellation semantics the audit flags:
+# cancellation must be a safe no-op, never a detach substituted for cancel.
+
+# Standard Android system libraries a staged .so is allowed to resolve against
+# without being shipped in jniLibs (they are provided by the platform linker).
+ANDROID_SYSTEM_LIBS_RE='libc\.so|libm\.so|libdl\.so|liblog\.so|libandroid\.so|libEGL\.so|libGLESv2\.so|libGLESv3\.so|libvulkan\.so|libOpenSLES\.so|libaaudio\.so|libz\.so|libjnigraphics\.so|libmediandk\.so|libsync\.so|libnativewindow\.so|libcamera2ndk\.so|libstdc\+\+\.so|libc\+\+_shared\.so'
+
+check_elf_needed() {
+    local dir="$1"
+    if [[ -z "${READELF}" ]]; then
+        info "readelf/llvm-readelf not available: skipping DT_NEEDED dependency check"
+        info "(run in CI with ANDROID_NDK_HOME set, or install binutils, to enable it)"
+        return
+    fi
+    shopt -s nullglob
+    local sos=("${dir}"/*.so)
+    shopt -u nullglob
+    local so needed name unresolved
+    for so in "${sos[@]}"; do
+        unresolved=0
+        while read -r needed; do
+            [[ -z "${needed}" ]] && continue
+            name="$(basename "${needed}")"
+            grep -qE "^(${ANDROID_SYSTEM_LIBS_RE})$" <<< "${name}" && continue
+            if [[ ! -f "${dir}/${needed}" && ! -f "${dir}/${name}" ]]; then
+                fail "$(basename "${so}") DT_NEEDED '${needed}' is not staged and not a system library"
+                unresolved=1
+            fi
+        done < <("${READELF}" -d "${so}" 2>/dev/null | awk -F'[][]' '/\(NEEDED\)/{print $2}')
+        [[ "${unresolved}" -eq 0 ]] && pass "$(basename "${so}") DT_NEEDED dependencies resolve (staged or system)"
+    done
+}
+
+check_pthread_cancel_semantics() {
+    local root="$1"
+    # The reference's gamespy-android-pthread.patch replaces pthread_cancel with
+    # pthread_detach. The target deliberately does the opposite: a no-op cancel on
+    # Android (detach changes the thread lifecycle the audit warns against). Guard
+    # that decision against a regression.
+    local tc="${root}/GeneralsMD/Code/CompatLib/Source/thread_compat.cpp"
+    if [[ -f "${tc}" ]]; then
+        if grep -A20 'defined(__ANDROID__)' "${tc}" | grep -q 'pthread_detach'; then
+            fail "thread_compat.cpp: Android TerminateThread uses pthread_detach (detach-as-cancel); expected a safe no-op"
+        else
+            pass "thread_compat.cpp: Android TerminateThread is a no-op (no detach-as-cancel)"
+        fi
+    else
+        info "thread_compat.cpp not found (skipping pthread source check)"
+    fi
+    local gs="${root}/cmake/gamespy.cmake"
+    if [[ -f "${gs}" ]]; then
+        if grep -q 'pthread_cancel(t)=(0)' "${gs}"; then
+            pass "cmake/gamespy.cmake: Android compiles pthread_cancel to a no-op"
+        else
+            fail "cmake/gamespy.cmake: expected Android '-Dpthread_cancel(t)=(0)' no-op"
+        fi
+    else
+        info "cmake/gamespy.cmake not found (skipping gamespy pthread check)"
+    fi
+}
+
+# --- Phase 4 driver ----------------------------------------------------------
+section "Native dependency compatibility: pthread cancellation semantics"
+check_pthread_cancel_semantics "${REPO_ROOT}"
+if [[ -n "${LIB_DIR}" && -d "${LIB_DIR}" ]]; then
+    section "Native dependency compatibility: ELF DT_NEEDED"
+    check_elf_needed "${LIB_DIR}"
+fi
+
+# === Phase 5/6 sections are appended by their phases ========================
 
 # --- summary -----------------------------------------------------------------
 section "Summary"
