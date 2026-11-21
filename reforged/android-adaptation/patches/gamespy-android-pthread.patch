@@ -1,0 +1,42 @@
+Stage C (C1, blocker B5): the GameSpy SDK's Linux thread shim calls
+pthread_cancel, which bionic deliberately does not provide (Android's
+clang defines __linux__, so the SDK selects its Linux shim and the
+engine build fails with "call to undeclared function 'pthread_cancel'"
+at gsthreadlinux.c:72). On Android, detach instead: GameSpy's worker
+threads run on socket timeouts and exit on their own, so the handle is
+abandoned rather than force-killed. Semantic delta recorded in
+stage-c-c1-plan.md (B5).
+
+This is the formalisation B5 asked for: the probe workflow applies
+this file to the vendored GameSpy tree right after Tools/vendor.sh
+installs it (same git-apply-into-the-destination mechanics upstream's
+own vendor.sh uses for gamespy-gsi-unix.patch), so a vendor re-fetch
+keeps the change. Paths are relative to the GameSpy destination root
+(Libraries/Source/GameSpy).
+
+diff --git a/src/common/linux/gsthreadlinux.c b/src/common/linux/gsthreadlinux.c
+--- a/src/common/linux/gsthreadlinux.c
++++ b/src/common/linux/gsthreadlinux.c
+@@ -66,13 +66,22 @@
+ void gsiCancelThread(GSIThreadID id)
+ {
+     //should i destroy the attributes here?
+     pthread_attr_destroy(&id.attr);
+ 
++#if defined(__ANDROID__)
++    // Stage C (C1): bionic has no pthread_cancel, by design. Detach instead:
++    // GameSpy's worker threads run on socket timeouts and exit on their own,
++    // so the handle is abandoned rather than force-killed. Semantic delta
++    // recorded in stage-c-c1-plan.md (B5); to be formalised as a vendor patch
++    // beside gamespy-gsi-unix.patch so a vendor.sh re-fetch keeps it.
++    pthread_detach(id.thread);
++#else
+     if (pthread_cancel(id.thread) != PTHREAD_NO_ERROR) {
+         //there was an error - how should we handle these? or should we?
+         gsDebugFormat(GSIDebugCat_Common, GSIDebugType_Misc, GSIDebugLevel_WarmError, "Failed to cancel thread\r\n");
+     }
++#endif
+     //free up memory and set to NULL
+ 
+     gsifree(&id.thread);
+ }

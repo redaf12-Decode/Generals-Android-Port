@@ -1,0 +1,292 @@
+diff --git a/GeneralsMD/Code/CMakeLists.txt b/GeneralsMD/Code/CMakeLists.txt
+index 8d97451..7dbbfb1 100644
+--- a/GeneralsMD/Code/CMakeLists.txt
++++ b/GeneralsMD/Code/CMakeLists.txt
+@@ -32,6 +32,12 @@ else()
+     set(ZH_PLATFORM_MACOS TRUE)
+   elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+     set(ZH_PLATFORM_LINUX TRUE)
++  elseif(CMAKE_SYSTEM_NAME STREQUAL "Android")
++    # Stage C (C1): Android is POSIX-shaped but neither Linux nor macOS branch
++    # describes it (no Fontconfig, no LLD probe, bionic libc). Targets and code
++    # that must differ say ZH_PLATFORM_ANDROID; everything else keeps falling
++    # through the POSIX path exactly as before.
++    set(ZH_PLATFORM_ANDROID TRUE)
+   endif()
+ endif()
+ 
+@@ -1678,10 +1684,15 @@ if(ZH_PLATFORM_POSIX)
+   target_link_libraries(w3ddevice PUBLIC gameengine ww3d2 sdlinput binkvideo)
+ 
+   # A1's link checkpoint: all of w3ddevice and ww3d2, whole archive, against what the POSIX game links.
++  # Stage C (C1): on Android the generate step rejects this target (ww3d2 named both under
++  # WHOLE_ARCHIVE and plainly in one link closure); the checkpoint is desktop-only until the
++  # Android link census exists (it comes from the shared-library link, C1 plan §2).
++  if(NOT ZH_PLATFORM_ANDROID)
+   add_executable(w3d_link_probe ${CMAKE_CURRENT_SOURCE_DIR}/Tests/w3d_link_probe.cpp)
+   set_target_properties(w3d_link_probe PROPERTIES CXX_STANDARD 17)
+   target_link_libraries(w3d_link_probe PRIVATE
+     "$<LINK_LIBRARY:WHOLE_ARCHIVE,w3ddevice,ww3d2>" posixdevice gameengine)
++  endif()
+ 
+   # A2's checkpoint: every texture of the install through WW3D2's loader into the POSIX device on a
+   # null-window (-headless) WW3D, read back and checked against the file.  Needs ZH_GAME_DATA, else Skipped.
+diff --git a/GeneralsMD/Code/GameEngine/Include/Precompiled/PreRTS.h b/GeneralsMD/Code/GameEngine/Include/Precompiled/PreRTS.h
+index 04e4a96..c745a80 100644
+--- a/GeneralsMD/Code/GameEngine/Include/Precompiled/PreRTS.h
++++ b/GeneralsMD/Code/GameEngine/Include/Precompiled/PreRTS.h
+@@ -114,7 +114,13 @@ class STLSpecialAlloc;
+ #include <stdlib.h>
+ #include <string.h>
+ #include <sys/stat.h>
++#if !defined(__ANDROID__)
++// Stage C (C1): bionic has no <sys/timeb.h>; nothing in the tree calls
++// ftime() or uses struct timeb (grep-verified), so the include is
++// vestigial on Android. glibc keeps the header, so other POSIX is
++// untouched.
+ #include <sys/timeb.h>
++#endif
+ #include <sys/types.h>
+ #include <time.h>
+ #include <wchar.h>
+diff --git a/GeneralsMD/Code/GameEngine/Source/Common/System/CrashHandlerPosix.cpp b/GeneralsMD/Code/GameEngine/Source/Common/System/CrashHandlerPosix.cpp
+index a001967..9d27980 100644
+--- a/GeneralsMD/Code/GameEngine/Source/Common/System/CrashHandlerPosix.cpp
++++ b/GeneralsMD/Code/GameEngine/Source/Common/System/CrashHandlerPosix.cpp
+@@ -469,7 +469,15 @@ unsigned int collectFrames( uintptr_t pc, uintptr_t fp, uintptr_t lr, uintptr_t
+ 	(void)fp;
+ 	(void)lr;
+ 	void *walked[ MAX_FRAMES ];
++#if defined(__ANDROID__) && __ANDROID_API__ < 33
++	// Stage C (C1): bionic declares backtrace() only from API 33; below it the
++	// crash file carries the PC alone rather than a walked stack. API 33+ (and
++	// every other POSIX target) walks as before.
++	const int got = 0;
++	(void)walked;
++#else
+ 	const int got = backtrace( walked, (int)MAX_FRAMES );
++#endif
+ 	for (int i = 0; i < got && count < MAX_FRAMES; ++i)
+ 		frames[ count++ ] = (uintptr_t)walked[i];
+ #endif
+@@ -715,7 +723,7 @@ void installCrashHandlers( void )
+ 		// backtrace()'s unwinder, whose first call allocates.
+ 		Dl_info info;
+ 		dladdr( (const void *)&installCrashHandlers, &info );
+-#if defined(__linux__)
++#if defined(__linux__) && !(defined(__ANDROID__) && __ANDROID_API__ < 33)
+ 		void *frames[ 4 ];
+ 		backtrace( frames, 4 );
+ #endif
+diff --git a/GeneralsMD/Code/GameEngine/Source/Common/System/GameMemory.cpp b/GeneralsMD/Code/GameEngine/Source/Common/System/GameMemory.cpp
+index 7db68bb..aa7efb2 100644
+--- a/GeneralsMD/Code/GameEngine/Source/Common/System/GameMemory.cpp
++++ b/GeneralsMD/Code/GameEngine/Source/Common/System/GameMemory.cpp
+@@ -3447,6 +3447,8 @@ void MemoryPoolFactory::debugMemoryReport(Int flags, Int startCheckpoint, Int en
+ 	these definitions of new/delete) ahead of all others. (We do debug checking
+ 	to ensure that's the case)
+ */
++// Stage C (C1): #pragma comment(lib) is an MSVC autolink mechanism; GNU ld ignores it but lld (the NDK linker) records .linker-options and fails the link on the named Windows libraries. MSVC only.
++#if defined(_MSC_VER)
+ #if defined(_DEBUG)
+ 	#pragma comment(lib, "GameEngineDebug")
+ #elif defined(_INTERNAL)
+@@ -3454,6 +3456,7 @@ void MemoryPoolFactory::debugMemoryReport(Int flags, Int startCheckpoint, Int en
+ #else
+ 	#pragma comment(lib, "GameEngine")
+ #endif
++#endif
+ 
+ #ifdef MEMORYPOOL_OVERRIDE_MALLOC
+ 	#pragma comment(linker, "/force:multiple")
+diff --git a/GeneralsMD/Code/GameEngine/Source/Common/System/StackDumpPosix.cpp b/GeneralsMD/Code/GameEngine/Source/Common/System/StackDumpPosix.cpp
+index cf73b2d..702a073 100644
+--- a/GeneralsMD/Code/GameEngine/Source/Common/System/StackDumpPosix.cpp
++++ b/GeneralsMD/Code/GameEngine/Source/Common/System/StackDumpPosix.cpp
+@@ -74,7 +74,15 @@ void FillStackAddresses( void **addresses, unsigned int count, unsigned int skip
+ 	unsigned int wanted = count + skip + 1;
+ 	if (wanted > MAX_FRAMES)
+ 		wanted = MAX_FRAMES;
++#if defined(__ANDROID__) && __ANDROID_API__ < 33
++	// Stage C (C1): bionic declares the execinfo walkers only from API 33;
++	// below it the addresses stay NULL, which every caller here already
++	// handles. API 33+ (and every other POSIX target) walks as before.
++	const int got = 0;
++	(void)frames;
++#else
+ 	const int got = backtrace( frames, (int)wanted );
++#endif
+ 	for (unsigned int i = 0; i < count; ++i)
+ 	{
+ 		const unsigned int from = i + skip + 1;
+@@ -89,7 +97,11 @@ void StackDumpFromAddresses( void **addresses, unsigned int count, void (*callba
+ 		unsigned int n = 0;
+ 		while (n < count && addresses[ n ] != NULL)
+ 			++n;
++#if defined(__ANDROID__) && __ANDROID_API__ < 33
++		(void)addresses; (void)n;	// Stage C (C1): no backtrace_symbols_fd before API 33; the stderr fallback prints nothing.
++#else
+ 		backtrace_symbols_fd( addresses, (int)n, STDERR_FILENO );
++#endif
+ 		return;
+ 	}
+ 	char line[ 512 ];
+diff --git a/GeneralsMD/Code/GameEngineDevice/Source/PosixDevice/Render/PosixDevice9Timing.cpp b/GeneralsMD/Code/GameEngineDevice/Source/PosixDevice/Render/PosixDevice9Timing.cpp
+index 333ffbc..01deca5 100644
+--- a/GeneralsMD/Code/GameEngineDevice/Source/PosixDevice/Render/PosixDevice9Timing.cpp
++++ b/GeneralsMD/Code/GameEngineDevice/Source/PosixDevice/Render/PosixDevice9Timing.cpp
+@@ -266,7 +266,15 @@ void Sdl_Creation_Log(const char *what, double started_ms, double took_ms, const
+ void Sdl_Creation_Log_Trace(const char *what)
+ {
+ 	void *frames[12];
++#if defined(__ANDROID__) && __ANDROID_API__ < 33
++	// Stage C (C1): bionic declares backtrace() only from API 33, and the host
++	// shell's floor is API 28, so below 33 the trace line carries no frames.
++	// Above it (and everywhere off Android) the walk runs as before.
++	const int count = 0;
++	(void)frames;
++#else
+ 	const int count = backtrace(frames, 12);
++#endif
+ 	std::string line = std::string("PosixDevice9 create: trace ") + what + ":";
+ 	for (int i = 1; i < count; ++i) {
+ 		Dl_info info;
+diff --git a/GeneralsMD/Code/GameEngineDevice/Source/PosixDevice/Render/SdlGpuFrame.cpp b/GeneralsMD/Code/GameEngineDevice/Source/PosixDevice/Render/SdlGpuFrame.cpp
+index 8e5f3df..cc0316a 100644
+--- a/GeneralsMD/Code/GameEngineDevice/Source/PosixDevice/Render/SdlGpuFrame.cpp
++++ b/GeneralsMD/Code/GameEngineDevice/Source/PosixDevice/Render/SdlGpuFrame.cpp
+@@ -168,7 +168,30 @@ SdlGpuFrame * SdlGpuFrame::Create(RenderWindow window, unsigned int width, unsig
+ 	SdlGpuFrame * frame = new SdlGpuFrame();
+ 	// Debug validation only when asked: it is slow, and the game runs without it.
+ 	const bool debug = getenv("ZH_GPU_DEBUG") != NULL;
++#if defined(__ANDROID__)
++	// A default SDL GPU device requires the Vulkan core features depthClamp and
++	// shaderClipDistance, and mobile GPUs of the Mali-G52 class implement neither:
++	// there SDL_CreateGPUDevice fails with "No supported SDL_GPU backend found"
++	// (C0 probe on the target phone; stage-c-c0-probe.md §8-§10). The engine needs
++	// neither feature - its one rasterizer write enables depth *clip*, never clamp,
++	// and no generated shader reads a clip distance - so on Android the device is
++	// created through properties with exactly those two features off. The rest of
++	// the property set mirrors SDL_CreateGPUDevice's own fill (SDL_gpu.c,
++	// SDL_GPU_FillProperties) for the formats and flags this call passes.
++	{
++		SDL_PropertiesID props = SDL_CreateProperties();
++		SDL_SetBooleanProperty(props, SDL_PROP_GPU_DEVICE_CREATE_SHADERS_SPIRV_BOOLEAN, true);
++		SDL_SetBooleanProperty(props, SDL_PROP_GPU_DEVICE_CREATE_SHADERS_MSL_BOOLEAN, true);
++		SDL_SetBooleanProperty(props, SDL_PROP_GPU_DEVICE_CREATE_DEBUGMODE_BOOLEAN, debug);
++		SDL_SetStringProperty(props, SDL_PROP_GPU_DEVICE_CREATE_NAME_STRING, NULL);
++		SDL_SetBooleanProperty(props, SDL_PROP_GPU_DEVICE_CREATE_FEATURE_DEPTH_CLAMPING_BOOLEAN, false);
++		SDL_SetBooleanProperty(props, SDL_PROP_GPU_DEVICE_CREATE_FEATURE_CLIP_DISTANCE_BOOLEAN, false);
++		frame->GpuDevice = SDL_CreateGPUDeviceWithProperties(props);
++		SDL_DestroyProperties(props);
++	}
++#else
+ 	frame->GpuDevice = SDL_CreateGPUDevice(SDL_GPU_SHADERFORMAT_SPIRV | SDL_GPU_SHADERFORMAT_MSL, debug, NULL);
++#endif
+ 	if (frame->GpuDevice == NULL) {
+ 		error = std::string("SDL_CreateGPUDevice: ") + SDL_GetError();
+ 		delete frame;
+diff --git a/GeneralsMD/Code/Libraries/Source/WWVegas/WW3D2/glyphrasteriser.cpp b/GeneralsMD/Code/Libraries/Source/WWVegas/WW3D2/glyphrasteriser.cpp
+index 968f177..a37b901 100644
+--- a/GeneralsMD/Code/Libraries/Source/WWVegas/WW3D2/glyphrasteriser.cpp
++++ b/GeneralsMD/Code/Libraries/Source/WWVegas/WW3D2/glyphrasteriser.cpp
+@@ -31,7 +31,7 @@
+ #include FT_TRUETYPE_TABLES_H
+ #include FT_TRUETYPE_TAGS_H
+ 
+-#if !defined(__APPLE__) || defined(ZH_GLYPHS_USE_FONTCONFIG)
++#if (!defined(__APPLE__) && !defined(__ANDROID__)) || defined(ZH_GLYPHS_USE_FONTCONFIG)
+ #include <fontconfig/fontconfig.h>
+ #define ZH_GLYPHS_FONTCONFIG 1
+ #endif
+@@ -270,6 +270,15 @@ bool resolve( const char *face, bool bold, std::string &path, bool &fileIsBold,
+ #if defined(ZH_GLYPHS_FONTCONFIG)
+ 	metricsFace = s.gdiMetrics;
+ 	return fontconfigFile( s.linuxFamily, bold, path, fileIsBold );
++#elif defined(__ANDROID__)
++	// Stage C (C1): Android has no fontconfig and no Liberation-metric system
++	// faces to substitute with; /system/fonts is Roboto family, whose metrics
++	// are not GDI's. Until the Android substitution table is a decided thing
++	// (stage-c-c1-plan.md, font seam), an unregistered face reports no file
++	// here - registered fonts (the game's own, the primary path) are matched
++	// above and unaffected.
++	(void)s;
++	return false;
+ #else
+ 	const char *directory = "/System/Library/Fonts/Supplemental/";
+ 	if (bold && s.macBold != NULL && fileExists( (std::string( directory ) + s.macBold).c_str() ))
+diff --git a/GeneralsMD/Code/Libraries/Source/debug/debug.h b/GeneralsMD/Code/Libraries/Source/debug/debug.h
+index 871651e..40c1c9b 100644
+--- a/GeneralsMD/Code/Libraries/Source/debug/debug.h
++++ b/GeneralsMD/Code/Libraries/Source/debug/debug.h
+@@ -90,22 +90,30 @@
+ 
+ // Define which libraries to use. 
+ #if defined(_INTERNAL)
++#if defined(_MSC_VER)
+ #  pragma comment (lib,"debuginternal.lib")
++#endif
+ #  define HAS_ASSERTS
+ #  define HAS_LOGS
+ #  define HAS_OPT
+ #elif defined(_DEBUG)
++#if defined(_MSC_VER)
+ #  pragma comment (lib,"debugdebug.lib")
++#endif
+ #  define HAS_ASSERTS
+ #  define HAS_LOGS
+ #elif defined(_PROFILE)
++#if defined(_MSC_VER)
+ #  pragma comment (lib,"debugprofile.lib")
++#endif
+ #  define HAS_ASSERTS
+ #  define HAS_LOGS
+ #  define HAS_OPT
+ #  define HAS_PROFILE
+ #else
++#if defined(_MSC_VER)
+ #  pragma comment (lib,"debug.lib")
++#endif
+ #  define HAS_OPT
+ #endif
+ 
+diff --git a/GeneralsMD/Code/Libraries/Source/profile/profile.h b/GeneralsMD/Code/Libraries/Source/profile/profile.h
+index 22996d0..6c60812 100644
+--- a/GeneralsMD/Code/Libraries/Source/profile/profile.h
++++ b/GeneralsMD/Code/Libraries/Source/profile/profile.h
+@@ -37,7 +37,9 @@
+ 	#error "Only either _DEBUG or _INTERNAL should ever be defined"
+ #endif
+ 
+-// Define which libraries to use. 
++// Define which libraries to use.
++// Stage C (C1): #pragma comment(lib) is an MSVC autolink mechanism; GNU ld ignores it but lld (the NDK linker) records .linker-options and fails the link on the named Windows libraries. MSVC only.
++#if defined(_MSC_VER)
+ #if defined(_INTERNAL)
+ #  pragma comment (lib,"profileinternal.lib")
+ #elif defined(_DEBUG)
+@@ -47,6 +49,7 @@
+ #else
+ #  pragma comment (lib,"profile.lib")
+ #endif
++#endif
+ 
+ // include all our public header files (use double quotes here)
+ #include "profile_doc.h"
+diff --git a/GeneralsMD/Code/Tools/ffmpeg-build-posix.sh b/GeneralsMD/Code/Tools/ffmpeg-build-posix.sh
+index f48d3ab..03fc8ae 100755
+--- a/GeneralsMD/Code/Tools/ffmpeg-build-posix.sh
++++ b/GeneralsMD/Code/Tools/ffmpeg-build-posix.sh
+@@ -64,7 +64,11 @@ version=8.1.2
+ 
+ rm -rf "$work" "$prefix"
+ mkdir -p "$work/build"
+-tar -xf "$tarball" -C "$work"
++# Stage C (C1): --no-same-owner — as root inside a user namespace (CI sandboxes,
++# Android build containers) tar's ownership restore is refused and exits
++# nonzero although every file extracted; ownership of a throwaway build tree
++# is never load-bearing. A no-op for non-root users.
++tar --no-same-owner -xf "$tarball" -C "$work"
+ source="$work/ffmpeg-$version"
+ if [ ! -x "$source/configure" ]; then
+   echo "ffmpeg-build-posix: $tarball did not unpack to ffmpeg-$version" >&2

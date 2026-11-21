@@ -111,3 +111,9 @@ android-staging/
 
 # Reforged engine checkout (fetched by scripts/build/android/fetch-reforged-engine.sh; never committed)
 reforged-engine/
+
+# Reforged engine Android build artifacts
+/rfx-build/
+/host-tools/
+/libmain.so
+/libmainrfxgame.so
