@@ -110,11 +110,16 @@ HOSTCXX="${CXX:-c++}"
 export PATH="${REPO_ROOT}/host-tools:$PATH"
 
 # --- configure (Android arm64) ---------------------------------------------
+# --export-dynamic-symbol=SDL_main forces SDL_main into the dynamic symbol
+# table regardless of the engine's visibility preset, so SDLActivity.java can
+# dlsym it. Default visibility preset is a belt-and-braces companion.
 log "Configuring CMake (Android arm64-v8a, API 28)"
 cmake -S "$SRC/GeneralsMD/Code" -B "$BUILD" -G Ninja \
     -DCMAKE_TOOLCHAIN_FILE="$ANDROID_NDK_HOME/build/cmake/android.toolchain.cmake" \
     -DANDROID_ABI=arm64-v8a -DANDROID_PLATFORM=android-28 -DCMAKE_BUILD_TYPE=Release \
-    -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+    -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
+    -DCMAKE_CXX_VISIBILITY_PRESET=default -DCMAKE_C_VISIBILITY_PRESET=default \
+    -DCMAKE_SHARED_LINKER_FLAGS="-Wl,--export-dynamic-symbol=SDL_main"
 
 # --- optional build-only self-check gate (ships nothing) -------------------
 # Builds the frame selfcheck to prove the c1 CMake/bionic adaptation and the
@@ -142,7 +147,16 @@ cp "$BUILD/librfx_game.so" "$OUT"
 log "Verifying $OUT"
 "$READELF" -h "$OUT" | grep -q "AArch64" || die "not AArch64"
 "$READELF" -h "$OUT" | grep -q "DYN"     || die "not a shared object"
-"$NM" -D "$OUT" | grep -q " T SDL_main"  || die "SDL_main not exported"
+# Diagnostics: show every entry-point-ish dynamic and full symbol so a missing
+# export is explainable (is it 'main', hidden 'SDL_main', or absent?).
+echo "--- dynamic symbols matching SDL_main/main ---"
+"$NM" -D "$OUT" | grep -iE "sdl_main|[[:space:]]main$" || echo "  (none in dynsym)"
+echo "--- full symbol table matching SDL_main/main ---"
+"$NM" "$OUT" 2>/dev/null | grep -iE "sdl_main|[[:space:]]main$" || echo "  (none in symtab)"
+if ! "$NM" -D "$OUT" | grep -qE " T SDL_main$"; then
+    echo "ERROR: SDL_main not exported in the dynamic symbol table" >&2
+    exit 1
+fi
 log "DT_NEEDED:"
 "$READELF" -d "$OUT" | grep NEEDED || true
 
