@@ -134,7 +134,8 @@ jobs:
           "$READELF" -h "$LIB" | grep -q "AArch64" || { echo "::error::not AArch64"; exit 1; }
           "$READELF" -h "$LIB" | grep -q "DYN"     || { echo "::error::not a shared object"; exit 1; }
           echo "--- SDL_main export ---"
-          "$NM" -D "$LIB" | grep " T SDL_main" || { echo "::error::SDL_main not exported"; exit 1; }
+          "$NM" -D "$LIB" | tr -d '\r' | awk '{for(i=2;i<=NF;i++) if($i=="SDL_main" && $(i-1)=="T") f=1} END{exit !f}' \
+            || { echo "::error::SDL_main not exported"; exit 1; }
           echo "--- DT_NEEDED ---"
           "$READELF" -d "$LIB" | grep NEEDED || true
           echo "Reforged engine library verified: $LIB"

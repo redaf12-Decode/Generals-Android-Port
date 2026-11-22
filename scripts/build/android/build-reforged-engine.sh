@@ -147,13 +147,12 @@ cp "$BUILD/librfx_game.so" "$OUT"
 log "Verifying $OUT"
 "$READELF" -h "$OUT" | grep -q "AArch64" || die "not AArch64"
 "$READELF" -h "$OUT" | grep -q "DYN"     || die "not a shared object"
-# Diagnostics: show every entry-point-ish dynamic and full symbol so a missing
-# export is explainable (is it 'main', hidden 'SDL_main', or absent?).
-echo "--- dynamic symbols matching SDL_main/main ---"
-"$NM" -D "$OUT" | grep -iE "sdl_main|[[:space:]]main" || echo "  (none in dynsym)"
-# Match the defined text symbol "T SDL_main" (substring, tolerant of any
-# trailing whitespace llvm-nm may emit); 'U SDL_main'/'t SDL_main' won't match.
-if ! "$NM" -D "$OUT" | grep -q " T SDL_main"; then
+# Diagnostics: show every entry-point-ish dynamic symbol. Separator-agnostic.
+echo "--- dynamic symbols matching SDL_main ---"
+"$NM" -D "$OUT" | grep -i "sdl_main" || echo "  (none in dynsym)"
+# Assert a DEFINED text symbol "T SDL_main" (field match: works whether llvm-nm
+# separates columns with spaces or tabs; 'U SDL_main'/'t SDL_main' won't match).
+if ! "$NM" -D "$OUT" | tr -d '\r' | awk '{for(i=2;i<=NF;i++) if($i=="SDL_main" && $(i-1)=="T") f=1} END{exit !f}'; then
     echo "ERROR: SDL_main not exported as a defined dynamic symbol" >&2
     exit 1
 fi
