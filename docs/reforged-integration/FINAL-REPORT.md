@@ -102,7 +102,8 @@ cross-compiles and links for Android ARM64 in CI**, and its shared library is ve
 
 ### Stage 4 — Reforged APK: VERIFIED (green)
 - Workflow: `.github/workflows/build-reforged-apk.yml`, run
-  <https://github.com/redaf12-Decode/Generals-Android-Port/actions/runs/44966811828> — **success**.
+  <https://github.com/redaf12-Decode/Generals-Android-Port/actions/runs/44967213316> — **success**
+  (latest, with libmain.so stripped; the first green APK run was 44966811828).
 - `scripts/build/android/build-reforged-apk.sh` (non-destructive; all injection is build-time only, the
   MYSOREZ tree is never modified) does:
   1. builds `libmain.so` (the Reforged engine) via `build-reforged-engine.sh`;
@@ -119,8 +120,8 @@ cross-compiles and links for Android ARM64 in CI**, and its shared library is ve
   engine (libmain.so, SDL_main) and no MYSOREZ engine` — asserts `lib/arm64-v8a/libmain.so` is AArch64
   and exports `SDL_main`, that no `libmain60/libgenerals/libSDL3/libopenal/libmainrfx*` is present, and
   that the `org.libsdl.apprfx` classes are in the dex.
-- Artifact `reforged-apk` (ID 14732215221). `libmain.so` is stripped for packaging (keeps `.dynsym`:
-  `SDL_main` + JNI exports; drops debug tables).
+- Artifact `reforged-apk` (ID 14732790043), **~21.5 MB** with `libmain.so` stripped for packaging
+  (33 MB, keeps `.dynsym`: `SDL_main` + JNI exports; drops debug tables).
 - This is a **debug-signed** APK for verification; a release build/sign is a packaging follow-up. The
   launcher is unchanged — it still uses SetupActivity to pick the (user-supplied, not bundled) game
   folder; only the play engine behind it is now Reforged.

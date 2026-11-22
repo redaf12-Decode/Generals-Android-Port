@@ -108,4 +108,4 @@ script is explicitly *not* acceptance.
 1. **Stage 1 (this commit):** correct pin → `61dbc59`; this map. Commit "docs(android): map Reforged engine integration".
 2. **Stage 2:** vendor patches + `build-reforged-engine.sh`. Commit "build(android): add Reforged engine build script and adaptation layer".
 3. **Stage 3:** CI workflow; push; wait for Actions; the ARM64 `librfx_game.so` build+verify is the gate. Commit "ci(android): build and verify Reforged engine library".
-4. **Stage 4:** wire APK packaging + app to load Reforged as the play engine; CI-verify APK contents (single engine, ELF, DT_NEEDED, no MYSOREZ engine). Commit "feat(android): ship Reforged engine as the play engine".
+4. **Stage 4 (DONE):** APK packages libmain.so as the sole play engine with an isolated org.libsdl.apprfx SDL 3.4.16 layer + ReforgedGameActivity; CI-verified (green run 44967213316, artifact reforged-apk ~21.5 MB, no MYSOREZ engine). Remaining: on-device runtime validation (needs a device) + release signing.
