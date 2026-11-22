@@ -65,10 +65,51 @@ Commits: `d70061a` "docs: audit Reforged engine integration", `a342b2b` "build(a
 
 ---
 
-## 4. Status of Phases 3–11: BLOCKED (not faked)
+## 4. Status of Phases 3–11: BUILD PHASES DELIVERED; APK packaging remaining
 
-Phases 3–10 require building the actual Reforged engine for Android ARM64 and inspecting real CI logs.
-They **cannot be completed in this environment**, for concrete, documented reasons:
+**Update (Stage 3 complete):** the earlier "blocked" assessment is superseded. By pinning olcay to
+`61dbc59` (the revision the Android adaptation layer is verified against) and building the engine with
+its own `Tools/vendor.sh` + the vendored adaptation patches, the **actual olcay Reforged engine now
+cross-compiles and links for Android ARM64 in CI**, and its shared library is verified. See
+`SOURCE-TO-TARGET-INTEGRATION-MAP.md` for the staged plan and the per-stage commits.
+
+### Stage 3 — actual Reforged engine build: VERIFIED (green)
+- Workflow: `.github/workflows/build-reforged-engine.yml`, run
+  <https://github.com/redaf12-Decode/Generals-Android-Port/actions/runs/44966254875> — **success**.
+- Produced `librfx_game.so` → `libmain.so` from `add_library(rfx_game SHARED PosixMain.cpp)`:
+  - `ELF` `Type: DYN`, `Machine: AArch64` (arm64-v8a).
+  - `SDL_main` exported as a defined dynamic symbol (`T SDL_main`) — required by `SDLActivity`.
+  - `DT_NEEDED`: only Android system libraries (`libm.so`, `libdl.so`, `liblog.so`, `libandroid.so`,
+    `libc.so`). **SDL3 (3.4.16), libc++, GameSpy, miniaudio, FFmpeg and glslang/SPIRV-Cross are all
+    statically linked in** — there are no external native dependencies to ship beyond `libmain.so`.
+- Artifact `reforged-engine-libmain` (ID 14731523890), ~82 MB (unstripped + symbol table + logs).
+- This is the acceptance the mission demanded: a real Android ARM64 build of the olcay engine with its
+  generated shared library inspected, not a launcher-only APK or a static check.
+
+### What was verified vs not
+| Claim | Status |
+|-------|--------|
+| Target branch correct & clean | **Verified** |
+| olcay pinned to a build-achievable commit | **Verified** (`61dbc59`) |
+| Source acquisition reproduces the pin | **Verified** (script tested) |
+| Adaptation layer (c1→fse→fse-mali→c4, then vendor→rfx-jni→gamespy-pthread) applies | **Verified** (CI green) |
+| **olcay `libmain.so` builds for arm64 in CI** | **VERIFIED** (run 44966254875) |
+| **ELF aarch64 / DYN / `SDL_main` exported** | **VERIFIED** |
+| **DT_NEEDED = Android system libs only** | **VERIFIED** |
+| APK packages `libmain.so` as the sole play engine | Stage 4 (remaining) |
+| Reforged activity launches it (SDL3 static → `org.libsdl.apprfx` Java) | Stage 4 (remaining) |
+| On-device render/audio/touch/gameplay | Not tested (no device) |
+
+### Remaining: Stage 4 — package Reforged into the APK as the play engine
+Reforged's SDL3 is static with `org.libsdl.apprfx` JNI, so the host's `org.libsdl.app.SDLActivity`
+(3.4.2, expecting a separate `libSDL3.so`) cannot drive it. Stage 4 adds an isolated SDL 3.4.16 Java
+layer (`org.libsdl.apprfx`), a `ReforgedGameActivity extends org.libsdl.apprfx.SDLActivity`
+(`getLibraries()` → `{ "main" }`), packages `libmain.so` into `jniLibs/arm64-v8a`, routes the play
+action to it (build-time toggle so MYSOREZ builds are unaffected), and verifies the APK carries exactly
+one engine. This is the next staged commit.
+
+## 4a. Original (superseded) blocker assessment
+The build phases require building the actual Reforged engine for Android ARM64 and inspecting real CI logs.
 
 - **No build toolchain in this sandbox:** no Android NDK, vcpkg, meson, glslang, or DXVK; a 3.5-minute
   per-command cap. A full engine build (let alone the vendor.sh dependency builds) is impossible locally.
