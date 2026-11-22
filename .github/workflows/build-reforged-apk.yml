@@ -1,0 +1,133 @@
+name: Build Reforged APK (Android)
+
+# Packages the actual olcay Reforged engine (built arm64 by
+# build-reforged-engine.yml) as the play engine of the target Android
+# application: isolated org.libsdl.apprfx SDL 3.4.16 Java layer +
+# ReforgedGameActivity + libmain.so, packaged by gradle. Verifies the APK
+# carries the Reforged engine and no MYSOREZ engine. See
+# docs/reforged-integration/SOURCE-TO-TARGET-INTEGRATION-MAP.md (Stage 4).
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - Afork
+    paths:
+      - 'reforged/**'
+      - 'scripts/build/android/build-reforged-engine.sh'
+      - 'scripts/build/android/build-reforged-apk.sh'
+      - 'scripts/build/android/fetch-reforged-engine.sh'
+      - '.github/workflows/build-reforged-apk.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  reforged-apk:
+    name: reforged-apk@arm64-v8a
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    env:
+      NDK_VERSION: "27.2.12479018"
+      GRADLE_VERSION: "8.9"
+      CMDLINE_TOOLS_VERSION: "13114758"
+      CMDLINE_TOOLS_SHA1: "5fdcc763663eefb86a5b8879697aa6088b041e70"
+
+    steps:
+      - name: Checkout host (Afork)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: false
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Restore Android SDK cache
+        id: cache-android-sdk
+        uses: actions/cache/restore@v5
+        with:
+          path: /opt/android-sdk
+          key: android-sdk-${{ env.CMDLINE_TOOLS_VERSION }}-ndk${{ env.NDK_VERSION }}-p35-bt35
+
+      - name: Install Android SDK (cmdline-tools + NDK + platform + build-tools)
+        if: steps.cache-android-sdk.outputs.cache-hit != 'true'
+        run: |
+          set -euo pipefail
+          curl -fL --retry 3 -o /tmp/cmdline-tools.zip \
+            "https://dl.google.com/android/repository/commandlinetools-linux-${{ env.CMDLINE_TOOLS_VERSION }}_latest.zip"
+          echo "${{ env.CMDLINE_TOOLS_SHA1 }}  /tmp/cmdline-tools.zip" | sha1sum -c -
+          sudo mkdir -p /opt/android-sdk/cmdline-tools
+          sudo unzip -q /tmp/cmdline-tools.zip -d /opt/android-sdk/cmdline-tools
+          sudo mv /opt/android-sdk/cmdline-tools/cmdline-tools /opt/android-sdk/cmdline-tools/latest
+          sudo chown -R "$(id -u):$(id -g)" /opt/android-sdk
+          rm /tmp/cmdline-tools.zip
+          SDKMANAGER=/opt/android-sdk/cmdline-tools/latest/bin/sdkmanager
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" --install "ndk;${{ env.NDK_VERSION }}" "platforms;android-35" "build-tools;35.0.0" "platform-tools"
+
+      - name: Export Android SDK environment
+        run: |
+          set -euo pipefail
+          echo "ANDROID_HOME=/opt/android-sdk" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=/opt/android-sdk" >> "$GITHUB_ENV"
+          echo "ANDROID_NDK_HOME=/opt/android-sdk/ndk/${{ env.NDK_VERSION }}" >> "$GITHUB_ENV"
+          test -f "/opt/android-sdk/ndk/${{ env.NDK_VERSION }}/build/cmake/android.toolchain.cmake" \
+            || { echo "::error::NDK toolchain file missing after install"; exit 1; }
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: ${{ env.GRADLE_VERSION }}
+
+      - name: Install build tools (ninja, meson, pkg-config, glslang, ccache, zlib, python3, unzip)
+        run: |
+          set -euo pipefail
+          sudo rm -f /etc/apt/sources.list.d/google-chrome.list \
+                     /etc/apt/sources.list.d/microsoft-prod.list
+          sudo apt-get update -qq || sudo apt-get update -qq || true
+          sudo apt-get install -y -qq --no-install-recommends \
+            ninja-build meson pkg-config glslang-tools ccache zlib1g-dev python3 unzip
+          ninja --version; meson --version; python3 --version
+
+      - name: Restore ccache
+        id: cache-ccache
+        uses: actions/cache/restore@v5
+        with:
+          path: ~/.cache/ccache
+          key: ccache-reforged-apk-${{ github.run_id }}
+          restore-keys: |
+            ccache-reforged-
+
+      - name: Configure ccache
+        run: |
+          set -euo pipefail
+          ccache --set-config=max_size=4G
+          ccache --set-config=compiler_check=content
+          ccache --zero-stats
+          echo "CCACHE_DIR=$HOME/.cache/ccache" >> "$GITHUB_ENV"
+
+      - name: Build and package the Reforged APK
+        run: |
+          set -o pipefail
+          mkdir -p logs
+          ./scripts/build/android/build-reforged-apk.sh 2>&1 | tee logs/build-reforged-apk.log
+
+      - name: Save ccache
+        if: always()
+        uses: actions/cache/save@v5
+        with:
+          path: ~/.cache/ccache
+          key: ccache-reforged-apk-${{ github.run_id }}
+
+      - name: Upload Reforged APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: reforged-apk
+          path: |
+            android/app/build/outputs/apk/debug/app-debug.apk
+            logs/*.log
+          if-no-files-found: error

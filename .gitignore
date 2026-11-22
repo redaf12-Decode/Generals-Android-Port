@@ -117,3 +117,6 @@ reforged-engine/
 /host-tools/
 /libmain.so
 /libmainrfxgame.so
+
+# Reforged APK host SDL Java staging
+/rfx-host-sdl/
