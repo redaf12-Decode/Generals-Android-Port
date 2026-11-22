@@ -117,9 +117,20 @@ sed -i 's/GeneralsZHActivity\.class/ReforgedGameActivity.class/g' "${JAVA_DIR}/S
 grep -q "ReforgedGameActivity.class" "${JAVA_DIR}/SetupActivity.java" || die "play redirect did not take"
 
 # --- 6. jniLibs: the Reforged engine only ---------------------------------
+# Strip the packaged copy (keeps .dynsym: SDL_main + the org_libsdl_apprfx JNI
+# exports the activity resolves via dlsym; drops ~240 MB of debug/symbol tables
+# that would otherwise bloat the APK). The engine workflow keeps the unstripped
+# library + symbol table as its own artifact.
+STRIP="$(ls "${ANDROID_NDK_HOME}"/toolchains/llvm/prebuilt/*/bin/llvm-strip 2>/dev/null | head -1 || true)"
+if [[ -n "$STRIP" ]]; then
+    cp "${REPO_ROOT}/libmain.so" "${REPO_ROOT}/libmain-stripped.so"
+    "$STRIP" --strip-unneeded "${REPO_ROOT}/libmain-stripped.so"
+    log "Stripped libmain.so: $(du -h "${REPO_ROOT}/libmain-stripped.so" | cut -f1)"
+fi
 rm -rf "${APP_DIR}/src/main/jniLibs"
 mkdir -p "${JNILIBS}"
-cp "${REPO_ROOT}/libmain.so" "${JNILIBS}/libmain.so"
+cp "${REPO_ROOT}/libmain-stripped.so" "${JNILIBS}/libmain.so" 2>/dev/null \
+    || cp "${REPO_ROOT}/libmain.so" "${JNILIBS}/libmain.so"
 log "Staged jniLibs:"; ls -la "${JNILIBS}"
 
 # --- 7. gradle assembleDebug ----------------------------------------------

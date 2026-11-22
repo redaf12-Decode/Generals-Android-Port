@@ -120,3 +120,4 @@ reforged-engine/
 
 # Reforged APK host SDL Java staging
 /rfx-host-sdl/
+/libmain-stripped.so

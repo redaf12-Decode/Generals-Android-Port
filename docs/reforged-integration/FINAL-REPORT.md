@@ -100,13 +100,35 @@ cross-compiles and links for Android ARM64 in CI**, and its shared library is ve
 | Reforged activity launches it (SDL3 static → `org.libsdl.apprfx` Java) | Stage 4 (remaining) |
 | On-device render/audio/touch/gameplay | Not tested (no device) |
 
-### Remaining: Stage 4 — package Reforged into the APK as the play engine
-Reforged's SDL3 is static with `org.libsdl.apprfx` JNI, so the host's `org.libsdl.app.SDLActivity`
-(3.4.2, expecting a separate `libSDL3.so`) cannot drive it. Stage 4 adds an isolated SDL 3.4.16 Java
-layer (`org.libsdl.apprfx`), a `ReforgedGameActivity extends org.libsdl.apprfx.SDLActivity`
-(`getLibraries()` → `{ "main" }`), packages `libmain.so` into `jniLibs/arm64-v8a`, routes the play
-action to it (build-time toggle so MYSOREZ builds are unaffected), and verifies the APK carries exactly
-one engine. This is the next staged commit.
+### Stage 4 — Reforged APK: VERIFIED (green)
+- Workflow: `.github/workflows/build-reforged-apk.yml`, run
+  <https://github.com/redaf12-Decode/Generals-Android-Port/actions/runs/44966811828> — **success**.
+- `scripts/build/android/build-reforged-apk.sh` (non-destructive; all injection is build-time only, the
+  MYSOREZ tree is never modified) does:
+  1. builds `libmain.so` (the Reforged engine) via `build-reforged-engine.sh`;
+  2. stages the host `org.libsdl.app` SDL **3.4.2** Java (so the app compiles);
+  3. stages the isolated `org.libsdl.apprfx` SDL **3.4.16** Java from the engine's vendored SDL
+     (`stage-rfx-glue.py` + gesture-patched `SDLActivity` override), because the engine's SDL3 is
+     static with `org.libsdl.apprfx` JNI and cannot use the host's `org.libsdl.app` layer;
+  4. adds `ReforgedGameActivity extends org.libsdl.apprfx.SDLActivity` (`getLibraries()` → `{"main"}`,
+     `getArguments()` → `["-root", <game folder picked in SetupActivity>]`), registers it in the manifest,
+     and routes `SetupActivity`'s play action to it;
+  5. stages `libmain.so` as the only engine library in `jniLibs/arm64-v8a`;
+  6. `gradle assembleDebug`.
+- APK verification (in the run log): `gradle BUILD SUCCESSFUL`; `APK verified: contains the Reforged
+  engine (libmain.so, SDL_main) and no MYSOREZ engine` — asserts `lib/arm64-v8a/libmain.so` is AArch64
+  and exports `SDL_main`, that no `libmain60/libgenerals/libSDL3/libopenal/libmainrfx*` is present, and
+  that the `org.libsdl.apprfx` classes are in the dex.
+- Artifact `reforged-apk` (ID 14732215221). `libmain.so` is stripped for packaging (keeps `.dynsym`:
+  `SDL_main` + JNI exports; drops debug tables).
+- This is a **debug-signed** APK for verification; a release build/sign is a packaging follow-up. The
+  launcher is unchanged — it still uses SetupActivity to pick the (user-supplied, not bundled) game
+  folder; only the play engine behind it is now Reforged.
+
+### Remaining: on-device validation
+The APK contains and is configured to load the actual Reforged engine. Confirming it renders, plays
+audio, takes touch input and runs a match requires a **device** (none available here). That is runtime
+evidence, distinct from the build/package verification above, which is complete.
 
 ## 4a. Original (superseded) blocker assessment
 The build phases require building the actual Reforged engine for Android ARM64 and inspecting real CI logs.
